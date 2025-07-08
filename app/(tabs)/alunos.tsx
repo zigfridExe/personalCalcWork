@@ -1,14 +1,13 @@
 import * as SQLite from 'expo-sqlite';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 
-export default function TabOneScreen() {
+export default function AlunosScreen() {
   useEffect(() => {
     const db = SQLite.openDatabaseSync('personaltrainer.db');
     try {
       db.execSync('CREATE TABLE IF NOT EXISTS alunos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT);');
       
-      // Verifica se a tabela já tem algum aluno para não inserir duplicados
       const countResult = db.getFirstSync<{ 'COUNT(*)': number }>('SELECT COUNT(*) FROM alunos;');
       const count = countResult ? countResult['COUNT(*)'] : 0;
 
@@ -25,6 +24,22 @@ export default function TabOneScreen() {
   }, []);
 
   return (
-    <Text>SQLite integrado! Veja o console para teste de banco.</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Alunos</Text>
+      <Text>A base de dados SQLite foi inicializada. Veja o console.</Text>
+    </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});
