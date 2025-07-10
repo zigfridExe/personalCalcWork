@@ -1,47 +1,60 @@
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, Platform, Image } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TextInput, Button, Image } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { MediaType } from 'expo-image-picker';
 
 import * as FileSystem from 'expo-file-system';
+import useAlunosStore from '../../store/useAlunosStore';
 
-import { Text, View } from '@/components/Themed';
-import useAlunosStore from '../store/useAlunosStore';
-
-export default function ModalScreen() {
+export default function EditAlunoScreen() {
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const { alunos, updateAluno } = useAlunosStore();
   const [nome, setNome] = useState('');
   const [status, setStatus] = useState('');
   const [contato, setContato] = useState('');
   const [fotoUri, setFotoUri] = useState<string | null>(null);
-  const { addAluno } = useAlunosStore();
-  const router = useRouter();
+
+  useEffect(() => {
+    const aluno = alunos.find((a) => a.id.toString() === id);
+    if (aluno) {
+      setNome(aluno.nome);
+      setStatus(aluno.status || '');
+      setContato(aluno.contato || '');
+      setFotoUri(aluno.fotoUri || null);
+    }
+  }, [id, alunos]);
 
   const pickImage = async () => {
-    console.log('Botão Selecionar Foto clicado');
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setFotoUri(result.assets[0].uri);
+      const newUri = result.assets[0].uri;
+      const fileName = newUri.split('/').pop();
+      const newPath = FileSystem.documentDirectory + 'photos/' + fileName;
+
+      try {
+        await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'photos/', { intermediates: true });
+        await FileSystem.copyAsync({ from: newUri, to: newPath });
+        setFotoUri(newPath);
+      } catch (e) {
+        console.error('Erro ao copiar imagem:', e);
+        alert('Erro ao salvar a imagem.');
+      }
     }
   };
 
   const handleSave = async () => {
     if (nome.trim().length > 0) {
-      try {
-        console.log('Salvando aluno:', { nome, status, contato, fotoUri });
-        await addAluno(nome, status, contato, fotoUri || undefined);
-        alert('Aluno salvo com sucesso!');
-        router.back();
-      } catch (e) {
-        alert('Erro ao salvar aluno: ' + (e instanceof Error ? e.message : String(e)));
-        console.error(e);
-      }
+      await updateAluno(Number(id), nome, status, contato, fotoUri || undefined);
+      router.back();
     } else {
       alert('Por favor, insira o nome do aluno.');
     }
@@ -49,7 +62,9 @@ export default function ModalScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Cadastrar Novo Aluno</Text>
+      <Text style={styles.title}>Editar Aluno</Text>
+      {fotoUri && <Image source={{ uri: fotoUri }} style={styles.imagePreview} />}
+      <Button title="Alterar Foto" onPress={pickImage} />
       <TextInput
         style={styles.input}
         placeholder="Nome do Aluno"
@@ -68,9 +83,7 @@ export default function ModalScreen() {
         value={contato}
         onChangeText={setContato}
       />
-      <Button title="Selecionar Foto" onPress={pickImage} />
-      {fotoUri && <Image source={{ uri: fotoUri }} style={styles.imagePreview} />}
-      <Button title="Salvar" onPress={handleSave} />
+      <Button title="Salvar Alterações" onPress={handleSave} />
 
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />

@@ -11,7 +11,7 @@ Gerenciamento de Alunos: Cadastro, edição e visualização de perfis de alunos
 
 Fichas de Treino Completas: Criação e personalização de fichas de treino com séries, repetições/tempo, carga e observações.
 
-Histórico de Treino Detalhado: Registro e acompanhamento da evolução dos treonos de cada aluno.
+Histórico de Treino Detalhado: Registro e acompanhamento da evolução dos treinos de cada aluno.
 
 Ferramentas de Tempo Integradas: Cronômetro de exercícios e contador de intervalo com alertas sonoros.
 
@@ -34,3 +34,16 @@ Performance: Desenvolvido para ser ágil e responsivo, mesmo com grandes volumes
 Usabilidade: Interface intuitiva para uso rápido e eficiente em ambientes de treino.
 
 Importante: Este aplicativo é exclusivamente mobile. Não há interface web.
+
+Hierarquia de Dados e Fluxo:
+
+- Aluno
+    - Ficha de Treino (um aluno pode ter várias fichas)
+        - Exercícios (cada ficha possui seus próprios exercícios)
+
+Fluxo esperado no app:
+1. Selecionar um aluno
+2. Visualizar/Adicionar Fichas de Treino desse aluno
+3. Dentro de cada ficha, visualizar/adicionar Exercícios
+
+Cada ficha de treino deve exibir diretamente os exercícios associados, sem etapas intermediárias desnecessárias.

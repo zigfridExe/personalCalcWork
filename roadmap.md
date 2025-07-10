@@ -1,19 +1,19 @@
 # Roadmap de Desenvolvimento - MVP Personal Trainer Offline
 
 ## 1. Estrutura Inicial do Projeto
-- [ ] Configurar ambiente React Native com TypeScript e Expo
+- [x] Configurar ambiente React Native com TypeScript e Expo
 - [x] Integrar SQLite local (expo-sqlite ou sqlite puro)
 - [x] Definir estrutura de navegação (React Navigation)
-- [ ] Escolher solução de gerenciamento de estado (Context API, Redux Toolkit, Zustand, etc.)
+- [x] Escolher solução de gerenciamento de estado (Zustand)
 
 ## 2. Gerenciamento de Alunos e Fichas de Treino
-- [ ] Tela de listagem de alunos (nome, foto, status)
-- [ ] Cadastro e edição de aluno (nome, contato, objetivos, observações)
-- [ ] Criação e edição de ficha de treino para cada aluno
-- [ ] Adição de exercícios à ficha (nome, séries, repetições/tempo, carga, descanso, observações)
+- [x] Tela de listagem de alunos (nome, foto, status)
+- [x] Cadastro e edição de aluno (nome, contato, objetivos, observações)
+- [x] Criação e edição de ficha de treino para cada aluno
+- [x] Adição de exercícios à ficha (nome, séries, repetições/tempo, carga, descanso, observações)
 - [ ] Copiar treinos para outros dias/alunos
 - [ ] Visualização da ficha de treino atual
-- [ ] Persistência das fichas e alunos no SQLite
+- [x] Persistência das fichas e alunos no SQLite
 
 ## 3. Execução do Treino e Monitoramento
 - [ ] Tela de treino ativo (exercício atual, séries, repetições, carga)

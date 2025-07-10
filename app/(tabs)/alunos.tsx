@@ -1,32 +1,54 @@
-import * as SQLite from 'expo-sqlite';
-import { useEffect } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Button, Alert, Image } from 'react-native';
+import { Link } from 'expo-router';
+import useAlunosStore from '../../store/useAlunosStore';
 
 export default function AlunosScreen() {
-  useEffect(() => {
-    const db = SQLite.openDatabaseSync('personaltrainer.db');
-    try {
-      db.execSync('CREATE TABLE IF NOT EXISTS alunos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT);');
-      
-      const countResult = db.getFirstSync<{ 'COUNT(*)': number }>('SELECT COUNT(*) FROM alunos;');
-      const count = countResult ? countResult['COUNT(*)'] : 0;
+  const { alunos, initializeDatabase, deleteAluno } = useAlunosStore();
 
-      if (count === 0) {
-        db.runSync('INSERT INTO alunos (nome) VALUES (?);', 'Primeiro Aluno');
-        console.log('Primeiro aluno inserido.');
-      }
-      
-      const rows = db.getAllSync('SELECT * FROM alunos;');
-      console.log('Alunos cadastrados:', rows);
-    } catch (error) {
-      console.error('Erro ao interagir com o banco de dados:', error);
-    }
-  }, []);
+  useEffect(() => {
+    initializeDatabase();
+  }, [initializeDatabase]);
+
+  const handleDelete = (id: number) => {
+    Alert.alert(
+      "Confirmar Exclusão",
+      "Você tem certeza que deseja excluir este aluno? Todos os seus dados serão perdidos.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", onPress: () => deleteAluno(id), style: "destructive" },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Alunos</Text>
-      <Text>A base de dados SQLite foi inicializada. Veja o console.</Text>
+      <Link href="/modal" style={styles.link}>Cadastrar Novo Aluno</Link>
+      <FlatList
+        data={alunos}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.alunoContainer}>
+            {item.fotoUri && <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />}
+            <View style={styles.alunoInfo}>
+              <Text style={styles.alunoItem}>{item.nome}</Text>
+              {item.status && <Text style={styles.alunoDetail}>Status: {item.status}</Text>}
+              {item.contato && <Text style={styles.alunoDetail}>Contato: {item.contato}</Text>}
+            </View>
+            <View style={styles.buttonsContainer}>
+              <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
+                <Button title="Ver Fichas" />
+              </Link>
+              <Link href={`/edit-aluno/${item.id}`} asChild>
+                <Button title="Editar" />
+              </Link>
+              <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
+            </View>
+          </View>
+        )}
+        style={styles.list}
+      />
     </View>
   );
 }
@@ -36,10 +58,48 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 50,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  list: {
+    width: '100%',
+    marginTop: 20,
+  },
+  alunoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  alunoInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  alunoItem: {
+    fontSize: 18,
+  },
+  alunoDetail: {
+    fontSize: 14,
+    color: 'gray',
+  },
+  alunoImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    gap: 5, // Adiciona um pequeno espaço entre os botões
+  },
+  link: {
+    marginTop: 15,
+    paddingVertical: 15,
+    color: 'blue',
   },
 });
