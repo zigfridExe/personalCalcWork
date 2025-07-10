@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SQLite from 'expo-sqlite';
+import { getDatabase } from '../utils/databaseUtils';
 
 interface Ficha {
   id: number;
@@ -24,7 +24,7 @@ interface FichasState {
 const useFichasStore = create<FichasState>((set, get) => ({
   fichas: [],
   loadFichasByAlunoId: async (alunoId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const fichas = await db.getAllAsync<Ficha>('SELECT * FROM fichas WHERE aluno_id = ?;', alunoId);
       set({ fichas });
@@ -33,7 +33,7 @@ const useFichasStore = create<FichasState>((set, get) => ({
     }
   },
   addFicha: async (ficha) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const result = await db.runAsync(
         'INSERT INTO fichas (aluno_id, nome, data_inicio, data_fim, objetivos, observacoes, professor, descanso_padrao) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
@@ -53,7 +53,7 @@ const useFichasStore = create<FichasState>((set, get) => ({
     }
   },
   updateFicha: async (ficha) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync(
         'UPDATE fichas SET nome = ?, data_inicio = ?, data_fim = ?, objetivos = ?, observacoes = ?, professor = ?, descanso_padrao = ? WHERE id = ?;',
@@ -74,7 +74,7 @@ const useFichasStore = create<FichasState>((set, get) => ({
     }
   },
   deleteFicha: async (fichaId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync('DELETE FROM fichas WHERE id = ?;', fichaId);
       set((state) => ({ fichas: state.fichas.filter((f) => f.id !== fichaId) }));

@@ -9,16 +9,20 @@ export default function FichasScreen() {
   const { id } = useLocalSearchParams();
   const alunoId = Number(id);
   const { fichas, loadFichasByAlunoId, deleteFicha } = useFichasStore();
-  const { alunos } = useAlunosStore();
+  const { alunos, initializeDatabase } = useAlunosStore();
   const { exercicios, loadExerciciosByFichaId, deleteExercicio } = useExerciciosStore();
 
   const aluno = alunos.find(a => a.id === alunoId);
 
   useEffect(() => {
-    if (alunoId) {
-      loadFichasByAlunoId(alunoId);
-    }
-  }, [alunoId, loadFichasByAlunoId]);
+    const initDB = async () => {
+      await initializeDatabase();
+      if (alunoId) {
+        loadFichasByAlunoId(alunoId);
+      }
+    };
+    initDB();
+  }, [alunoId, initializeDatabase, loadFichasByAlunoId]);
 
   // Função para carregar exercícios ao expandir ficha
   const handleExpandFicha = (fichaId: number) => {

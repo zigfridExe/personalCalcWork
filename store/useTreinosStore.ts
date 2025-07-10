@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SQLite from 'expo-sqlite';
+import { getDatabase } from '../utils/databaseUtils';
 
 interface Treino {
   id: number;
@@ -18,7 +18,7 @@ interface TreinosState {
 const useTreinosStore = create<TreinosState>((set, get) => ({
   treinos: [],
   loadTreinosByFichaId: async (fichaId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const treinos = await db.getAllAsync<Treino>('SELECT * FROM treinos WHERE ficha_id = ?;', fichaId);
       set({ treinos });
@@ -27,7 +27,7 @@ const useTreinosStore = create<TreinosState>((set, get) => ({
     }
   },
   addTreino: async (treino) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const result = await db.runAsync(
         'INSERT INTO treinos (ficha_id, nome) VALUES (?, ?);',
@@ -41,7 +41,7 @@ const useTreinosStore = create<TreinosState>((set, get) => ({
     }
   },
   updateTreino: async (treino) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync(
         'UPDATE treinos SET nome = ? WHERE id = ?;',
@@ -56,7 +56,7 @@ const useTreinosStore = create<TreinosState>((set, get) => ({
     }
   },
   deleteTreino: async (treinoId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync('DELETE FROM treinos WHERE id = ?;', treinoId);
       set((state) => ({ treinos: state.treinos.filter((t) => t.id !== treinoId) }));

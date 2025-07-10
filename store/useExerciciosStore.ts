@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SQLite from 'expo-sqlite';
+import { getDatabase } from '../utils/databaseUtils';
 
 interface Exercicio {
   id: number;
@@ -25,7 +25,7 @@ interface ExerciciosState {
 const useExerciciosStore = create<ExerciciosState>((set, get) => ({
   exercicios: [],
   loadExerciciosByFichaId: async (fichaId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const exercicios = await db.getAllAsync<Exercicio>('SELECT * FROM exercicios WHERE ficha_id = ?;', fichaId);
       set({ exercicios });
@@ -34,7 +34,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
     }
   },
   addExercicio: async (exercicio) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       const result = await db.runAsync(
         'INSERT INTO exercicios (ficha_id, grupo_muscular, nome, maquina, series, repeticoes, carga, ajuste, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
@@ -55,7 +55,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
     }
   },
   updateExercicio: async (exercicio) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync(
         'UPDATE exercicios SET ficha_id = ?, grupo_muscular = ?, nome = ?, maquina = ?, series = ?, repeticoes = ?, carga = ?, ajuste = ?, observacoes = ? WHERE id = ?;',
@@ -78,7 +78,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
     }
   },
   deleteExercicio: async (exercicioId) => {
-    const db = await SQLite.openDatabaseAsync('personaltrainer.db');
+    const db = await getDatabase();
     try {
       await db.runAsync('DELETE FROM exercicios WHERE id = ?;', exercicioId);
       set((state) => ({ exercicios: state.exercicios.filter((e) => e.id !== exercicioId) }));

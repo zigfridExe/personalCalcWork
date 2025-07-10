@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Button, Alert, Image } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
+import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 
 export default function AlunosScreen() {
   const { alunos, initializeDatabase, deleteAluno } = useAlunosStore();
@@ -21,10 +22,34 @@ export default function AlunosScreen() {
     );
   };
 
+  const handleResetDatabase = () => {
+    Alert.alert(
+      "Resetar Banco de Dados",
+      "ATENÇÃO: Isso irá apagar TODOS os dados do aplicativo. Tem certeza?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Resetar", 
+          onPress: async () => {
+            try {
+              await resetDB();
+              await initializeDatabase();
+              Alert.alert("Sucesso", "Banco de dados resetado com sucesso!");
+            } catch (error) {
+              Alert.alert("Erro", "Erro ao resetar banco de dados: " + error);
+            }
+          }, 
+          style: "destructive" 
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Alunos</Text>
       <Link href="/modal" style={styles.link}>Cadastrar Novo Aluno</Link>
+      <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" />
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}

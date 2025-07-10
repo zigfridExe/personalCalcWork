@@ -5,11 +5,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 import useExerciciosStore from '../store/useExerciciosStore';
+import useAlunosStore from '../store/useAlunosStore';
 
 export default function ModalExercicioScreen() {
   const router = useRouter();
   const { fichaId, exercicioId } = useLocalSearchParams();
   const { exercicios, addExercicio, updateExercicio } = useExerciciosStore();
+  const { initializeDatabase } = useAlunosStore();
 
   const [nome, setNome] = useState('');
   const [grupoMuscular, setGrupoMuscular] = useState('');
@@ -21,6 +23,13 @@ export default function ModalExercicioScreen() {
   const [observacoes, setObservacoes] = useState('');
 
   const isEditing = !!exercicioId;
+
+  useEffect(() => {
+    const initDB = async () => {
+      await initializeDatabase();
+    };
+    initDB();
+  }, [initializeDatabase]);
 
   useEffect(() => {
     if (isEditing) {
