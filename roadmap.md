@@ -32,9 +32,9 @@
 - [ ] Notificação de progresso (alertas de marcos alcançados)
 
 ## 5. Avaliação Física Simplificada
-- [ ] Tela de cálculo de IMC (salvar resultado no perfil)
-- [ ] Registro de medidas (peso, altura, circunferências)
-- [ ] Histórico de medidas
+- [x] Tela de cálculo de IMC (salvar resultado no perfil)
+- [x] Registro de medidas (peso, altura, circunferências)
+- [x] Histórico de medidas
 
 ## 6. Calendário de Aulas
 - [ ] Tela de calendário com aulas agendadas
@@ -54,4 +54,5 @@
 > **Observações:**
 > - Todas as funcionalidades principais devem operar offline.
 > - O app será focado exclusivamente em dispositivos móveis.
-> - Priorizar performance, confiabilidade e experiência do usuário. 
+> - Priorizar performance, confiabilidade e experiência do usuário.
+> - O desenvolvimento dos lembretes da seção 4 ficará para depois. 

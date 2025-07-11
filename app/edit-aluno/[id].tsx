@@ -5,6 +5,15 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import useAlunosStore from '../../store/useAlunosStore';
 
+interface Aluno {
+  id: number;
+  nome: string;
+  status?: string;
+  contato?: string;
+  fotoUri?: string;
+  lembrete_hidratacao_minutos?: number | null;
+}
+
 export default function EditAlunoScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -13,15 +22,17 @@ export default function EditAlunoScreen() {
   const [status, setStatus] = useState('');
   const [contato, setContato] = useState('');
   const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [lembreteHidratacao, setLembreteHidratacao] = useState<string>('');
 
   useEffect(() => {
-    const aluno = alunos.find((a) => a.id.toString() === id);
+    const aluno = (alunos as Aluno[]).find((a) => a.id.toString() === id);
     console.log('Carregando dados do aluno:', aluno);
     if (aluno) {
       setNome(aluno.nome);
       setStatus(aluno.status || '');
       setContato(aluno.contato || '');
       setFotoUri(aluno.fotoUri || null);
+      setLembreteHidratacao(aluno.lembrete_hidratacao_minutos ? String(aluno.lembrete_hidratacao_minutos) : '');
       console.log('Dados do aluno carregados:', {
         nome: aluno.nome,
         status: aluno.status,
@@ -54,7 +65,7 @@ export default function EditAlunoScreen() {
         console.log('Tipo da fotoUri:', typeof fotoUri);
         console.log('FotoUri é null/undefined?', fotoUri === null || fotoUri === undefined);
         
-        await updateAluno(Number(id), nome, status, contato, fotoUri || '');
+        await updateAluno(Number(id), nome, status, contato, fotoUri || '', lembreteHidratacao ? Number(lembreteHidratacao) : null);
         alert('Aluno atualizado com sucesso!');
         router.back();
       } catch (e) {
@@ -106,6 +117,13 @@ export default function EditAlunoScreen() {
         placeholder="Contato (Ex: Telefone, Email)"
         value={contato}
         onChangeText={setContato}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Lembrete de hidratação (minutos)"
+        value={lembreteHidratacao}
+        onChangeText={setLembreteHidratacao}
+        keyboardType="numeric"
       />
       <Button title="Salvar Alterações" onPress={handleSave} />
 

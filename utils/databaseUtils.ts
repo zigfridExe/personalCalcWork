@@ -50,7 +50,75 @@ export const checkAndFixDatabase = async () => {
         await createExerciciosTable(db);
       }
     }
+
+    // Verificar se a tabela alunos existe e se a coluna lembrete_hidratacao_minutos existe
+    const alunosTableExists = await db.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='alunos';");
+    if (alunosTableExists.length > 0) {
+      const alunosColumns = await db.getAllAsync("PRAGMA table_info(alunos);");
+      const hasLembreteHidratacao = alunosColumns.some((col: any) => col.name === 'lembrete_hidratacao_minutos');
+      if (!hasLembreteHidratacao) {
+        console.log('Coluna lembrete_hidratacao_minutos não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN lembrete_hidratacao_minutos INTEGER;');
+        console.log('Coluna lembrete_hidratacao_minutos adicionada com sucesso.');
+      }
+      // Migração para peso, altura e imc
+      const hasPeso = alunosColumns.some((col: any) => col.name === 'peso');
+      if (!hasPeso) {
+        console.log('Coluna peso não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN peso REAL;');
+        console.log('Coluna peso adicionada com sucesso.');
+      }
+      const hasAltura = alunosColumns.some((col: any) => col.name === 'altura');
+      if (!hasAltura) {
+        console.log('Coluna altura não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN altura REAL;');
+        console.log('Coluna altura adicionada com sucesso.');
+      }
+      const hasImc = alunosColumns.some((col: any) => col.name === 'imc');
+      if (!hasImc) {
+        console.log('Coluna imc não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN imc REAL;');
+        console.log('Coluna imc adicionada com sucesso.');
+      }
+    }
     
+    // Verificar se a tabela medidas existe
+    const medidasTableExists = await db.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='medidas';");
+    if (medidasTableExists.length === 0) {
+      console.log('Tabela medidas não existe. Criando...');
+      await db.execAsync(`
+        CREATE TABLE medidas (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          aluno_id INTEGER,
+          data TEXT,
+          peso REAL,
+          altura REAL,
+          cintura REAL,
+          quadril REAL,
+          FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+        );
+      `);
+      console.log('Tabela medidas criada com sucesso.');
+    }
+
+    // Verificar se a tabela aulas existe
+    const aulasTableExists = await db.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='aulas';");
+    if (aulasTableExists.length === 0) {
+      console.log('Tabela aulas não existe. Criando...');
+      await db.execAsync(`
+        CREATE TABLE aulas (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          aluno_id INTEGER,
+          data TEXT,
+          hora TEXT,
+          descricao TEXT,
+          presenca INTEGER DEFAULT 0,
+          FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+        );
+      `);
+      console.log('Tabela aulas criada com sucesso.');
+    }
+
     console.log('Verificação do banco de dados concluída.');
   } catch (error) {
     console.error('Erro ao verificar banco de dados:', error);
@@ -99,7 +167,8 @@ export const resetDatabase = async () => {
         nome TEXT NOT NULL,
         status TEXT,
         contato TEXT,
-        foto_uri TEXT
+        foto_uri TEXT,
+        lembrete_hidratacao_minutos INTEGER
       );
 
       CREATE TABLE fichas (
@@ -197,7 +266,11 @@ export const initializeDatabase = async () => {
           nome TEXT NOT NULL,
           status TEXT,
           contato TEXT,
-          foto_uri TEXT
+          foto_uri TEXT,
+          lembrete_hidratacao_minutos INTEGER,
+          peso REAL,
+          altura REAL,
+          imc REAL
         );
 
         CREATE TABLE IF NOT EXISTS fichas (
@@ -284,6 +357,43 @@ export const initializeDatabase = async () => {
       } catch (error) {
         // Coluna já existe, ignorar erro
         console.log('Coluna descanso já existe na tabela exercicios.');
+      }
+
+      // Migração: adicionar coluna medidas se não existir
+      try {
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS medidas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            aluno_id INTEGER,
+            data TEXT,
+            peso REAL,
+            altura REAL,
+            cintura REAL,
+            quadril REAL,
+            FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+          );
+        `);
+        console.log('Tabela medidas criada/verificada com sucesso.');
+      } catch (error) {
+        console.error('Erro ao criar/verificar tabela medidas:', error);
+      }
+
+      // Migração: adicionar coluna aulas se não existir
+      try {
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS aulas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            aluno_id INTEGER,
+            data TEXT,
+            hora TEXT,
+            descricao TEXT,
+            presenca INTEGER DEFAULT 0,
+            FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+          );
+        `);
+        console.log('Tabela aulas criada/verificada com sucesso.');
+      } catch (error) {
+        console.error('Erro ao criar/verificar tabela aulas:', error);
       }
     });
     

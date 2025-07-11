@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Button, Alert, TouchableOpacity, Te
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Vibration } from 'react-native';
+import * as Notifications from 'expo-notifications';
 // Remover import do Audio
 
 import useFichasStore from '../../store/useFichasStore';
@@ -198,6 +199,21 @@ export default function TreinoAtivoScreen() {
       setTreinoIniciado(true);
     }
   }, [contagemRegressiva, treinoIniciado]);
+
+  /*
+  useEffect(() => {
+    if (treinoIniciado) {
+      // Teste: agendar notificação para 5 segundos após início do treino
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Hora de se hidratar! 💧',
+          body: 'Lembre-se de beber água durante o treino.',
+        },
+        trigger: { seconds: 5 },
+      });
+    }
+  }, [treinoIniciado]);
+  */
 
   const handleIniciarSerie = () => {
     setSerieEmAndamento(true);

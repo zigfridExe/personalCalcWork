@@ -47,3 +47,22 @@ Fluxo esperado no app:
 3. Dentro de cada ficha, visualizar/adicionar Exercícios
 
 Cada ficha de treino deve exibir diretamente os exercícios associados, sem etapas intermediárias desnecessárias.
+
+## Avaliação Física Completa (para pós-MVP)
+
+Quando formos expandir a avaliação física além da versão simplificada do MVP, contemplar as seguintes etapas e testes:
+
+- PAR-Q (Questionário de Prontidão para Atividade Física)
+- Anamnese (Entrevista de Histórico de Saúde)
+- Aferição de Peso e Altura
+- Cálculo de IMC (Índice de Massa Corporal)
+- Medidas de Circunferências Corporais (Ex: cintura, quadril, braço)
+- Dobras Cutâneas (Avaliação com adipômetro para percentual de gordura)
+- Bioimpedância (Análise de Composição Corporal por corrente elétrica)
+- Avaliação Postural
+- Testes Cardiorrespiratórios (Ex: Teste de Cooper, Teste de Esteira/Bicicleta Ergométrica para VO2 máx)
+- Testes de Força Muscular (Ex: Testes de 1RM - Repetição Máxima)
+- Testes de Resistência Muscular Localizada (Ex: Flexões, Abdominais)
+- Testes de Flexibilidade (Ex: Sentar e Alcançar)
+
+Esses itens servirão de base para a evolução do sistema após a entrega do MVP.

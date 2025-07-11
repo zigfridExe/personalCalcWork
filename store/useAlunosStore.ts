@@ -7,16 +7,32 @@ interface Aluno {
   status?: string;
   contato?: string;
   fotoUri?: string;
+  lembrete_hidratacao_minutos?: number | null;
+  peso?: number | null;
+  altura?: number | null;
+  imc?: number | null;
+}
+
+interface Medida {
+  id?: number;
+  aluno_id: number;
+  data: string;
+  peso: number;
+  altura: number;
+  cintura?: number | null;
+  quadril?: number | null;
 }
 
 interface AlunosState {
   alunos: Aluno[];
-  addAluno: (nome: string, status?: string, contato?: string, fotoUri?: string) => Promise<void>;
-  updateAluno: (id: number, nome: string, status?: string, contato?: string, fotoUri?: string) => Promise<void>;
+  addAluno: (nome: string, status?: string, contato?: string, fotoUri?: string, lembreteHidratacaoMinutos?: number | null, peso?: number | null, altura?: number | null, imc?: number | null) => Promise<void>;
+  updateAluno: (id: number, nome: string, status?: string, contato?: string, fotoUri?: string, lembreteHidratacaoMinutos?: number | null, peso?: number | null, altura?: number | null, imc?: number | null) => Promise<void>;
   deleteAluno: (id: number) => Promise<void>;
   initializeDatabase: () => Promise<void>;
   resetDatabase: () => Promise<void>;
   debugAlunos: () => Promise<void>;
+  registrarMedida: (medida: Medida) => Promise<void>;
+  buscarMedidas: (aluno_id: number) => Promise<Medida[]>;
 }
 
 const useAlunosStore = create<AlunosState>((set, get) => ({
@@ -35,22 +51,23 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       // Mapear foto_uri para fotoUri para compatibilidade com a interface
       const alunosMapeados = allRows.map((aluno: any) => ({
         ...aluno,
-        fotoUri: aluno.foto_uri
+        fotoUri: aluno.foto_uri,
+        lembrete_hidratacao_minutos: aluno.lembrete_hidratacao_minutos ?? null
       }));
       set({ alunos: alunosMapeados });
     } catch (e) {
       console.error('Erro ao inicializar banco de dados:', e);
     }
   },
-  addAluno: async (nome, status = '', contato = '', fotoUri = '') => {
+  addAluno: async (nome, status = '', contato = '', fotoUri = '', lembreteHidratacaoMinutos: number | null = null, peso: number | null = null, altura: number | null = null, imc: number | null = null) => {
     const { initializeDatabase } = get();
     try {
       console.log('addAluno - Inicializando banco de dados...');
       await initializeDatabase();
       const db = await getDatabase();
-      const result = await db.runAsync('INSERT INTO alunos (nome, status, contato, foto_uri) VALUES (?, ?, ?, ?);', nome, status, contato, fotoUri);
+      const result = await db.runAsync('INSERT INTO alunos (nome, status, contato, foto_uri, lembrete_hidratacao_minutos, peso, altura, imc) VALUES (?, ?, ?, ?, ?, ?, ?, ?);', nome, status, contato, fotoUri, lembreteHidratacaoMinutos, peso, altura, imc);
       console.log('addAluno - Resultado DB:', result);
-      const newAluno = { id: result.lastInsertRowId, nome, status, contato, fotoUri };
+      const newAluno = { id: result.lastInsertRowId, nome, status, contato, fotoUri, lembrete_hidratacao_minutos: lembreteHidratacaoMinutos, peso, altura, imc };
       console.log('addAluno - Novo aluno criado:', newAluno);
       set((state) => {
         const updatedAlunos = [...state.alunos, newAluno];
@@ -62,13 +79,13 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       throw error;
     }
   },
-  updateAluno: async (id, nome, status = '', contato = '', fotoUri = '') => {
+  updateAluno: async (id, nome, status = '', contato = '', fotoUri = '', lembreteHidratacaoMinutos: number | null = null, peso: number | null = null, altura: number | null = null, imc: number | null = null) => {
     const db = await getDatabase();
     try {
-      await db.runAsync('UPDATE alunos SET nome = ?, status = ?, contato = ?, foto_uri = ? WHERE id = ?;', nome, status, contato, fotoUri, id);
+      await db.runAsync('UPDATE alunos SET nome = ?, status = ?, contato = ?, foto_uri = ?, lembrete_hidratacao_minutos = ?, peso = ?, altura = ?, imc = ? WHERE id = ?;', nome, status, contato, fotoUri, lembreteHidratacaoMinutos, peso, altura, imc, id);
       console.log('updateAluno - Aluno atualizado no DB.');
       set((state) => {
-        const updatedAlunos = state.alunos.map((aluno) => (aluno.id === id ? { ...aluno, nome, status, contato, fotoUri } : aluno));
+        const updatedAlunos = state.alunos.map((aluno) => (aluno.id === id ? { ...aluno, nome, status, contato, fotoUri, lembrete_hidratacao_minutos: lembreteHidratacaoMinutos, peso, altura, imc } : aluno));
         console.log('updateAluno - Novo estado alunos:', updatedAlunos);
         return { alunos: updatedAlunos };
       });
@@ -113,6 +130,31 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
     } catch (error) {
       console.error('Erro no debug:', error);
     }
+  },
+  registrarMedida: async (medida) => {
+    const db = await getDatabase();
+    await db.runAsync(
+      'INSERT INTO medidas (aluno_id, data, peso, altura, cintura, quadril) VALUES (?, ?, ?, ?, ?, ?);',
+      medida.aluno_id,
+      medida.data,
+      medida.peso,
+      medida.altura,
+      medida.cintura ?? null,
+      medida.quadril ?? null
+    );
+  },
+  buscarMedidas: async (aluno_id) => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<any>('SELECT * FROM medidas WHERE aluno_id = ? ORDER BY data DESC;', aluno_id);
+    return rows.map((row: any) => ({
+      id: row.id,
+      aluno_id: row.aluno_id,
+      data: row.data,
+      peso: row.peso,
+      altura: row.altura,
+      cintura: row.cintura,
+      quadril: row.quadril,
+    }));
   },
 }));
 

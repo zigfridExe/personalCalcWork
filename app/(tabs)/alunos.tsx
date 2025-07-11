@@ -68,19 +68,24 @@ export default function AlunosScreen() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.alunoContainer}>
-            {item.fotoUri ? (
-              <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />
-            ) : (
-              <View style={styles.alunoImagePlaceholder}>
-                <Text style={styles.alunoImagePlaceholderText}>
-                  {item.nome.charAt(0).toUpperCase()}
-                </Text>
+            <View style={styles.infoRow}>
+              {item.fotoUri ? (
+                <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />
+              ) : (
+                <View style={styles.alunoImagePlaceholder}>
+                  <Text style={styles.alunoImagePlaceholderText}>
+                    {item.nome.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.alunoInfo}>
+                <Text style={styles.alunoItem}>{item.nome}</Text>
+                {item.status && <Text style={styles.alunoDetail}>Status: {item.status}</Text>}
+                {item.contato && <Text style={styles.alunoDetail}>Contato: {item.contato}</Text>}
+                {item.peso !== undefined && item.peso !== null && <Text style={styles.alunoDetail}>Peso: {item.peso} kg</Text>}
+                {item.altura !== undefined && item.altura !== null && <Text style={styles.alunoDetail}>Altura: {item.altura} cm</Text>}
+                {item.imc !== undefined && item.imc !== null && <Text style={styles.alunoDetail}>IMC: {item.imc.toFixed(2)}</Text>}
               </View>
-            )}
-            <View style={styles.alunoInfo}>
-              <Text style={styles.alunoItem}>{item.nome}</Text>
-              {item.status && <Text style={styles.alunoDetail}>Status: {item.status}</Text>}
-              {item.contato && <Text style={styles.alunoDetail}>Contato: {item.contato}</Text>}
             </View>
             <View style={styles.buttonsContainer}>
               <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
@@ -91,6 +96,9 @@ export default function AlunosScreen() {
               </Link>
               <Link href={`/edit-aluno/${item.id}`} asChild>
                 <Button title="Editar" />
+              </Link>
+              <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
+                <Button title="Avaliação Física" color="#2196F3" />
               </Link>
               <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
             </View>
@@ -119,16 +127,25 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   alunoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   alunoInfo: {
     flex: 1,
     marginLeft: 10,
+    marginBottom: 10, // Espaço extra abaixo dos dados do aluno
   },
   alunoItem: {
     fontSize: 18,
@@ -157,7 +174,10 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     flexDirection: 'row',
-    gap: 5, // Adiciona um pequeno espaço entre os botões
+    gap: 5,
+    width: '100%',
+    justifyContent: 'center',
+    marginTop: 5,
   },
   link: {
     marginTop: 15,
