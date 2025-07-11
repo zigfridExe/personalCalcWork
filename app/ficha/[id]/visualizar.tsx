@@ -58,8 +58,7 @@ export default function VisualizarFichaScreen() {
       [
         { text: "Cancelar", style: "cancel" },
         { text: "Iniciar", onPress: () => {
-          // TODO: Implementar navegação para tela de treino ativo
-          Alert.alert("Funcionalidade", "Tela de treino ativo será implementada em breve!");
+          router.push(`/treino-ativo/${fichaId}` as any);
         }},
       ]
     );
@@ -181,6 +180,7 @@ export default function VisualizarFichaScreen() {
         <Link href={{ pathname: "/modal-ficha", params: { fichaId: fichaId, alunoId: ficha.aluno_id } }} asChild>
           <Button title="✏️ Editar Ficha" />
         </Link>
+        <Button title="📊 Ver Histórico" onPress={() => router.push(`/historico/${ficha.aluno_id}` as any)} color="#9C27B0" />
         <Button title="⬅️ Voltar" onPress={() => router.back()} />
       </View>
     </ScrollView>

@@ -15,18 +15,18 @@
 - [x] Visualização da ficha de treino atual
 - [x] Persistência das fichas e alunos no SQLite
 
-## 3. Execução do Treino e Monitoramento
-- [ ] Tela de treino ativo (exercício atual, séries, repetições, carga)
-- [ ] Botão "Série Concluída"
-- [ ] Registro de carga/repetições reais por série
-- [ ] Anotações rápidas durante o treino
-- [ ] Cronômetro integrado para exercícios de tempo
-- [ ] Temporizador de descanso com alerta sonoro/vibração
-- [ ] Resumo rápido do histórico do exercício
-- [ ] Salvamento automático do treino no histórico
-- [ ] Visualização do histórico completo do aluno
+## 3. Execução do Treino e Monitoramento ✅ CONCLUÍDO
+- [x] Tela de treino ativo (exercício atual, séries, repetições, carga)
+- [x] Botão "Série Concluída"
+- [x] Registro de carga/repetições reais por série
+- [x] Salvamento automático do treino no histórico
+- [x] Visualização do histórico completo do aluno
+- [x] Anotações rápidas durante o treino
+- [x] Cronômetro integrado para exercícios de tempo
+- [x] Temporizador de descanso com alerta sonoro/vibração
+- [x] Resumo rápido do histórico do exercício
 
-## 4. Lembretes e Notificações Internas
+## 4. Lembretes e Notificações Internas 🎯 PRÓXIMA FASE
 - [ ] Lembrete de hidratação (configurável por aluno, push local)
 - [ ] Lembrete de aula (notificações internas para o professor)
 - [ ] Notificação de progresso (alertas de marcos alcançados)

@@ -12,6 +12,7 @@ interface Exercicio {
   carga?: string;
   ajuste?: string;
   observacoes?: string;
+  descanso?: string; // Adicionar campo descanso
 }
 
 interface ExerciciosState {
@@ -37,7 +38,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
     const db = await getDatabase();
     try {
       const result = await db.runAsync(
-        'INSERT INTO exercicios (ficha_id, grupo_muscular, nome, maquina, series, repeticoes, carga, ajuste, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+        'INSERT INTO exercicios (ficha_id, grupo_muscular, nome, maquina, series, repeticoes, carga, ajuste, observacoes, descanso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
         exercicio.ficha_id,
         exercicio.grupo_muscular || null,
         exercicio.nome,
@@ -46,7 +47,8 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
         exercicio.repeticoes || null,
         exercicio.carga || null,
         exercicio.ajuste || null,
-        exercicio.observacoes || null
+        exercicio.observacoes || null,
+        exercicio.descanso || null
       );
       const newExercicio = { ...exercicio, id: result.lastInsertRowId };
       set((state) => ({ exercicios: [...state.exercicios, newExercicio] }));
@@ -58,7 +60,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
     const db = await getDatabase();
     try {
       await db.runAsync(
-        'UPDATE exercicios SET ficha_id = ?, grupo_muscular = ?, nome = ?, maquina = ?, series = ?, repeticoes = ?, carga = ?, ajuste = ?, observacoes = ? WHERE id = ?;',
+        'UPDATE exercicios SET ficha_id = ?, grupo_muscular = ?, nome = ?, maquina = ?, series = ?, repeticoes = ?, carga = ?, ajuste = ?, observacoes = ?, descanso = ? WHERE id = ?;',
         exercicio.ficha_id,
         exercicio.grupo_muscular || null,
         exercicio.nome,
@@ -68,6 +70,7 @@ const useExerciciosStore = create<ExerciciosState>((set, get) => ({
         exercicio.carga || null,
         exercicio.ajuste || null,
         exercicio.observacoes || null,
+        exercicio.descanso || null,
         exercicio.id
       );
       set((state) => ({

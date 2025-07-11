@@ -71,6 +71,7 @@ const createExerciciosTable = async (db: SQLite.SQLiteDatabase) => {
       carga TEXT,
       ajuste TEXT,
       observacoes TEXT,
+      descanso TEXT,
       FOREIGN KEY (ficha_id) REFERENCES fichas (id) ON DELETE CASCADE
     );
   `);
@@ -132,6 +133,7 @@ export const resetDatabase = async () => {
         carga TEXT,
         ajuste TEXT,
         observacoes TEXT,
+        descanso TEXT,
         FOREIGN KEY (ficha_id) REFERENCES fichas (id) ON DELETE CASCADE
       );
 
@@ -150,6 +152,30 @@ export const resetDatabase = async () => {
         treino_id INTEGER,
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE,
         FOREIGN KEY (treino_id) REFERENCES treinos (id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE historico_treinos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ficha_id INTEGER,
+        aluno_id INTEGER,
+        data_inicio TEXT,
+        data_fim TEXT,
+        duracao_minutos INTEGER,
+        observacoes TEXT,
+        FOREIGN KEY (ficha_id) REFERENCES fichas (id) ON DELETE CASCADE,
+        FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE historico_series (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        historico_treino_id INTEGER,
+        exercicio_id INTEGER,
+        serie_numero INTEGER,
+        repeticoes TEXT,
+        carga TEXT,
+        observacoes TEXT,
+        FOREIGN KEY (historico_treino_id) REFERENCES historico_treinos (id) ON DELETE CASCADE,
+        FOREIGN KEY (exercicio_id) REFERENCES exercicios (id) ON DELETE CASCADE
       );
     `);
     
@@ -205,6 +231,7 @@ export const initializeDatabase = async () => {
           carga TEXT,
           ajuste TEXT,
           observacoes TEXT,
+          descanso TEXT,
           FOREIGN KEY (ficha_id) REFERENCES fichas (id) ON DELETE CASCADE
         );
 
@@ -224,9 +251,43 @@ export const initializeDatabase = async () => {
           FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE,
           FOREIGN KEY (treino_id) REFERENCES treinos (id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS historico_treinos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          ficha_id INTEGER,
+          aluno_id INTEGER,
+          data_inicio TEXT,
+          data_fim TEXT,
+          duracao_minutos INTEGER,
+          observacoes TEXT,
+          FOREIGN KEY (ficha_id) REFERENCES fichas (id) ON DELETE CASCADE,
+          FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS historico_series (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          historico_treino_id INTEGER,
+          exercicio_id INTEGER,
+          serie_numero INTEGER,
+          repeticoes TEXT,
+          carga TEXT,
+          observacoes TEXT,
+          FOREIGN KEY (historico_treino_id) REFERENCES historico_treinos (id) ON DELETE CASCADE,
+          FOREIGN KEY (exercicio_id) REFERENCES exercicios (id) ON DELETE CASCADE
+        );
       `);
-      console.log('Banco de dados inicializado com sucesso.');
+
+      // Migração: adicionar coluna descanso se não existir
+      try {
+        await db.execAsync('ALTER TABLE exercicios ADD COLUMN descanso TEXT;');
+        console.log('Coluna descanso adicionada à tabela exercicios.');
+      } catch (error) {
+        // Coluna já existe, ignorar erro
+        console.log('Coluna descanso já existe na tabela exercicios.');
+      }
     });
+    
+    console.log('Banco de dados inicializado com sucesso.');
   } catch (error) {
     console.error('Erro ao inicializar banco de dados:', error);
     throw error;

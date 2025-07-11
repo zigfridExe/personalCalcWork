@@ -21,6 +21,7 @@ export default function ModalExercicioScreen() {
   const [carga, setCarga] = useState('');
   const [ajuste, setAjuste] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [descanso, setDescanso] = useState('');
 
   const isEditing = !!exercicioId;
 
@@ -43,6 +44,7 @@ export default function ModalExercicioScreen() {
         setCarga(exercicioToEdit.carga || '');
         setAjuste(exercicioToEdit.ajuste || '');
         setObservacoes(exercicioToEdit.observacoes || '');
+        setDescanso(exercicioToEdit.descanso || '');
       }
     }
   }, [isEditing, exercicioId, exercicios]);
@@ -63,6 +65,7 @@ export default function ModalExercicioScreen() {
       carga,
       ajuste,
       observacoes,
+      descanso,
     };
 
     if (isEditing) {
@@ -125,6 +128,10 @@ export default function ModalExercicioScreen() {
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Ajuste</Text>
           <TextInput style={styles.execucaoInput} value={ajuste} onChangeText={setAjuste} placeholder="" />
+        </View>
+        <View style={styles.execucaoRow}>
+          <Text style={styles.execucaoLabel}>Descanso</Text>
+          <TextInput style={styles.execucaoInput} value={descanso} onChangeText={setDescanso} placeholder="Ex: 60s" />
         </View>
         <Button title="Salvar Exercício" onPress={handleSave} />
       </ScrollView>

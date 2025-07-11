@@ -84,7 +84,10 @@ export default function AlunosScreen() {
             </View>
             <View style={styles.buttonsContainer}>
               <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
-                <Button title="Ver Fichas" />
+                <Button title="Fichas" />
+              </Link>
+              <Link href={`/historico/${item.id}`} asChild>
+                <Button title="Histórico" color="#4CAF50" />
               </Link>
               <Link href={`/edit-aluno/${item.id}`} asChild>
                 <Button title="Editar" />
