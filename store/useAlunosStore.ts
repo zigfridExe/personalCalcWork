@@ -16,6 +16,7 @@ interface AlunosState {
   deleteAluno: (id: number) => Promise<void>;
   initializeDatabase: () => Promise<void>;
   resetDatabase: () => Promise<void>;
+  debugAlunos: () => Promise<void>;
 }
 
 const useAlunosStore = create<AlunosState>((set, get) => ({
@@ -30,8 +31,13 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       
       // Carregar alunos
       const db = await getDatabase();
-      const allRows = await db.getAllAsync<Aluno>('SELECT * FROM alunos;');
-      set({ alunos: allRows });
+      const allRows = await db.getAllAsync<any>('SELECT * FROM alunos;');
+      // Mapear foto_uri para fotoUri para compatibilidade com a interface
+      const alunosMapeados = allRows.map((aluno: any) => ({
+        ...aluno,
+        fotoUri: aluno.foto_uri
+      }));
+      set({ alunos: alunosMapeados });
     } catch (e) {
       console.error('Erro ao inicializar banco de dados:', e);
     }
@@ -45,6 +51,7 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       const result = await db.runAsync('INSERT INTO alunos (nome, status, contato, foto_uri) VALUES (?, ?, ?, ?);', nome, status, contato, fotoUri);
       console.log('addAluno - Resultado DB:', result);
       const newAluno = { id: result.lastInsertRowId, nome, status, contato, fotoUri };
+      console.log('addAluno - Novo aluno criado:', newAluno);
       set((state) => {
         const updatedAlunos = [...state.alunos, newAluno];
         console.log('addAluno - Novo estado alunos:', updatedAlunos);
@@ -81,6 +88,30 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       await get().initializeDatabase(); // Re-initialize the database
     } catch (error) {
       console.error('resetDatabase - Erro ao resetar banco:', error);
+    }
+  },
+  debugAlunos: async () => {
+    const db = await getDatabase();
+    try {
+      console.log('=== DEBUG ALUNOS ===');
+      const alunosDB = await db.getAllAsync<any>('SELECT * FROM alunos;');
+      console.log('Alunos no banco:', alunosDB);
+      
+      alunosDB.forEach((aluno: any, index: number) => {
+        console.log(`Aluno ${index + 1}:`, {
+          id: aluno.id,
+          nome: aluno.nome,
+          foto_uri: aluno.foto_uri,
+          fotoUri: aluno.fotoUri,
+          temFotoUri: !!aluno.fotoUri,
+          temFoto_uri: !!aluno.foto_uri
+        });
+      });
+      
+      console.log('Alunos no estado:', get().alunos);
+      console.log('=== FIM DEBUG ===');
+    } catch (error) {
+      console.error('Erro no debug:', error);
     }
   },
 }));

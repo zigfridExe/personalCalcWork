@@ -11,8 +11,8 @@
 - [x] Cadastro e edição de aluno (nome, contato, objetivos, observações)
 - [x] Criação e edição de ficha de treino para cada aluno
 - [x] Adição de exercícios à ficha (nome, séries, repetições/tempo, carga, descanso, observações)
-- [ ] Copiar treinos para outros dias/alunos
-- [ ] Visualização da ficha de treino atual
+- [x] Copiar treinos para outros dias/alunos
+- [x] Visualização da ficha de treino atual
 - [x] Persistência das fichas e alunos no SQLite
 
 ## 3. Execução do Treino e Monitoramento

@@ -3,9 +3,6 @@ import { View, Text, TextInput, Button, StyleSheet, Platform, Image } from 'reac
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
-import { MediaType } from 'expo-image-picker';
-
-import * as FileSystem from 'expo-file-system';
 import useAlunosStore from '../../store/useAlunosStore';
 
 export default function EditAlunoScreen() {
@@ -19,42 +16,51 @@ export default function EditAlunoScreen() {
 
   useEffect(() => {
     const aluno = alunos.find((a) => a.id.toString() === id);
+    console.log('Carregando dados do aluno:', aluno);
     if (aluno) {
       setNome(aluno.nome);
       setStatus(aluno.status || '');
       setContato(aluno.contato || '');
       setFotoUri(aluno.fotoUri || null);
+      console.log('Dados do aluno carregados:', {
+        nome: aluno.nome,
+        status: aluno.status,
+        contato: aluno.contato,
+        fotoUri: aluno.fotoUri
+      });
     }
   }, [id, alunos]);
 
   const pickImage = async () => {
+    console.log('Botão Alterar Foto clicado');
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      const newUri = result.assets[0].uri;
-      const fileName = newUri.split('/').pop();
-      const newPath = FileSystem.documentDirectory + 'photos/' + fileName;
-
-      try {
-        await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory + 'photos/', { intermediates: true });
-        await FileSystem.copyAsync({ from: newUri, to: newPath });
-        setFotoUri(newPath);
-      } catch (e) {
-        console.error('Erro ao copiar imagem:', e);
-        alert('Erro ao salvar a imagem.');
-      }
+      const selectedUri = result.assets[0].uri;
+      console.log('Nova foto selecionada:', selectedUri);
+      setFotoUri(selectedUri);
     }
   };
 
   const handleSave = async () => {
     if (nome.trim().length > 0) {
-      await updateAluno(Number(id), nome, status, contato, fotoUri || undefined);
-      router.back();
+      try {
+        console.log('Salvando alterações do aluno:', { id, nome, status, contato, fotoUri });
+        console.log('Tipo da fotoUri:', typeof fotoUri);
+        console.log('FotoUri é null/undefined?', fotoUri === null || fotoUri === undefined);
+        
+        await updateAluno(Number(id), nome, status, contato, fotoUri || '');
+        alert('Aluno atualizado com sucesso!');
+        router.back();
+      } catch (e) {
+        alert('Erro ao atualizar aluno: ' + (e instanceof Error ? e.message : String(e)));
+        console.error(e);
+      }
     } else {
       alert('Por favor, insira o nome do aluno.');
     }
@@ -63,8 +69,26 @@ export default function EditAlunoScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Editar Aluno</Text>
-      {fotoUri && <Image source={{ uri: fotoUri }} style={styles.imagePreview} />}
-      <Button title="Alterar Foto" onPress={pickImage} />
+      
+      {/* Preview da foto */}
+      <View style={styles.imageContainer}>
+        {fotoUri ? (
+          <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imagePlaceholderText}>
+              {nome.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.photoButtons}>
+        <Button title="📷 Alterar Foto" onPress={pickImage} color="#2196F3" />
+        {fotoUri && (
+          <Button title="🗑️ Remover Foto" onPress={() => setFotoUri(null)} color="#f44336" />
+        )}
+      </View>
       <TextInput
         style={styles.input}
         placeholder="Nome do Aluno"
@@ -116,6 +140,29 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginTop: 10,
+    marginBottom: 20,
+  },
+  imageContainer: {
+    marginBottom: 20,
+  },
+  imagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  imagePlaceholderText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  photoButtons: {
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 20,
   },
 });

@@ -20,14 +20,16 @@ export default function ModalScreen() {
   const pickImage = async () => {
     console.log('Botão Selecionar Foto clicado');
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setFotoUri(result.assets[0].uri);
+      const selectedUri = result.assets[0].uri;
+      console.log('Foto selecionada:', selectedUri);
+      setFotoUri(selectedUri);
     }
   };
 
@@ -35,7 +37,10 @@ export default function ModalScreen() {
     if (nome.trim().length > 0) {
       try {
         console.log('Salvando aluno:', { nome, status, contato, fotoUri });
-        await addAluno(nome, status, contato, fotoUri || undefined);
+        console.log('Tipo da fotoUri:', typeof fotoUri);
+        console.log('FotoUri é null/undefined?', fotoUri === null || fotoUri === undefined);
+        
+        await addAluno(nome, status, contato, fotoUri || '');
         alert('Aluno salvo com sucesso!');
         router.back();
       } catch (e) {

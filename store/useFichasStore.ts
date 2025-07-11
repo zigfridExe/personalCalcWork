@@ -19,6 +19,7 @@ interface FichasState {
   addFicha: (ficha: Omit<Ficha, 'id'>) => Promise<void>;
   updateFicha: (ficha: Ficha) => Promise<void>;
   deleteFicha: (fichaId: number) => Promise<void>;
+  copyFicha: (fichaId: number, novoAlunoId?: number, novoNome?: string) => Promise<number>;
 }
 
 const useFichasStore = create<FichasState>((set, get) => ({
@@ -80,6 +81,64 @@ const useFichasStore = create<FichasState>((set, get) => ({
       set((state) => ({ fichas: state.fichas.filter((f) => f.id !== fichaId) }));
     } catch (error) {
       console.error('Erro ao deletar ficha:', error);
+    }
+  },
+  copyFicha: async (fichaId, novoAlunoId, novoNome) => {
+    const db = await getDatabase();
+    try {
+      // Buscar a ficha original
+      const fichaOriginal = get().fichas.find(f => f.id === fichaId);
+      if (!fichaOriginal) {
+        throw new Error('Ficha não encontrada');
+      }
+
+      // Determinar o novo nome e aluno
+      const nomeFinal = novoNome || `${fichaOriginal.nome} (Cópia)`;
+      const alunoIdFinal = novoAlunoId || fichaOriginal.aluno_id;
+
+      // Criar nova ficha
+      const result = await db.runAsync(
+        'INSERT INTO fichas (aluno_id, nome, data_inicio, data_fim, objetivos, observacoes, professor, descanso_padrao) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+        alunoIdFinal,
+        nomeFinal,
+        fichaOriginal.data_inicio || null,
+        fichaOriginal.data_fim || null,
+        fichaOriginal.objetivos || null,
+        fichaOriginal.observacoes || null,
+        fichaOriginal.professor || null,
+        fichaOriginal.descanso_padrao || null
+      );
+
+      const novaFichaId = result.lastInsertRowId;
+
+      // Buscar exercícios da ficha original
+      const exercicios = await db.getAllAsync<any>('SELECT * FROM exercicios WHERE ficha_id = ?;', fichaId);
+
+      // Copiar exercícios para a nova ficha
+      for (const exercicio of exercicios) {
+        await db.runAsync(
+          'INSERT INTO exercicios (ficha_id, grupo_muscular, nome, maquina, series, repeticoes, carga, ajuste, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+          novaFichaId,
+          exercicio.grupo_muscular || null,
+          exercicio.nome,
+          exercicio.maquina || null,
+          exercicio.series || null,
+          exercicio.repeticoes || null,
+          exercicio.carga || null,
+          exercicio.ajuste || null,
+          exercicio.observacoes || null
+        );
+      }
+
+      // Adicionar nova ficha ao estado
+      const novaFicha = { ...fichaOriginal, id: novaFichaId, aluno_id: alunoIdFinal, nome: nomeFinal };
+      set((state) => ({ fichas: [...state.fichas, novaFicha] }));
+
+      console.log(`Ficha copiada com sucesso. Nova ficha ID: ${novaFichaId}`);
+      return novaFichaId;
+    } catch (error) {
+      console.error('Erro ao copiar ficha:', error);
+      throw error;
     }
   },
 }));

@@ -5,11 +5,23 @@ import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 
 export default function AlunosScreen() {
-  const { alunos, initializeDatabase, deleteAluno } = useAlunosStore();
+  const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
 
   useEffect(() => {
     initializeDatabase();
   }, [initializeDatabase]);
+
+  // Debug: Log dos alunos carregados
+  useEffect(() => {
+    console.log('Alunos carregados:', alunos);
+    alunos.forEach(aluno => {
+      console.log(`Aluno ${aluno.id}:`, {
+        nome: aluno.nome,
+        fotoUri: aluno.fotoUri,
+        temFoto: !!aluno.fotoUri
+      });
+    });
+  }, [alunos]);
 
   const handleDelete = (id: number) => {
     Alert.alert(
@@ -50,12 +62,21 @@ export default function AlunosScreen() {
       <Text style={styles.title}>Alunos</Text>
       <Link href="/modal" style={styles.link}>Cadastrar Novo Aluno</Link>
       <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" />
+      <Button title="🐛 Debug Fotos" onPress={debugAlunos} color="purple" />
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.alunoContainer}>
-            {item.fotoUri && <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />}
+            {item.fotoUri ? (
+              <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />
+            ) : (
+              <View style={styles.alunoImagePlaceholder}>
+                <Text style={styles.alunoImagePlaceholderText}>
+                  {item.nome.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.alunoInfo}>
               <Text style={styles.alunoItem}>{item.nome}</Text>
               {item.status && <Text style={styles.alunoDetail}>Status: {item.status}</Text>}
@@ -117,6 +138,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+  },
+  alunoImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alunoImagePlaceholderText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#666',
   },
   buttonsContainer: {
     flexDirection: 'row',

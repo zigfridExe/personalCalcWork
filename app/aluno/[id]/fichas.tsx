@@ -66,7 +66,12 @@ export default function FichasScreen() {
             <Text style={styles.fichaDetail}>Objetivos: {item.objetivos}</Text>
             <Text style={styles.fichaDetail}>Professor: {item.professor}</Text>
             <View style={styles.buttonsContainer}>
-              {/* Remover botão de Ver Treinos */}
+              <Link href={{ pathname: "/ficha/[id]/visualizar", params: { id: item.id } }} asChild>
+                <Button title="Visualizar" color="#2196F3" />
+              </Link>
+              <Link href={{ pathname: "/modal-copiar-ficha", params: { fichaId: item.id } }} asChild>
+                <Button title="📋 Copiar" color="#FF9800" />
+              </Link>
               <Link href={{ pathname: "/modal-ficha", params: { fichaId: item.id, alunoId: alunoId } }} asChild>
                 <Button title="Editar" />
               </Link>
