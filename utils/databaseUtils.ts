@@ -204,6 +204,7 @@ export const resetDatabase = async () => {
         status TEXT,
         contato TEXT,
         foto_uri TEXT,
+        data_nascimento TEXT,
         lembrete_hidratacao_minutos INTEGER,
         peso REAL,
         altura REAL,
@@ -342,6 +343,7 @@ export const initializeDatabase = async () => {
           status TEXT,
           contato TEXT,
           foto_uri TEXT,
+          data_nascimento TEXT,
           lembrete_hidratacao_minutos INTEGER,
           peso REAL,
           altura REAL,
@@ -512,6 +514,16 @@ export const initializeDatabase = async () => {
           }
         }
       }
+
+      // MIGRAÇÃO: Adiciona a coluna data_nascimento se não existir
+      await db.execAsync(`
+        PRAGMA foreign_keys=off;
+        BEGIN TRANSACTION;
+        CREATE TABLE IF NOT EXISTS temp_alunos_migracao AS SELECT * FROM alunos;
+        ALTER TABLE alunos ADD COLUMN data_nascimento TEXT;
+        COMMIT;
+        PRAGMA foreign_keys=on;
+      `).catch(() => {}); // Ignora erro se a coluna já existir
     });
     
     console.log('Banco de dados inicializado com sucesso.');

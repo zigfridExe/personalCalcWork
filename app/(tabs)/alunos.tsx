@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Button, Alert, Image, TouchableOpacit
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
+import { format } from 'date-fns';
 
 export default function AlunosScreen() {
   const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
@@ -82,30 +83,45 @@ export default function AlunosScreen() {
               )}
               <View style={styles.alunoInfo}>
                 <Text style={styles.alunoItem}>{item.nome}</Text>
-                {item.status && <Text style={styles.alunoDetail}>Status: {item.status}</Text>}
-                {item.contato && <Text style={styles.alunoDetail}>Contato: {item.contato}</Text>}
-                {item.peso !== undefined && item.peso !== null && <Text style={styles.alunoDetail}>Peso: {item.peso} kg</Text>}
-                {item.altura !== undefined && item.altura !== null && <Text style={styles.alunoDetail}>Altura: {item.altura} cm</Text>}
-                {item.imc !== undefined && item.imc !== null && <Text style={styles.alunoDetail}>IMC: {item.imc.toFixed(2)}</Text>}
+                {item.data_nascimento && (
+                  <Text style={styles.alunoDetail}>
+                    Data de Nascimento: {item.data_nascimento.length === 10 ? item.data_nascimento : format(new Date(item.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
+                  </Text>
+                )}
+                {item.contato && <Text style={styles.alunoDetail}>Telefone: {item.contato}</Text>}
               </View>
             </View>
-            <View style={styles.buttonsContainer}>
-              <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
-                <Button title="Fichas" />
-              </Link>
-              <Link href={`/historico/${item.id}`} asChild>
-                <Button title="Histórico" color="#4CAF50" />
-              </Link>
-              <Link href={`/edit-aluno/${item.id}`} asChild>
-                <Button title="Editar" />
-              </Link>
-              <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
-                <Button title="Avaliação Física" color="#2196F3" />
-              </Link>
-              <Link href={{ pathname: "/aluno/[id]/horarios-padrao", params: { id: item.id } }} asChild>
-                <Button title="📅 Horários" color="#FF9800" />
-              </Link>
-              <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
+            <View style={styles.buttonsRow}>
+              <View style={styles.buttonWrapper}>
+                <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
+                  <Button title="Fichas" />
+                </Link>
+              </View>
+              <View style={styles.buttonWrapper}>
+                <Link href={`/historico/${item.id}`} asChild>
+                  <Button title="Histórico" color="#4CAF50" />
+                </Link>
+              </View>
+              <View style={styles.buttonWrapper}>
+                <Link href={`/edit-aluno/${item.id}`} asChild>
+                  <Button title="Editar" />
+                </Link>
+              </View>
+            </View>
+            <View style={styles.buttonsRow}>
+              <View style={styles.buttonWrapper}>
+                <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
+                  <Button title="Avaliação Física" color="#2196F3" />
+                </Link>
+              </View>
+              <View style={styles.buttonWrapper}>
+                <Link href={{ pathname: "/aluno/[id]/horarios-padrao", params: { id: item.id } }} asChild>
+                  <Button title="📅 Horários" color="#FF9800" />
+                </Link>
+              </View>
+              <View style={styles.buttonWrapper}>
+                <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
+              </View>
             </View>
           </View>
         )}
@@ -178,10 +194,11 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   buttonsContainer: {
-    flexDirection: 'row',
-    gap: 5,
+    flexDirection: 'column',
+    gap: 8,
     width: '100%',
     justifyContent: 'center',
+    alignItems: 'stretch',
     marginTop: 5,
   },
   link: {
@@ -208,5 +225,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  buttonWrapper: {
+    marginHorizontal: 2,
+    flex: 1,
   },
 });

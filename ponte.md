@@ -3,22 +3,27 @@ Análise das Anotações
 Problema: Telas de cadastro e edição de aluno têm campos diferentes.
 Solução MVP: Unificar os campos essenciais nas duas telas (pelo menos Nome, Telefone, Idade/Data de Nascimento, Foto).
 Refatoração futura: Criar um único componente de formulário de aluno, usado tanto para criar quanto para editar.
+
 2. Gerenciamento de Aula
 Problema: Gerenciamento de aula está na edição de aluno, mas deveria estar no calendário.
 Solução MVP: Remover (ou ocultar) o gerenciamento de aula da tela de edição de aluno, deixando esse fluxo apenas no calendário.
 Refatoração futura: Garantir que toda lógica de aula fique centralizada no domínio "Calendário/Aulas".
+
 3. Configurações e Banco de Dados
 Problema: Funções de debug e manutenção do banco estão misturadas e algumas não funcionam.
 Solução MVP: Garantir que as funções críticas (limpar aulas duplicadas, limpar aulas, regenerar aulas recorrentes) funcionem, mesmo que de forma simples.
 Refatoração futura: Criar uma tela de administração/diagnóstico separada, com logs claros e funções robustas.
+
 4. Criação de Aula
 Problema: Processo de criação de aula precisa ser mais robusto e intuitivo.
 Solução MVP: Ao clicar em "Nova Aula" no calendário, abrir um fluxo claro: escolher aluno, tipo de aula (avulsa/recorrente), dias/horários, observações.
 Refatoração futura: Implementar um wizard/componentes reutilizáveis para criação de aulas, com validações e feedbacks.
+
 5. Ficha de Treino
 Problema: Campos de datas e horários precisam ser normalizados.
 Solução MVP: Garantir que datas e horários estejam no mesmo formato em todas as telas e no banco.
 Refatoração futura: Centralizar a lógica de formatação de datas/horários em utilitários.
+
 Plano de Ação Resumido
 Para o MVP (Curto Prazo)
 Unificar campos essenciais entre cadastro e edição de aluno.
@@ -27,6 +32,7 @@ Testar e corrigir funções críticas de manutenção do banco (limpeza, regener
 Simplificar o fluxo de criação de aula no calendário, garantindo clareza e funcionamento.
 Normalizar datas/horários nas fichas de treino e aulas.
 Documentar no código e em um doc rápido as soluções temporárias e limitações.
+
 Para a Refatoração (Pós-MVP)
 Criar componentes reutilizáveis para formulários de aluno e aula.
 Centralizar lógica de aulas no domínio calendário.

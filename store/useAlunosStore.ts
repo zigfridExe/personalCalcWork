@@ -4,13 +4,9 @@ import { getDatabase, initializeDatabase as initDB, checkAndFixDatabase, resetDa
 interface Aluno {
   id: number;
   nome: string;
-  status?: string;
   contato?: string;
+  data_nascimento?: string;
   fotoUri?: string;
-  lembrete_hidratacao_minutos?: number | null;
-  peso?: number | null;
-  altura?: number | null;
-  imc?: number | null;
 }
 
 interface Medida {
@@ -25,8 +21,8 @@ interface Medida {
 
 interface AlunosState {
   alunos: Aluno[];
-  addAluno: (nome: string, status?: string, contato?: string, fotoUri?: string, lembreteHidratacaoMinutos?: number | null, peso?: number | null, altura?: number | null, imc?: number | null) => Promise<void>;
-  updateAluno: (id: number, nome: string, status?: string, contato?: string, fotoUri?: string, lembreteHidratacaoMinutos?: number | null, peso?: number | null, altura?: number | null, imc?: number | null) => Promise<void>;
+  addAluno: (nome: string, contato: string, data_nascimento: string, fotoUri?: string) => Promise<void>;
+  updateAluno: (id: number, nome: string, contato: string, data_nascimento: string, fotoUri?: string) => Promise<void>;
   deleteAluno: (id: number) => Promise<void>;
   initializeDatabase: () => Promise<void>;
   resetDatabase: () => Promise<void>;
@@ -50,24 +46,26 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       const allRows = await db.getAllAsync<any>('SELECT * FROM alunos;');
       // Mapear foto_uri para fotoUri para compatibilidade com a interface
       const alunosMapeados = allRows.map((aluno: any) => ({
-        ...aluno,
-        fotoUri: aluno.foto_uri,
-        lembrete_hidratacao_minutos: aluno.lembrete_hidratacao_minutos ?? null
+        id: aluno.id,
+        nome: aluno.nome,
+        contato: aluno.contato,
+        data_nascimento: aluno.data_nascimento,
+        fotoUri: aluno.foto_uri
       }));
       set({ alunos: alunosMapeados });
     } catch (e) {
       console.error('Erro ao inicializar banco de dados:', e);
     }
   },
-  addAluno: async (nome, status = '', contato = '', fotoUri = '', lembreteHidratacaoMinutos: number | null = null, peso: number | null = null, altura: number | null = null, imc: number | null = null) => {
+  addAluno: async (nome, contato, data_nascimento, fotoUri = '') => {
     const { initializeDatabase } = get();
     try {
       console.log('addAluno - Inicializando banco de dados...');
       await initializeDatabase();
       const db = await getDatabase();
-      const result = await db.runAsync('INSERT INTO alunos (nome, status, contato, foto_uri, lembrete_hidratacao_minutos, peso, altura, imc) VALUES (?, ?, ?, ?, ?, ?, ?, ?);', nome, status, contato, fotoUri, lembreteHidratacaoMinutos, peso, altura, imc);
+      const result = await db.runAsync('INSERT INTO alunos (nome, contato, data_nascimento, foto_uri) VALUES (?, ?, ?, ?);', nome, contato, data_nascimento, fotoUri);
       console.log('addAluno - Resultado DB:', result);
-      const newAluno = { id: result.lastInsertRowId, nome, status, contato, fotoUri, lembrete_hidratacao_minutos: lembreteHidratacaoMinutos, peso, altura, imc };
+      const newAluno = { id: result.lastInsertRowId, nome, contato, data_nascimento, fotoUri };
       console.log('addAluno - Novo aluno criado:', newAluno);
       set((state) => {
         const updatedAlunos = [...state.alunos, newAluno];
@@ -79,13 +77,13 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
       throw error;
     }
   },
-  updateAluno: async (id, nome, status = '', contato = '', fotoUri = '', lembreteHidratacaoMinutos: number | null = null, peso: number | null = null, altura: number | null = null, imc: number | null = null) => {
+  updateAluno: async (id, nome, contato, data_nascimento, fotoUri = '') => {
     const db = await getDatabase();
     try {
-      await db.runAsync('UPDATE alunos SET nome = ?, status = ?, contato = ?, foto_uri = ?, lembrete_hidratacao_minutos = ?, peso = ?, altura = ?, imc = ? WHERE id = ?;', nome, status, contato, fotoUri, lembreteHidratacaoMinutos, peso, altura, imc, id);
+      await db.runAsync('UPDATE alunos SET nome = ?, contato = ?, data_nascimento = ?, foto_uri = ? WHERE id = ?;', nome, contato, data_nascimento, fotoUri, id);
       console.log('updateAluno - Aluno atualizado no DB.');
       set((state) => {
-        const updatedAlunos = state.alunos.map((aluno) => (aluno.id === id ? { ...aluno, nome, status, contato, fotoUri, lembrete_hidratacao_minutos: lembreteHidratacaoMinutos, peso, altura, imc } : aluno));
+        const updatedAlunos = state.alunos.map((aluno) => (aluno.id === id ? { ...aluno, nome, contato, data_nascimento, fotoUri } : aluno));
         console.log('updateAluno - Novo estado alunos:', updatedAlunos);
         return { alunos: updatedAlunos };
       });

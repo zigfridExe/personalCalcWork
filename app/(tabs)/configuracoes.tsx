@@ -1,7 +1,7 @@
 import { Text, View, Button, Alert } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
-import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes } from '../../utils/databaseUtils';
+import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase } from '../../utils/databaseUtils';
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
@@ -132,6 +132,17 @@ export default function ConfiguracoesScreen() {
     );
   };
 
+  const handleLogColunasAlunos = async () => {
+    try {
+      const db = await getDatabase();
+      const colunas = await db.getAllAsync('PRAGMA table_info(alunos);');
+      console.log('Colunas da tabela alunos:', colunas);
+      Alert.alert('Log gerado', 'Veja o console para as colunas da tabela alunos.');
+    } catch (error) {
+      Alert.alert('Erro', 'Erro ao obter colunas: ' + error);
+    }
+  };
+
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
       <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
@@ -163,6 +174,10 @@ export default function ConfiguracoesScreen() {
       <View style={{ height: 20 }} />
       
       <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
+      
+      <View style={{ height: 20 }} />
+      
+      <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
       
       <View style={{ height: 20 }} />
       

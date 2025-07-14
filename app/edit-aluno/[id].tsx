@@ -4,6 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import useAlunosStore from '../../store/useAlunosStore';
+// Corrigido o caminho do AlunoForm para refletir a estrutura correta do projeto
+import AlunoForm from '../../components/AlunoForm';
 
 interface Aluno {
   id: number;
@@ -18,123 +20,33 @@ export default function EditAlunoScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { alunos, updateAluno } = useAlunosStore();
-  const [nome, setNome] = useState('');
-  const [status, setStatus] = useState('');
-  const [contato, setContato] = useState('');
-  const [fotoUri, setFotoUri] = useState<string | null>(null);
-  const [lembreteHidratacao, setLembreteHidratacao] = useState<string>('');
 
-  useEffect(() => {
-    const aluno = (alunos as Aluno[]).find((a) => a.id.toString() === id);
-    console.log('Carregando dados do aluno:', aluno);
-    if (aluno) {
-      setNome(aluno.nome);
-      setStatus(aluno.status || '');
-      setContato(aluno.contato || '');
-      setFotoUri(aluno.fotoUri || null);
-      setLembreteHidratacao(aluno.lembrete_hidratacao_minutos ? String(aluno.lembrete_hidratacao_minutos) : '');
-      console.log('Dados do aluno carregados:', {
-        nome: aluno.nome,
-        status: aluno.status,
-        contato: aluno.contato,
-        fotoUri: aluno.fotoUri
-      });
-    }
-  }, [id, alunos]);
+  const aluno = (alunos as any[]).find((a) => a.id.toString() === id);
 
-  const pickImage = async () => {
-    console.log('Botão Alterar Foto clicado');
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  const initialValues = {
+    nome: aluno?.nome || '',
+    telefone: aluno?.contato || '',
+    dataNascimento: aluno?.data_nascimento || '',
+    fotoUri: aluno?.fotoUri || null,
+  };
 
-    if (!result.canceled) {
-      const selectedUri = result.assets[0].uri;
-      console.log('Nova foto selecionada:', selectedUri);
-      setFotoUri(selectedUri);
+  const handleSubmit = async (data: { nome: string; telefone: string; dataNascimento: string; fotoUri: string | null }) => {
+    try {
+      await updateAluno(Number(id), data.nome, data.telefone, data.dataNascimento, data.fotoUri || '');
+      alert('Aluno atualizado com sucesso!');
+      router.back();
+    } catch (e) {
+      alert('Erro ao atualizar aluno: ' + (e instanceof Error ? e.message : String(e)));
+      console.error(e);
     }
   };
 
-  const handleSave = async () => {
-    if (nome.trim().length > 0) {
-      try {
-        console.log('Salvando alterações do aluno:', { id, nome, status, contato, fotoUri });
-        console.log('Tipo da fotoUri:', typeof fotoUri);
-        console.log('FotoUri é null/undefined?', fotoUri === null || fotoUri === undefined);
-        
-        await updateAluno(Number(id), nome, status, contato, fotoUri || '', lembreteHidratacao ? Number(lembreteHidratacao) : null);
-        alert('Aluno atualizado com sucesso!');
-        router.back();
-      } catch (e) {
-        alert('Erro ao atualizar aluno: ' + (e instanceof Error ? e.message : String(e)));
-        console.error(e);
-      }
-    } else {
-      alert('Por favor, insira o nome do aluno.');
-    }
-  };
+  if (!aluno) {
+    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>Aluno não encontrado.</Text></View>;
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Editar Aluno</Text>
-      
-      {/* Preview da foto */}
-      <View style={styles.imageContainer}>
-        {fotoUri ? (
-          <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>
-              {nome.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.photoButtons}>
-        <Button title="📷 Alterar Foto" onPress={pickImage} color="#2196F3" />
-        {fotoUri && (
-          <Button title="🗑️ Remover Foto" onPress={() => setFotoUri(null)} color="#f44336" />
-        )}
-      </View>
-      <TextInput
-        style={styles.input}
-        placeholder="Nome do Aluno"
-        value={nome}
-        onChangeText={setNome}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Status (Ex: Ativo, Inativo)"
-        value={status}
-        onChangeText={setStatus}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contato (Ex: Telefone, Email)"
-        value={contato}
-        onChangeText={setContato}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Lembrete de hidratação (minutos)"
-        value={lembreteHidratacao}
-        onChangeText={setLembreteHidratacao}
-        keyboardType="numeric"
-      />
-      <Button title="Salvar Alterações" onPress={handleSave} />
-      <Button
-        title="Gerenciar Horários Padrão"
-        onPress={() => router.push(`/aluno/${id}/horarios-padrao`)}
-        color="#1976D2"
-      />
-
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </View>
+    <AlunoForm initialValues={initialValues} onSubmit={handleSubmit} submitLabel="Salvar Alterações" />
   );
 }
 
