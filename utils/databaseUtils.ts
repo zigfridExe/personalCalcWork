@@ -606,20 +606,45 @@ export const desativarHorarioRecorrente = async (id: number) => {
 };
 
 /**
- * Remove aulas duplicadas do banco de dados, mantendo apenas uma por aluno/data/hora/horario_recorrente_id.
+ * Remove todas as aulas (recorrentes e avulsas) do banco
+ */
+export const limparTodasAulas = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🧹 Limpando TODAS as aulas (recorrentes e avulsas)...');
+    const result = await db.runAsync('DELETE FROM aulas;');
+    console.log(`✅ Removidas ${result.changes} aulas do banco!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao limpar todas as aulas:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove apenas aulas duplicadas (mantém uma de cada combinação aluno/data/hora/tipo)
  */
 export const limparAulasDuplicadas = async () => {
   const db = await getDatabase();
   try {
-    console.log('🧹 LIMPEZA URGENTE: Removendo TODAS as aulas recorrentes...');
-    
-    // REMOÇÃO COMPLETA - mais seguro neste momento
-    const result = await db.runAsync('DELETE FROM aulas WHERE tipo_aula = \'RECORRENTE\';');
-    console.log(`🧹 Removidas ${result.changes} aulas recorrentes do banco!`);
-    
-    console.log('✅ Limpeza completa concluída!');
+    console.log('🧹 Removendo apenas aulas duplicadas...');
+    // Seleciona as duplicatas (mantendo a menor id)
+    const duplicatas = await db.getAllAsync<any>(`
+      SELECT id FROM aulas WHERE id NOT IN (
+        SELECT MIN(id) FROM aulas
+        GROUP BY aluno_id, data_aula, hora_inicio, tipo_aula
+      )
+    `);
+    if (duplicatas.length === 0) {
+      console.log('✅ Nenhuma aula duplicada encontrada!');
+      return 0;
+    }
+    const idsParaRemover = duplicatas.map((d: any) => d.id);
+    await db.runAsync(`DELETE FROM aulas WHERE id IN (${idsParaRemover.join(',')});`);
+    console.log(`✅ Removidas ${idsParaRemover.length} aulas duplicadas!`);
+    return idsParaRemover.length;
   } catch (error) {
-    console.error('❌ Erro ao limpar aulas:', error);
+    console.error('❌ Erro ao limpar aulas duplicadas:', error);
     throw error;
   }
 };

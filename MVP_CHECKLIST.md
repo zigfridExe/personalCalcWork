@@ -1,16 +1,18 @@
 r# Checklist do MVP
 
 ## 1. Cadastro/Edição de Aluno
-- [ ] Unificar os campos essenciais nas telas de cadastro e edição de aluno (Nome, Telefone, Idade/Data de Nascimento, Foto).
+- [x] Unificar os campos essenciais nas telas de cadastro e edição de aluno (Nome, Telefone, Idade/Data de Nascimento, Foto).
+- [x] Normalizar o campo de data de nascimento (formato DD/MM/AAAA).
+- [x] Melhorar visual e agrupamento dos botões na tela principal de alunos.
 
 ## 2. Gerenciamento de Aula
-- [ ] Remover ou ocultar o gerenciamento de aula da tela de edição de aluno.
-- [ ] Garantir que o gerenciamento de aula esteja disponível apenas no calendário.
-r
+- [x] Remover ou ocultar o gerenciamento de aula da tela de edição de aluno.
+- [x] Garantir que o gerenciamento de aula esteja disponível apenas no calendário.
+
 ## 3. Configurações e Banco de Dados
-- [ ] Testar e corrigir a função de limpar aulas duplicadas.
-- [ ] Testar e corrigir a função de limpar aulas.
-- [ ] Testar e corrigir a função de regenerar aulas recorrentes.
+- [x] Testar e corrigir a função de limpar aulas duplicadas.
+- [x] Testar e corrigir a função de limpar aulas.
+- [x] Testar e corrigir a função de regenerar aulas recorrentes.
 
 ## 4. Criação de Aula
 - [ ] Simplificar o fluxo de criação de aula no calendário:

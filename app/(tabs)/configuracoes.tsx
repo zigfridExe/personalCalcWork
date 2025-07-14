@@ -1,4 +1,4 @@
-import { Text, View, Button, Alert } from 'react-native';
+import { Text, View, Button, Alert, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase } from '../../utils/databaseUtils';
@@ -143,51 +143,81 @@ export default function ConfiguracoesScreen() {
     }
   };
 
+  const styles = StyleSheet.create({
+    buttonsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    buttonWrapper: {
+      marginHorizontal: 4,
+      flex: 1,
+      minWidth: 150,
+      maxWidth: 180,
+      height: 48,
+      justifyContent: 'center',
+    },
+  });
+
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
       <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
-      
-      <Button title="🔧 Testar Banco" onPress={handleTestarBanco} color="green" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🔄 Reiniciar Conexão" onPress={handleReiniciarConexao} color="teal" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="👁️ Visualizar Dados do Banco" onPress={handleVisualizarDados} color="blue" />
-      <View style={{ height: 20 }} />
-      <Button title="🔍 Verificar Aulas no Banco" onPress={handleVerificarAulasNoBanco} color="navy" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🧹 Limpar Aulas Duplicadas" onPress={handleLimparAulasDuplicadas} color="orange" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🚨 LIMPEZA DE EMERGÊNCIA" onPress={handleLimpezaEmergencia} color="red" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
-      
-      <View style={{ height: 20 }} />
-      
-      <Link href="/calendario/debug" asChild>
-        <Button title="🔍 Debug Calendário" color="brown" />
-      </Link>
-      
-      <View style={{ height: 20 }} />
-      
-      <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="🔧 Testar Banco" onPress={handleTestarBanco} color="green" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🔄 Reiniciar Conexão" onPress={handleReiniciarConexao} color="teal" />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="👁️ Visualizar Dados do Banco" onPress={handleVisualizarDados} color="blue" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🔍 Verificar Aulas no Banco" onPress={handleVerificarAulasNoBanco} color="navy" />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="🧹 Limpar Aulas Duplicadas" onPress={handleLimparAulasDuplicadas} color="orange" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🚨 LIMPEZA DE EMERGÊNCIA" onPress={handleLimpezaEmergencia} color="red" />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Link href="/calendario/debug" asChild>
+            <Button title="🔍 Debug Calendário" color="brown" />
+          </Link>
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
+        </View>
+      </View>
     </View>
   );
 }
