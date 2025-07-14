@@ -48,6 +48,53 @@
 ## 8. Robustez e Usabilidade
 - [ ] Implementar testes de unidade e integração
 - [ ] Foco em usabilidade para uso rápido e prático
+- [ ] Refatorar estrutura de pastas/telas para separar claramente screens, componentes e domínios do app, conforme sugestão:
+
+  ```
+  app/
+    screens/
+      Home/
+        HomeScreen.tsx
+        TabsNavigator.tsx
+      Alunos/
+        AlunosListScreen.tsx
+        AlunoDetailScreen.tsx
+        EditAlunoScreen.tsx
+        AvaliacaoScreen.tsx
+        FichasScreen.tsx
+        HorariosPadraoScreen.tsx
+        ImcScreen.tsx
+        NovaMedidaScreen.tsx
+        HistoricoScreen.tsx
+      Fichas/
+        FichaDetailScreen.tsx
+        VisualizarFichaScreen.tsx
+        TreinoAtivoScreen.tsx
+      Treinos/
+        TreinoDetailScreen.tsx
+      Calendario/
+        CalendarioScreen.tsx
+        NovaAulaScreen.tsx
+        EditarAulaScreen.tsx
+      Configuracoes/
+        ConfiguracoesScreen.tsx
+    components/
+      modals/
+        ExercicioModal.tsx
+        FichaModal.tsx
+        TreinoModal.tsx
+        CopiarFichaModal.tsx
+        GenericModal.tsx
+    navigation/
+      AppNavigator.tsx
+      TabNavigator.tsx
+      StackNavigators.tsx
+    utils/
+    store/
+    assets/
+  ```
+
+  - Vantagens: organização por domínio, separação clara de telas e componentes, fácil manutenção e escalabilidade.
 
 ## Refatoração do Calendário - Novos Passos
 
