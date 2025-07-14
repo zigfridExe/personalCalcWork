@@ -126,6 +126,11 @@ export default function EditAlunoScreen() {
         keyboardType="numeric"
       />
       <Button title="Salvar Alterações" onPress={handleSave} />
+      <Button
+        title="Gerenciar Horários Padrão"
+        onPress={() => router.push(`/aluno/${id}/horarios-padrao`)}
+        color="#1976D2"
+      />
 
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />

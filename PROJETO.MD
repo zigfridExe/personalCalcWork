@@ -66,3 +66,17 @@ Quando formos expandir a avaliação física além da versão simplificada do MV
 - Testes de Flexibilidade (Ex: Sentar e Alcançar)
 
 Esses itens servirão de base para a evolução do sistema após a entrega do MVP.
+
+## Refatoração do Módulo de Calendário e Agendamento de Aulas
+
+- **Novo Modelo de Dados:**
+  - Criação da tabela `horarios_recorrentes` para armazenar padrões de horários semanais dos alunos.
+  - Ajuste da tabela `aulas` para suportar tipos de aula (`RECORRENTE`, `AVULSA`, `SOBREESCRITA`, `CANCELADA_RECORRENTE`) e vincular a um padrão recorrente.
+- **Lógica de Geração de Aulas:**
+  - Geração dinâmica ("just-in-time") das aulas recorrentes ao navegar pelo calendário, evitando criar todas as aulas futuras de uma vez.
+  - Tratamento de exceções: sobreescrita e cancelamento de aulas específicas.
+- **UI/UX:**
+  - Uso de biblioteca de calendário (ex: `react-native-calendars`).
+  - Visualização clara dos dias com aulas, status e tipos.
+  - Tela de configuração de horários padrão no perfil do aluno.
+  - Opções para editar, cancelar ou adicionar aulas avulsas diretamente pelo calendário.

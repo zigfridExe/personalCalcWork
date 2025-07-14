@@ -49,6 +49,28 @@
 - [ ] Implementar testes de unidade e integração
 - [ ] Foco em usabilidade para uso rápido e prático
 
+## Refatoração do Calendário - Novos Passos
+
+1. **Banco de Dados**
+   - [ ] Criar tabela `horarios_recorrentes` no SQLite.
+   - [ ] Ajustar tabela `aulas` para novos campos e tipos.
+
+2. **Lógica de Backend/Store**
+   - [ ] Implementar funções para buscar, criar e atualizar `horarios_recorrentes`.
+   - [ ] Refatorar lógica de geração de aulas recorrentes "on demand" ao abrir o calendário.
+   - [ ] Implementar lógica de sobreescrita e cancelamento de aulas específicas.
+
+3. **Interface do Usuário**
+   - [ ] Integrar `react-native-calendars` para visualização mensal.
+   - [ ] Marcar dias com aulas, diferenciando tipos e status.
+   - [ ] Listar aulas do dia ao clicar em uma data.
+   - [ ] Adicionar/editar/desativar horários padrão no perfil do aluno.
+   - [ ] Permitir edição/cancelamento de aulas individuais e adição de aulas avulsas.
+
+4. **Testes e Ajustes**
+   - [ ] Testar geração de aulas em diferentes cenários (recorrente, avulsa, sobreescrita, cancelada).
+   - [ ] Ajustar UX conforme feedback.
+
 ---
 
 > **Observações:**

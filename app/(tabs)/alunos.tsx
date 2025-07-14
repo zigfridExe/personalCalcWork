@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Button, Alert, Image, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
@@ -59,10 +59,12 @@ export default function AlunosScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Alunos</Text>
-      <Link href="/modal" style={styles.link}>Cadastrar Novo Aluno</Link>
-      <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" />
-      <Button title="🐛 Debug Fotos" onPress={debugAlunos} color="purple" />
+      {/* <Text style={styles.title}>Alunos</Text> */}
+      <TouchableOpacity style={styles.cadastrarButton} activeOpacity={0.8} onPress={() => { /* navegação */ }}>
+        <Link href="/modal" style={styles.cadastrarButtonText}>Cadastrar Novo Aluno</Link>
+      </TouchableOpacity>
+      {/* <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" /> */}
+      {/* <Button title="🐛 Debug Fotos" onPress={debugAlunos} color="purple" /> */}
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
@@ -99,6 +101,9 @@ export default function AlunosScreen() {
               </Link>
               <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
                 <Button title="Avaliação Física" color="#2196F3" />
+              </Link>
+              <Link href={{ pathname: "/aluno/[id]/horarios-padrao", params: { id: item.id } }} asChild>
+                <Button title="📅 Horários" color="#FF9800" />
               </Link>
               <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
             </View>
@@ -183,5 +188,25 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingVertical: 15,
     color: 'blue',
+  },
+  cadastrarButton: {
+    backgroundColor: '#1976D2',
+    borderRadius: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    marginTop: 10,
+    marginBottom: 10,
+    alignSelf: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  cadastrarButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
