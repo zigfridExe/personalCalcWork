@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
-import { useHorariosRecorrentesStore } from '../../store/useHorariosRecorrentesStore';
-import { useFocusEffect } from 'expo-router';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -39,12 +37,6 @@ function getDiaSemana(dataISO: string) {
   return dias[data.getDay()];
 }
 
-function getDiasSemanaRecorrentes(horarios: Array<{ dia_semana: number }>): string {
-  const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const diasUnicos = Array.from(new Set(horarios.map(h => h.dia_semana))).sort((a, b) => a - b);
-  return diasUnicos.map(idx => dias[idx]).join(', ');
-}
-
 export default function CalendarioScreen() {
   // Tipos auxiliares para robustez
   type Aula = {
@@ -58,94 +50,32 @@ export default function CalendarioScreen() {
     presenca: number;
     observacoes?: string;
   };
-  type HorarioRecorrente = {
-    id: number;
-    aluno_id: number;
-    aluno_nome?: string;
-    dia_semana: number;
-    hora_inicio: string;
-    duracao_minutos: number;
-    ativo: number;
-  };
-
-  function getAulasComRecorrentes(
-    aulasDb: Aula[],
-    horariosRecorrentes: HorarioRecorrente[],
-    mes: number,
-    ano: number
-  ): Aula[] {
-    // 1. Agrupa aulas do banco por data/aluno
-    const aulasMap = new Map<string, Aula>();
-    aulasDb.forEach((aula: Aula) => {
-      aulasMap.set(`${aula.aluno_id}_${aula.data_aula}`, aula);
-    });
-
-    // 2. Para cada horário recorrente ativo, gera as datas do mês
-    const aulasRecorrentes: Aula[] = [];
-    horariosRecorrentes.filter((h: HorarioRecorrente) => h.ativo !== 0).forEach((horario: HorarioRecorrente) => {
-      // Para cada dia do mês, se bate com o dia_semana do padrão, gera aula recorrente
-      const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-      for (let dia = 1; dia <= diasNoMes; dia++) {
-        const data = new Date(ano, mes, dia);
-        if (data.getDay() === horario.dia_semana) {
-          const dataStr = data.toISOString().slice(0, 10);
-          const key = `${horario.aluno_id}_${dataStr}`;
-          // Só gera se não existe sobrescrita/cancelada/avulsa para esse dia/aluno
-          if (!aulasMap.has(key)) {
-            aulasRecorrentes.push({
-              id: `recorrente_${horario.aluno_id}_${dataStr}`,
-              aluno_id: horario.aluno_id,
-              aluno_nome: horario.aluno_nome || '',
-              data_aula: dataStr,
-              hora_inicio: horario.hora_inicio,
-              duracao_minutos: horario.duracao_minutos,
-              tipo_aula: 'RECORRENTE',
-              presenca: 0,
-              observacoes: '',
-            });
-          }
-        }
-      }
-    });
-    // 3. Junta aulas do banco + recorrentes geradas
-    return [...aulasDb, ...aulasRecorrentes];
-  }
 
   const { aulas, carregarAulas } = useAulasStore();
-  const { horarios, fetchHorarios } = useHorariosRecorrentesStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
   const [loading, setLoading] = useState<boolean>(true);
 
   // Carrega aulas do mês atual ao focar na tela
-  useFocusEffect(
-    useCallback(() => {
-      const hoje = new Date();
-      const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-      setLoading(true);
-      carregarAulas(
-        inicio.toISOString().slice(0, 10),
-        fim.toISOString().slice(0, 10)
-      ).then(() => setLoading(false));
-    }, [carregarAulas])
-  );
-
-  // Carrega horários recorrentes dos alunos das aulas do dia
   useEffect(() => {
-    // Busca horários apenas dos alunos das aulas do dia selecionado
-    const alunosIds = Array.from(new Set(aulas.filter(a => a.data_aula === dataSelecionada).map(a => a.aluno_id)));
-    alunosIds.forEach((id: number) => fetchHorarios(id));
-  }, [aulas, dataSelecionada, fetchHorarios]);
+    const hoje = new Date();
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    setLoading(true);
+    carregarAulas(
+      inicio.toISOString().slice(0, 10),
+      fim.toISOString().slice(0, 10)
+    ).then(() => setLoading(false));
+  }, [carregarAulas]);
 
   // Gera lista mesclada de aulas (banco + recorrentes)
   const hoje = new Date();
   const mesAtual = hoje.getMonth();
   const anoAtual = hoje.getFullYear();
   const aulasComRecorrentes = useMemo(() =>
-    getAulasComRecorrentes(aulas, horarios, mesAtual, anoAtual),
-    [aulas, horarios, mesAtual, anoAtual]
+    aulas, // Retorna apenas as aulas do banco
+    [aulas]
   );
 
   // Marca os dias com aulas (usando a lista mesclada)
@@ -199,8 +129,6 @@ export default function CalendarioScreen() {
           data={aulasDoDia}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => {
-            // Busca horários recorrentes do aluno
-            const horariosAluno = horarios.filter(h => h.aluno_id === item.aluno_id && h.ativo !== 0);
             return (
               <View style={styles.aulaCard}>
                 <Text style={styles.aulaHora}>{item.hora_inicio} ({item.duracao_minutos}min)</Text>
@@ -208,11 +136,6 @@ export default function CalendarioScreen() {
                   {item.aluno_nome || 'Aluno'}
                   {'  '}
                   <Text style={styles.diaSemana}>({getDiaSemana(item.data_aula)})</Text>
-                  {horariosAluno.length > 0 && (
-                    <Text style={styles.diaSemanaRecorrente}>
-                      {'  '}[Horário padrão: {getDiasSemanaRecorrentes(horariosAluno)}]
-                    </Text>
-                  )}
                 </Text>
                 <Text style={styles.aulaTipo}>
                   {item.tipo_aula === 'RECORRENTE' && 'Recorrente'}

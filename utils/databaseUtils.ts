@@ -193,7 +193,6 @@ export const resetDatabase = async () => {
     await db.execAsync('DROP TABLE IF EXISTS fichas;');
     await db.execAsync('DROP TABLE IF EXISTS alunos;');
     await db.execAsync('DROP TABLE IF EXISTS aulas;');
-    await db.execAsync('DROP TABLE IF EXISTS horarios_recorrentes;');
     await db.execAsync('DROP TABLE IF EXISTS medidas;');
     
     // Recriar todas as tabelas
@@ -290,26 +289,11 @@ export const resetDatabase = async () => {
       CREATE TABLE aulas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         aluno_id INTEGER,
-        data_aula TEXT,
-        hora_inicio TEXT,
-        duracao_minutos INTEGER,
+        data TEXT,
+        hora TEXT,
+        descricao TEXT,
         presenca INTEGER DEFAULT 0,
-        tipo_aula TEXT,
-        horario_recorrente_id INTEGER,
-        observacoes TEXT,
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE horarios_recorrentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        aluno_id INTEGER NOT NULL,
-        dia_semana INTEGER NOT NULL,
-        hora_inicio TEXT NOT NULL,
-        duracao_minutos INTEGER NOT NULL,
-        ativo INTEGER NOT NULL DEFAULT 1,
-        data_inicio_vigencia TEXT,
-        data_fim_vigencia TEXT,
-        FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
       );
 
       CREATE TABLE medidas (
@@ -473,48 +457,6 @@ export const initializeDatabase = async () => {
         console.error('Erro ao criar/verificar tabela aulas:', error);
       }
 
-      // Migração: adicionar tabela horarios_recorrentes se não existir
-      try {
-        await db.execAsync(`
-          CREATE TABLE IF NOT EXISTS horarios_recorrentes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            aluno_id INTEGER NOT NULL,
-            dia_semana INTEGER NOT NULL,
-            hora_inicio TEXT NOT NULL,
-            duracao_minutos INTEGER NOT NULL,
-            ativo INTEGER NOT NULL DEFAULT 1,
-            data_inicio_vigencia TEXT,
-            data_fim_vigencia TEXT,
-            FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
-          );
-        `);
-        console.log('Tabela horarios_recorrentes criada/verificada com sucesso.');
-      } catch (error) {
-        console.error('Erro ao criar/verificar tabela horarios_recorrentes:', error);
-      }
-
-      // Migração: ajustar tabela aulas para novo modelo
-      // Adicionar colunas se não existirem
-      const aulasColumns = await db.getAllAsync("PRAGMA table_info(aulas);");
-      const colunasNecessarias = [
-        { nome: 'data_aula', tipo: 'TEXT' },
-        { nome: 'hora_inicio', tipo: 'TEXT' },
-        { nome: 'duracao_minutos', tipo: 'INTEGER' },
-        { nome: 'tipo_aula', tipo: 'TEXT' },
-        { nome: 'horario_recorrente_id', tipo: 'INTEGER' },
-        { nome: 'observacoes', tipo: 'TEXT' }
-      ];
-      for (const coluna of colunasNecessarias) {
-        if (!aulasColumns.some((col: any) => col.name === coluna.nome)) {
-          try {
-            await db.execAsync(`ALTER TABLE aulas ADD COLUMN ${coluna.nome} ${coluna.tipo};`);
-            console.log(`Coluna ${coluna.nome} adicionada à tabela aulas.`);
-          } catch (error) {
-            console.log(`Erro ao adicionar coluna ${coluna.nome} (pode já existir):`, error);
-          }
-        }
-      }
-
       // MIGRAÇÃO: Adiciona a coluna data_nascimento se não existir
       await db.execAsync(`
         PRAGMA foreign_keys=off;
@@ -532,78 +474,6 @@ export const initializeDatabase = async () => {
     throw error;
   }
 }; 
-
-// Funções utilitárias para horarios_recorrentes
-
-/**
- * Insere um novo horário recorrente para um aluno.
- */
-export const inserirHorarioRecorrente = async (horario: {
-  aluno_id: number;
-  dia_semana: number;
-  hora_inicio: string;
-  duracao_minutos: number;
-  ativo?: number;
-  data_inicio_vigencia?: string | null;
-  data_fim_vigencia?: string | null;
-}) => {
-  const db = await getDatabase();
-  await db.runAsync(
-    `INSERT INTO horarios_recorrentes (aluno_id, dia_semana, hora_inicio, duracao_minutos, ativo, data_inicio_vigencia, data_fim_vigencia)
-     VALUES (?, ?, ?, ?, ?, ?, ?);`,
-    [
-      horario.aluno_id,
-      horario.dia_semana,
-      horario.hora_inicio,
-      horario.duracao_minutos,
-      horario.ativo ?? 1,
-      horario.data_inicio_vigencia ?? null,
-      horario.data_fim_vigencia ?? null
-    ]
-  );
-};
-
-/**
- * Busca todos os horários recorrentes ativos (ou de um aluno específico, se informado).
- */
-export const buscarHorariosRecorrentes = async (aluno_id?: number) => {
-  const db = await getDatabase();
-  let query = 'SELECT * FROM horarios_recorrentes WHERE ativo = 1';
-  let params: any[] = [];
-  if (aluno_id !== undefined) {
-    query += ' AND aluno_id = ?';
-    params.push(aluno_id);
-  }
-  return await db.getAllAsync(query, params);
-};
-
-/**
- * Atualiza um horário recorrente pelo id.
- */
-export const atualizarHorarioRecorrente = async (id: number, dados: Partial<{
-  dia_semana: number;
-  hora_inicio: string;
-  duracao_minutos: number;
-  ativo: number;
-  data_inicio_vigencia: string | null;
-  data_fim_vigencia: string | null;
-}>) => {
-  const db = await getDatabase();
-  const campos = Object.keys(dados).map(k => `${k} = ?`).join(', ');
-  const valores = Object.values(dados);
-  if (!campos) return;
-  await db.runAsync(
-    `UPDATE horarios_recorrentes SET ${campos} WHERE id = ?;`,
-    [...valores, id]
-  );
-};
-
-/**
- * Desativa (soft delete) um horário recorrente.
- */
-export const desativarHorarioRecorrente = async (id: number) => {
-  await atualizarHorarioRecorrente(id, { ativo: 0 });
-};
 
 /**
  * Remove todas as aulas (recorrentes e avulsas) do banco
@@ -632,7 +502,7 @@ export const limparAulasDuplicadas = async () => {
     const duplicatas = await db.getAllAsync<any>(`
       SELECT id FROM aulas WHERE id NOT IN (
         SELECT MIN(id) FROM aulas
-        GROUP BY aluno_id, data_aula, hora_inicio, tipo_aula
+        GROUP BY aluno_id, data, hora, descricao
       )
     `);
     if (duplicatas.length === 0) {
@@ -673,7 +543,7 @@ export const limparTodasAulasRecorrentes = async () => {
     
     // 4. Executar limpeza
     console.log('🧹 Executando limpeza...');
-    const result = await db.runAsync('DELETE FROM aulas WHERE tipo_aula = \'RECORRENTE\';');
+    const result = await db.runAsync('DELETE FROM aulas WHERE descricao LIKE \'%RECORRENTE%\';');
     
     console.log(`✅ Removidas ${result.changes} aulas recorrentes!`);
     return result.changes;
@@ -691,32 +561,23 @@ export const listarDadosBanco = async () => {
   try {
     console.log('=== DADOS DO BANCO DE DADOS ===');
     
-    // Listar horários recorrentes
-    console.log('\n--- HORÁRIOS RECORRENTES ---');
-    const horarios = await db.getAllAsync<any>('SELECT * FROM horarios_recorrentes WHERE ativo = 1 ORDER BY aluno_id, dia_semana;');
-    console.log(`Total de horários recorrentes: ${horarios.length}`);
-    horarios.forEach((horario: any) => {
-      const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-      console.log(`ID: ${horario.id} | Aluno: ${horario.aluno_id} | Dia: ${diasSemana[horario.dia_semana]} (${horario.dia_semana}) | Hora: ${horario.hora_inicio} | Duração: ${horario.duracao_minutos}min`);
-    });
-    
     // Listar todas as aulas
     console.log('\n--- TODAS AS AULAS ---');
     const aulas = await db.getAllAsync<any>(`
       SELECT a.*, al.nome as aluno_nome 
       FROM aulas a 
       LEFT JOIN alunos al ON a.aluno_id = al.id 
-      ORDER BY a.data_aula, a.hora_inicio
+      ORDER BY a.data, a.hora
     `);
     console.log(`Total de aulas: ${aulas.length}`);
     
     // Agrupar por data para facilitar visualização
     const aulasPorData: { [key: string]: any[] } = {};
     aulas.forEach((aula: any) => {
-      if (!aulasPorData[aula.data_aula]) {
-        aulasPorData[aula.data_aula] = [];
+      if (!aulasPorData[aula.data]) {
+        aulasPorData[aula.data] = [];
       }
-      aulasPorData[aula.data_aula].push(aula);
+      aulasPorData[aula.data].push(aula);
     });
     
     Object.keys(aulasPorData).sort().forEach(data => {
@@ -727,24 +588,24 @@ export const listarDadosBanco = async () => {
       
       console.log(`\n📅 ${data} (${diaSemana}) - ${aulasDoDia.length} aula(s):`);
       aulasDoDia.forEach((aula: any) => {
-        console.log(`  • ID: ${aula.id} | Aluno: ${aula.aluno_nome || aula.aluno_id} | Hora: ${aula.hora_inicio} | Tipo: ${aula.tipo_aula} | Horário Recorrente ID: ${aula.horario_recorrente_id}`);
+        console.log(`  • ID: ${aula.id} | Aluno: ${aula.aluno_nome || aula.aluno_id} | Hora: ${aula.hora} | Descrição: ${aula.descricao} | Presença: ${aula.presenca}`);
       });
     });
     
     // Verificar duplicações
     console.log('\n--- VERIFICAÇÃO DE DUPLICAÇÕES ---');
     const duplicadas = await db.getAllAsync<any>(`
-      SELECT aluno_id, data_aula, hora_inicio, horario_recorrente_id, COUNT(*) as count
+      SELECT aluno_id, data, hora, descricao, COUNT(*) as count
       FROM aulas 
-      WHERE tipo_aula = 'RECORRENTE'
-      GROUP BY aluno_id, data_aula, hora_inicio, horario_recorrente_id
+      WHERE descricao LIKE '%RECORRENTE%'
+      GROUP BY aluno_id, data, hora, descricao
       HAVING COUNT(*) > 1
     `);
     
     if (duplicadas.length > 0) {
       console.log(`⚠️  ENCONTRADAS ${duplicadas.length} COMBINAÇÕES DUPLICADAS:`);
       duplicadas.forEach((dup: any) => {
-        console.log(`  • ${dup.data_aula} ${dup.hora_inicio} - Aluno ${dup.aluno_id} - ${dup.count} aulas`);
+        console.log(`  • ${dup.data} ${dup.hora} - Aluno ${dup.aluno_id} - ${dup.count} aulas`);
       });
     } else {
       console.log('✅ Nenhuma duplicação encontrada!');
@@ -767,12 +628,16 @@ export const regenerarAulasRecorrentes = async () => {
     
     // 1. Remover todas as aulas recorrentes existentes
     console.log('Removendo aulas recorrentes antigas...');
-    const aulasRemovidas = await db.runAsync('DELETE FROM aulas WHERE tipo_aula = \'RECORRENTE\';');
+    const aulasRemovidas = await db.runAsync('DELETE FROM aulas WHERE descricao LIKE \'%RECORRENTE%\';');
     console.log(`Removidas ${aulasRemovidas.changes} aulas recorrentes antigas`);
     
     // 2. Buscar horários recorrentes ativos
-    const horarios = await buscarHorariosRecorrentes();
-    console.log(`Encontrados ${horarios.length} horários recorrentes ativos`);
+    // Remover todas as funções, migrações, queries e utilitários relacionados à tabela horarios_recorrentes, incluindo:
+    // - Criação da tabela (CREATE TABLE horarios_recorrentes...)
+    // - Funções: inserirHorarioRecorrente, buscarHorariosRecorrentes, atualizarHorarioRecorrente, desativarHorarioRecorrente, listarDadosBanco (parte de horarios_recorrentes), limparTodasAulasRecorrentes, regenerarAulasRecorrentes (parte de recorrentes)
+    // - Qualquer referência à tabela horarios_recorrentes
+    // const horarios = await buscarHorariosRecorrentes(); // Removido
+    // console.log(`Encontrados ${horarios.length} horários recorrentes ativos`); // Removido
     
     // 3. Definir período para gerar aulas (próximos 6 meses)
     const hoje = new Date();
@@ -797,20 +662,6 @@ export async function verificarAulasNoBanco(aluno_id?: number) {
   
   console.log('\n=== VERIFICAÇÃO DAS AULAS NO BANCO ===');
   
-  // Verificar horários recorrentes
-  const horarios = await buscarHorariosRecorrentes(aluno_id) as Array<{
-    id: number;
-    aluno_id: number;
-    dia_semana: number;
-    hora_inicio: string;
-    duracao_minutos: number;
-    ativo: number;
-  }>;
-  console.log(`📅 Horários recorrentes encontrados: ${horarios.length}`);
-  horarios.forEach((h, i) => {
-    console.log(`  ${i + 1}. Aluno ${h.aluno_id} - ${['Dom','Seg','Ter','Qua','Qui','Sex','Sab'][h.dia_semana]} ${h.hora_inicio} (${h.duracao_minutos}min)`);
-  });
-  
   // Verificar aulas
   let query = 'SELECT aulas.*, alunos.nome as aluno_nome FROM aulas LEFT JOIN alunos ON aulas.aluno_id = alunos.id';
   const params: any[] = [];
@@ -820,18 +671,18 @@ export async function verificarAulasNoBanco(aluno_id?: number) {
     params.push(aluno_id);
   }
   
-  query += ' ORDER BY data_aula, hora_inicio LIMIT 20';
+  query += ' ORDER BY data, hora LIMIT 20';
   
   const aulas = await db.getAllAsync<any>(query, params);
   console.log(`📚 Aulas encontradas: ${aulas.length}`);
   
   aulas.forEach((aula, i) => {
-    const data = new Date(aula.data_aula);
+    const data = new Date(aula.data);
     const diaSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'][data.getDay()];
-    console.log(`  ${i + 1}. ${aula.data_aula} (${diaSemana}) ${aula.hora_inicio} - ${aula.aluno_nome} (${aula.tipo_aula})`);
+    console.log(`  ${i + 1}. ${aula.data} (${diaSemana}) ${aula.hora} - ${aula.aluno_nome} (${aula.descricao})`);
   });
   
   console.log('=== FIM DA VERIFICAÇÃO ===\n');
   
-  return { horarios, aulas };
+  return { aulas };
 } 

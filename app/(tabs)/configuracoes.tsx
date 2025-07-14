@@ -1,7 +1,7 @@
 import { Text, View, Button, Alert, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
-import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase } from '../../utils/databaseUtils';
+import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas } from '../../utils/databaseUtils';
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
@@ -132,6 +132,28 @@ export default function ConfiguracoesScreen() {
     );
   };
 
+  const handleLimparTodasAulas = () => {
+    Alert.alert(
+      'APAGAR TODAS AS AULAS',
+      'ATENÇÃO: Isso irá remover TODAS as aulas do banco (recorrentes e avulsas). Esta ação não pode ser desfeita. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'APAGAR TUDO',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const removidas = await limparTodasAulas();
+              Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas do banco!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro ao apagar todas as aulas: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleLogColunasAlunos = async () => {
     try {
       const db = await getDatabase();
@@ -206,16 +228,14 @@ export default function ConfiguracoesScreen() {
         <View style={styles.buttonWrapper}>
           <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
         </View>
-        <View style={styles.buttonWrapper}>
-          <Link href="/calendario/debug" asChild>
-            <Button title="🔍 Debug Calendário" color="brown" />
-          </Link>
-        </View>
       </View>
 
       <View style={styles.buttonsRow}>
         <View style={styles.buttonWrapper}>
           <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="��️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
         </View>
       </View>
     </View>

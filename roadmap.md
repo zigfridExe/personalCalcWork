@@ -125,3 +125,12 @@
 > - O app será focado exclusivamente em dispositivos móveis.
 > - Priorizar performance, confiabilidade e experiência do usuário.
 > - O desenvolvimento dos lembretes da seção 4 ficará para depois. 
+
+## Lógica de Recorrência de Aulas no Calendário
+
+- Ao cadastrar uma aula recorrente, o sistema salva apenas a configuração da recorrência (aluno, hora, duração, dias da semana, data de início).
+- Não são criadas todas as aulas futuras no banco imediatamente.
+- Quando o usuário navega para um mês no calendário, o sistema calcula e exibe as datas das aulas recorrentes daquele mês, a partir da configuração salva.
+- Se o professor editar ou cancelar uma dessas aulas, a exceção é salva no banco.
+- O campo "Data" no cadastro de aula recorrente é desabilitado e substituído por "A partir de qual data?" para definir o início da recorrência.
+- Isso evita poluir o banco com aulas futuras desnecessárias e mantém o calendário sempre atualizado com as recorrências do mês em foco. 
