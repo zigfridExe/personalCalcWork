@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Button, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
@@ -63,10 +63,18 @@ export default function CalendarioScreen() {
     const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
     setLoading(true);
-    carregarAulas(
-      inicio.toISOString().slice(0, 10),
-      fim.toISOString().slice(0, 10)
-    ).then(() => setLoading(false));
+    (async () => {
+      try {
+        await carregarAulas(
+          inicio.toISOString().slice(0, 10),
+          fim.toISOString().slice(0, 10)
+        );
+      } catch (error: any) {
+        Alert.alert('Erro ao carregar aulas', error?.message || String(error));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [carregarAulas]);
 
   // Gera lista mesclada de aulas (banco + recorrentes)

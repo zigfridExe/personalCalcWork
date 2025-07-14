@@ -81,9 +81,44 @@ export default function NovaAulaScreen() {
       Alert.alert('Horário inválido! Use o formato HH:MM.');
       return;
     }
+    if (tipoAula === 'RECORRENTE') {
+      // Gerar datas recorrentes até o final do mês em foco (máx 4 semanas)
+      const dataInicial = formatDataISO(dataInicioRecorrente);
+      const [ano, mes, dia] = dataInicial.split('-').map(Number);
+      const dataRef = new Date(ano, mes - 1, dia);
+      const diaSemana = dataRef.getDay();
+      const datas: string[] = [];
+      let atual = new Date(dataRef);
+      let count = 0;
+      // Limite: até o último dia do mês ou 4 ocorrências
+      const ultimoDiaMes = new Date(ano, mes, 0).getDate();
+      while (atual.getMonth() === mes - 1 && count < 4) {
+        if (atual.getDay() === diaSemana && atual.getDate() >= dia) {
+          datas.push(atual.toISOString().slice(0, 10));
+          count++;
+        }
+        atual.setDate(atual.getDate() + 7);
+      }
+      for (const dataRecorrente of datas) {
+        await adicionarAula({
+          aluno_id: alunoId,
+          data_aula: dataRecorrente,
+          hora_inicio: hora,
+          duracao_minutos: Number(duracao),
+          presenca: 0,
+          observacoes: descricao,
+          tipo_aula: tipoAula,
+          horario_recorrente_id: null,
+        });
+      }
+      Alert.alert('Aulas recorrentes adicionadas com sucesso!');
+      router.back();
+      return;
+    }
+    // Aula avulsa
     await adicionarAula({
       aluno_id: alunoId,
-      data_aula: formatDataISO(tipoAula === 'RECORRENTE' ? dataInicioRecorrente : data),
+      data_aula: formatDataISO(data),
       hora_inicio: hora,
       duracao_minutos: Number(duracao),
       presenca: 0,

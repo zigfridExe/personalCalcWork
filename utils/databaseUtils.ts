@@ -140,14 +140,19 @@ export const checkAndFixDatabase = async () => {
         CREATE TABLE aulas (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           aluno_id INTEGER,
-          data TEXT,
-          hora TEXT,
-          descricao TEXT,
+          data_aula TEXT,
+          hora_inicio TEXT,
+          duracao_minutos INTEGER,
           presenca INTEGER DEFAULT 0,
+          observacoes TEXT,
+          tipo_aula TEXT,
+          horario_recorrente_id INTEGER,
           FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
         );
       `);
       console.log('Tabela aulas criada com sucesso.');
+    } else {
+      await migrarTabelaAulas();
     }
 
     console.log('Verificação do banco de dados concluída.');
@@ -175,6 +180,32 @@ const createExerciciosTable = async (db: SQLite.SQLiteDatabase) => {
     );
   `);
   console.log('Tabela exercicios criada com sucesso.');
+};
+
+export const migrarTabelaAulas = async () => {
+  const db = await getDatabase();
+  // Verifica colunas existentes
+  const columns = await db.getAllAsync("PRAGMA table_info(aulas);");
+  const colNames = columns.map((col: any) => col.name);
+  // Renomeia colunas antigas se existirem
+  if (colNames.includes('data')) {
+    await db.execAsync('ALTER TABLE aulas RENAME COLUMN data TO data_aula;');
+  }
+  if (colNames.includes('hora')) {
+    await db.execAsync('ALTER TABLE aulas RENAME COLUMN hora TO hora_inicio;');
+  }
+  if (colNames.includes('descricao')) {
+    await db.execAsync('ALTER TABLE aulas RENAME COLUMN descricao TO observacoes;');
+  }
+  // Adiciona colunas que faltam
+  const addIfMissing = async (col: string, type: string) => {
+    if (!colNames.includes(col)) {
+      await db.execAsync(`ALTER TABLE aulas ADD COLUMN ${col} ${type};`);
+    }
+  };
+  await addIfMissing('duracao_minutos', 'INTEGER');
+  await addIfMissing('tipo_aula', 'TEXT');
+  await addIfMissing('horario_recorrente_id', 'INTEGER');
 };
 
 export const resetDatabase = async () => {

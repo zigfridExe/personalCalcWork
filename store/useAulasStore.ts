@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { getDatabase } from '../utils/databaseUtils';
-import { gerarAulasRecorrentesParaPeriodo } from '../utils/recorrenciaUtils';
 
 export type TipoAula = 'RECORRENTE' | 'AVULSA' | 'SOBREESCRITA' | 'CANCELADA_RECORRENTE';
 
@@ -33,15 +32,6 @@ const useAulasStore = create<AulasState>((set, get) => ({
     console.log(`[AULAS] 📅 Período inicial: ${periodoInicio}`);
     console.log(`[AULAS] 📅 Período final: ${periodoFim}`);
     console.log(`[AULAS] 👤 Aluno ID: ${aluno_id || 'Todos'}`);
-    
-    // Gera aulas recorrentes antes de buscar
-    if (periodoInicio && periodoFim) {
-      console.log(`[AULAS] 🔄 Chamando geração de aulas recorrentes...`);
-      await gerarAulasRecorrentesParaPeriodo(periodoInicio, periodoFim, aluno_id);
-      console.log(`[AULAS] ✅ Geração de aulas recorrentes concluída`);
-    } else {
-      console.log(`[AULAS] ⚠️  Período não informado, pulando geração de aulas recorrentes`);
-    }
     
     const db = await getDatabase();
     let query = `SELECT aulas.*, alunos.nome as aluno_nome FROM aulas LEFT JOIN alunos ON aulas.aluno_id = alunos.id WHERE 1=1`;
