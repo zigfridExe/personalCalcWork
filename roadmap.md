@@ -36,10 +36,13 @@
 - [x] Registro de medidas (peso, altura, circunferências)
 - [x] Histórico de medidas
 
-## 6. Calendário de Aulas
-- [ ] Tela de calendário com aulas agendadas
-- [ ] Adição, edição e exclusão de aulas
-- [ ] Marcação de presença do aluno
+## 6. Calendário de Aulas ✅ CONCLUÍDO
+- [x] Tela de calendário com aulas agendadas
+- [x] Adição, edição e exclusão de aulas (avulsas, recorrentes, sobrescritas, canceladas)
+- [x] Marcação de presença do aluno (presente, falta, cancelada)
+- [x] Manipulação de recorrências: sobrescrever/cancelar ocorrência individual e toda a série
+- [x] Atualização imediata do calendário após qualquer operação
+- [x] UX moderna e robusta para manipulação de aulas
 
 ## 7. Backup e Restauração de Dados
 - [ ] Opção de backup dos dados do SQLite (exportar arquivo)
@@ -99,24 +102,25 @@
 ## Refatoração do Calendário - Novos Passos
 
 1. **Banco de Dados**
-   - [ ] Criar tabela `horarios_recorrentes` no SQLite.
-   - [ ] Ajustar tabela `aulas` para novos campos e tipos.
+   - [x] Criar tabela `horarios_recorrentes` no SQLite.
+   - [x] Ajustar tabela `aulas` para novos campos e tipos.
 
 2. **Lógica de Backend/Store**
-   - [ ] Implementar funções para buscar, criar e atualizar `horarios_recorrentes`.
-   - [ ] Refatorar lógica de geração de aulas recorrentes "on demand" ao abrir o calendário.
-   - [ ] Implementar lógica de sobreescrita e cancelamento de aulas específicas.
+   - [x] Implementar funções para buscar, criar e atualizar `horarios_recorrentes`.
+   - [x] Refatorar lógica de geração de aulas recorrentes "on demand" ao abrir o calendário.
+   - [x] Implementar lógica de sobrescrita e cancelamento de aulas específicas e de toda a recorrência.
 
 3. **Interface do Usuário**
-   - [ ] Integrar `react-native-calendars` para visualização mensal.
-   - [ ] Marcar dias com aulas, diferenciando tipos e status.
-   - [ ] Listar aulas do dia ao clicar em uma data.
-   - [ ] Adicionar/editar/desativar horários padrão no perfil do aluno.
-   - [ ] Permitir edição/cancelamento de aulas individuais e adição de aulas avulsas.
+   - [x] Integrar `react-native-calendars` para visualização mensal.
+   - [x] Marcar dias com aulas, diferenciando tipos e status.
+   - [x] Listar aulas do dia ao clicar em uma data.
+   - [x] Adicionar/editar/desativar horários padrão no perfil do aluno.
+   - [x] Permitir edição/cancelamento de aulas individuais e adição de aulas avulsas.
+   - [x] Modal de presença direto no calendário.
 
 4. **Testes e Ajustes**
-   - [ ] Testar geração de aulas em diferentes cenários (recorrente, avulsa, sobreescrita, cancelada).
-   - [ ] Ajustar UX conforme feedback.
+   - [x] Testar geração de aulas em diferentes cenários (recorrente, avulsa, sobrescrita, cancelada).
+   - [x] Ajustar UX conforme feedback.
 
 ---
 
@@ -125,12 +129,4 @@
 > - O app será focado exclusivamente em dispositivos móveis.
 > - Priorizar performance, confiabilidade e experiência do usuário.
 > - O desenvolvimento dos lembretes da seção 4 ficará para depois. 
-
-## Lógica de Recorrência de Aulas no Calendário
-
-- Ao cadastrar uma aula recorrente, o sistema salva apenas a configuração da recorrência (aluno, hora, duração, dias da semana, data de início).
-- Não são criadas todas as aulas futuras no banco imediatamente.
-- Quando o usuário navega para um mês no calendário, o sistema calcula e exibe as datas das aulas recorrentes daquele mês, a partir da configuração salva.
-- Se o professor editar ou cancelar uma dessas aulas, a exceção é salva no banco.
-- O campo "Data" no cadastro de aula recorrente é desabilitado e substituído por "A partir de qual data?" para definir o início da recorrência.
-- Isso evita poluir o banco com aulas futuras desnecessárias e mantém o calendário sempre atualizado com as recorrências do mês em foco. 
+> - O calendário agora reflete imediatamente todas as operações de manipulação de aulas, recorrências e presença, com feedback claro ao usuário. 

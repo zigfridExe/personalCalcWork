@@ -3,10 +3,72 @@ import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, deletarTodasAulasCanceladas } from '../../utils/databaseUtils';
 import useAulasStore from '../../store/useAulasStore';
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
   const { carregarAulas } = useAulasStore();
+
+  // Caminho do banco no Expo SQLite
+  const dbName = 'personalcalcwork.db';
+  const dbPath = FileSystem.documentDirectory + 'SQLite/' + dbName;
+
+  // Exportar backup
+  const handleExportarBackup = async () => {
+    try {
+      // Garante que o arquivo existe
+      const exists = await FileSystem.getInfoAsync(dbPath);
+      if (!exists.exists) {
+        Alert.alert('Erro', 'Banco de dados não encontrado.');
+        return;
+      }
+      // Copia para Downloads
+      const dest = FileSystem.documentDirectory + dbName;
+      await FileSystem.copyAsync({ from: dbPath, to: dest });
+      // Compartilhar
+      await Sharing.shareAsync(dest, { mimeType: 'application/octet-stream' });
+      Alert.alert('Backup exportado!', 'Arquivo .db pronto para salvar ou compartilhar.');
+    } catch (e) {
+      Alert.alert('Erro', 'Falha ao exportar backup: ' + e);
+    }
+  };
+
+  // Importar backup
+  const handleImportarBackup = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/octet-stream', copyToCacheDirectory: true });
+      if (!result || result.canceled || !result.assets || result.assets.length === 0) return;
+      const fileUri = result.assets[0].uri;
+      Alert.alert(
+        'Restaurar Backup',
+        'Isso irá substituir TODOS os dados atuais pelo backup selecionado. Tem certeza?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Restaurar',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Garante pasta SQLite
+                const sqliteDir = FileSystem.documentDirectory + 'SQLite';
+                const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
+                if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(sqliteDir);
+                // Copia o arquivo selecionado para o local do banco
+                await FileSystem.copyAsync({ from: fileUri, to: dbPath });
+                Alert.alert('Backup restaurado!', 'Reinicie o app para garantir que tudo foi carregado corretamente.');
+              } catch (e) {
+                Alert.alert('Erro', 'Falha ao restaurar backup: ' + e);
+              }
+            }
+          }
+        ]
+      );
+    } catch (e) {
+      Alert.alert('Erro', 'Falha ao importar backup: ' + e);
+    }
+  };
 
   const handleResetDatabase = () => {
     Alert.alert(
@@ -386,6 +448,12 @@ export default function ConfiguracoesScreen() {
         <View style={styles.buttonWrapper}>
           <Button title="️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
         </View>
+      </View>
+
+      <View style={{ marginTop: 32 }}>
+        <Button title="Exportar Backup (.db)" color="#1976D2" onPress={handleExportarBackup} />
+        <View style={{ height: 12 }} />
+        <Button title="Importar Backup (.db)" color="#FF9800" onPress={handleImportarBackup} />
       </View>
     </View>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Button, Alert, Modal } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import { RRule, rrulestr } from 'rrule';
 
@@ -53,11 +53,15 @@ export default function CalendarioScreen() {
     rrule?: string; // Adicionado para aulas recorrentes
   };
 
-  const { aulas, carregarAulas } = useAulasStore();
+  const { aulas, carregarAulas, adicionarAula, marcarPresenca } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
   const [loading, setLoading] = useState<boolean>(true);
+  const [modalAula, setModalAula] = useState<Aula | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalPresencaId, setModalPresencaId] = useState<number | null>(null);
+  const [modalPresencaVisible, setModalPresencaVisible] = useState(false);
 
   // Carrega aulas do mês atual ao focar na tela
   useEffect(() => {
@@ -145,6 +149,143 @@ export default function CalendarioScreen() {
   // Filtra aulas do dia selecionado (usando a lista mesclada)
   const aulasDoDia = aulasComRecorrentes.filter(a => a.data_aula === dataSelecionada);
 
+  // Função para abrir o modal de opções de aula recorrente
+  function handleAulaPress(aula: Aula) {
+    if (typeof aula.id === 'string' && aula.id.startsWith('recorrente_')) {
+      setModalAula(aula);
+      setModalVisible(true);
+    }
+  }
+
+  // Função para fechar o modal
+  function fecharModal() {
+    setModalVisible(false);
+    setModalAula(null);
+  }
+
+  // Função para editar só esta ocorrência (cria sobrescrita)
+  async function editarOcorrencia() {
+    if (!modalAula) return;
+    fecharModal();
+    try {
+      await adicionarAula({
+        aluno_id: modalAula.aluno_id,
+        data_aula: modalAula.data_aula,
+        hora_inicio: modalAula.hora_inicio,
+        duracao_minutos: modalAula.duracao_minutos,
+        presenca: 0,
+        observacoes: modalAula.observacoes || '',
+        tipo_aula: 'SOBREESCRITA',
+        horario_recorrente_id: null,
+        rrule: undefined,
+        data_avulsa: modalAula.data_aula,
+        sobrescrita_id: undefined,
+        cancelada_por_id: undefined,
+      });
+      await carregarAulas();
+      Alert.alert('Sucesso', 'Ocorrência sobrescrita criada! Agora edite normalmente.');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível sobrescrever esta ocorrência.');
+    }
+  }
+
+  // Função para editar toda a recorrência
+  function editarRecorrencia() {
+    if (!modalAula) return;
+    fecharModal();
+    // Encontrar o id real da recorrência (pelo aluno_id, hora_inicio e rrule)
+    const rec = aulas.find(a => a.tipo_aula === 'RECORRENTE' && a.aluno_id === modalAula.aluno_id && a.hora_inicio === modalAula.hora_inicio && a.rrule === modalAula.rrule);
+    if (rec && typeof rec.id === 'number') {
+      // Redireciona para a tela de edição da recorrência
+      // /calendario/editar?id=rec.id
+      router.push(`/calendario/editar?id=${rec.id}`);
+    } else {
+      Alert.alert('Recorrência não encontrada', 'Não foi possível localizar a configuração da recorrência.');
+    }
+  }
+
+  // Função para cancelar só esta ocorrência (cria registro de cancelamento)
+  async function cancelarOcorrencia() {
+    if (!modalAula) return;
+    fecharModal();
+    try {
+      await adicionarAula({
+        aluno_id: modalAula.aluno_id,
+        data_aula: modalAula.data_aula,
+        hora_inicio: modalAula.hora_inicio,
+        duracao_minutos: modalAula.duracao_minutos,
+        presenca: 3, // 3 = Cancelada
+        observacoes: 'Cancelada individualmente',
+        tipo_aula: 'CANCELADA_RECORRENTE',
+        horario_recorrente_id: null,
+        rrule: undefined,
+        data_avulsa: modalAula.data_aula,
+        sobrescrita_id: undefined,
+        cancelada_por_id: undefined,
+      });
+      await carregarAulas();
+      Alert.alert('Sucesso', 'Ocorrência cancelada!');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível cancelar esta ocorrência.');
+    }
+  }
+
+  // Função para cancelar toda a recorrência
+  async function cancelarRecorrencia() {
+    fecharModal();
+    if (!modalAula) return;
+    // Encontrar o registro da recorrência original
+    const rec = aulas.find(a => a.tipo_aula === 'RECORRENTE' && a.aluno_id === modalAula.aluno_id && a.hora_inicio === modalAula.hora_inicio && a.rrule === modalAula.rrule);
+    if (rec && typeof rec.id === 'number') {
+      try {
+        await adicionarAula({
+          aluno_id: rec.aluno_id,
+          data_aula: rec.data_aula, // data de início da recorrência
+          hora_inicio: rec.hora_inicio,
+          duracao_minutos: rec.duracao_minutos,
+          presenca: 3, // Cancelada
+          observacoes: 'Recorrência cancelada',
+          tipo_aula: 'CANCELADA_RECORRENTE',
+          horario_recorrente_id: null,
+          rrule: rec.rrule,
+          data_avulsa: undefined,
+          sobrescrita_id: undefined,
+          cancelada_por_id: undefined,
+        });
+        await carregarAulas();
+        Alert.alert('Sucesso', 'Toda a recorrência foi cancelada e o calendário atualizado!');
+      } catch (e) {
+        Alert.alert('Erro', 'Não foi possível cancelar a recorrência.');
+      }
+    } else {
+      Alert.alert('Recorrência não encontrada', 'Não foi possível localizar a configuração da recorrência.');
+    }
+  }
+
+  function abrirModalPresenca(id: number) {
+    setModalPresencaId(id);
+    setModalPresencaVisible(true);
+  }
+  function fecharModalPresenca() {
+    setModalPresencaId(null);
+    setModalPresencaVisible(false);
+  }
+  async function definirPresenca(presenca: number) {
+    if (modalPresencaId == null) return;
+    fecharModalPresenca();
+    try {
+      await marcarPresenca(modalPresencaId, presenca);
+      await carregarAulas();
+      let msg = '';
+      if (presenca === 1) msg = 'Presença marcada: aluno presente!';
+      else if (presenca === 2) msg = 'Falta marcada: aluno faltou sem avisar.';
+      else if (presenca === 3) msg = 'Cancelada: aluno avisou que não viria.';
+      Alert.alert('Sucesso', msg);
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível marcar presença.');
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Calendário de Aulas</Text>
@@ -178,8 +319,13 @@ export default function CalendarioScreen() {
           data={aulasDoDia}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => {
+            const isRecorrenteVirtual = typeof item.id === 'string' && item.id.startsWith('recorrente_');
             return (
-              <View style={styles.aulaCard}>
+              <TouchableOpacity
+                activeOpacity={isRecorrenteVirtual ? 0.7 : 1}
+                onPress={() => isRecorrenteVirtual ? handleAulaPress(item) : undefined}
+                style={styles.aulaCard}
+              >
                 <Text style={styles.aulaHora}>{item.hora_inicio} ({item.duracao_minutos}min)</Text>
                 <Text style={styles.aulaAluno}>
                   {item.aluno_nome || 'Aluno'}
@@ -199,22 +345,65 @@ export default function CalendarioScreen() {
                   {item.presenca === 0 && 'Agendada'}
                 </Text>
                 {item.observacoes ? <Text style={styles.aulaObs}>{item.observacoes}</Text> : null}
-                
                 {/* Botões de ação para cada aula */}
                 {typeof item.id === 'number' && (
                   <View style={styles.aulaButtons}>
                     <Link href={`/calendario/editar?id=${item.id}`} asChild>
                       <Button title="✏️ Editar" color="#2196F3" />
                     </Link>
+                    <Button title="Presença" color="#4CAF50" onPress={() => abrirModalPresenca(item.id as number)} />
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           }}
           style={{ width: '100%' }}
           ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhuma aula agendada.</Text>}
         />
       )}
+      {/* Modal de opções para aula recorrente */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={fecharModal}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 24, minWidth: 260, alignItems: 'center' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Aula Recorrente</Text>
+            <Text style={{ marginBottom: 16 }}>O que deseja fazer?</Text>
+            <Button title="✏️ Editar apenas esta ocorrência" onPress={editarOcorrencia} color="#FF9800" />
+            <View style={{ height: 10 }} />
+            <Button title="✏️ Editar toda a recorrência" onPress={editarRecorrencia} color="#1976D2" />
+            <View style={{ height: 10 }} />
+            <Button title="❌ Cancelar apenas esta ocorrência" onPress={cancelarOcorrencia} color="#F44336" />
+            <View style={{ height: 10 }} />
+            <Button title="❌ Cancelar toda a recorrência" onPress={cancelarRecorrencia} color="#B71C1C" />
+            <View style={{ height: 20 }} />
+            <Button title="Fechar" onPress={fecharModal} color="#888" />
+          </View>
+        </View>
+      </Modal>
+      {/* Modal de presença */}
+      <Modal
+        visible={modalPresencaVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={fecharModalPresenca}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 24, minWidth: 260, alignItems: 'center' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Marcar Presença</Text>
+            <Button title="Presente (aluno veio)" color="#4CAF50" onPress={() => definirPresenca(1)} />
+            <View style={{ height: 10 }} />
+            <Button title="Cancelada (aluno avisou)" color="#F44336" onPress={() => definirPresenca(3)} />
+            <View style={{ height: 10 }} />
+            <Button title="Falta (não avisou)" color="#FF9800" onPress={() => definirPresenca(2)} />
+            <View style={{ height: 20 }} />
+            <Button title="Fechar" onPress={fecharModalPresenca} color="#888" />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
