@@ -44,9 +44,10 @@
 - [x] Atualização imediata do calendário após qualquer operação
 - [x] UX moderna e robusta para manipulação de aulas
 
-## 7. Backup e Restauração de Dados
-- [ ] Opção de backup dos dados do SQLite (exportar arquivo)
-- [ ] Opção de restauração/importação de backup (com aviso de perda de dados)
+## 7. Backup e Restauração de Dados ✅ CONCLUÍDO
+- [x] Opção de backup dos dados do SQLite (exportar arquivo .db)
+- [x] Opção de restauração/importação de backup (com aviso de perda de dados)
+- Backup local, seguro e com feedback claro ao usuário.
 
 ## 8. Robustez e Usabilidade
 - [ ] Implementar testes de unidade e integração
@@ -129,4 +130,5 @@
 > - O app será focado exclusivamente em dispositivos móveis.
 > - Priorizar performance, confiabilidade e experiência do usuário.
 > - O desenvolvimento dos lembretes da seção 4 ficará para depois. 
-> - O calendário agora reflete imediatamente todas as operações de manipulação de aulas, recorrências e presença, com feedback claro ao usuário. 
+> - O calendário agora reflete imediatamente todas as operações de manipulação de aulas, recorrências e presença, com feedback claro ao usuário.
+> - O backup é local, seguro e pode ser compartilhado/exportado facilmente. 
