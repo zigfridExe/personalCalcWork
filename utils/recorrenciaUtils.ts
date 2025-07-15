@@ -1,4 +1,3 @@
-import { buscarHorariosRecorrentes } from './databaseUtils';
 import { getDatabase } from './databaseUtils';
 import { Aula, TipoAula } from '../store/useAulasStore';
 
@@ -52,17 +51,15 @@ export async function gerarAulasRecorrentesParaPeriodo(periodoInicio: string, pe
   console.log(`[RECORRENCIA] 📅 Período: ${periodoInicio} até ${periodoFim}`);
   console.log(`[RECORRENCIA] 👤 Aluno ID: ${aluno_id || 'Todos'}`);
   
-  // 1. Buscar horários recorrentes ativos
-  const horarios = await buscarHorariosRecorrentes(aluno_id) as Array<{
-    id: number;
-    aluno_id: number;
-    dia_semana: number;
-    hora_inicio: string;
-    duracao_minutos: number;
-    ativo: number;
-    data_inicio_vigencia?: string | null;
-    data_fim_vigencia?: string | null;
-  }>;
+  // Buscar "horários recorrentes" a partir das aulas com RRULE
+  const horarios = await db.getAllAsync<any>(
+    `SELECT id, aluno_id, strftime('%w', data_aula) as dia_semana, hora_inicio, duracao_minutos, rrule
+     FROM aulas
+     WHERE tipo_aula = 'RECORRENTE' AND rrule IS NOT NULL
+     ${aluno_id ? 'AND aluno_id = ?' : ''}
+     GROUP BY aluno_id, dia_semana, hora_inicio, duracao_minutos, rrule`,
+    ...(aluno_id ? [aluno_id] : [])
+  );
   
   console.log(`[RECORRENCIA] 📋 Encontrados ${horarios.length} horários recorrentes`);
   
@@ -145,8 +142,8 @@ export async function gerarAulasRecorrentesParaPeriodo(periodoInicio: string, pe
       // 5. Inserir aula recorrente (apenas se passou por todas as validações)
       console.log(`[RECORRENCIA] 💾 SALVANDO: ${data} ${horario.hora_inicio} - Aluno ${horario.aluno_id}`);
       await db.runAsync(
-        `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, tipo_aula, horario_recorrente_id)
-         VALUES (?, ?, ?, ?, 0, 'RECORRENTE', ?);`,
+        `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id, rrule, data_avulsa, sobrescrita_id, cancelada_por_id)
+         VALUES (?, ?, ?, ?, 0, NULL, 'RECORRENTE', ?, NULL, NULL, NULL, NULL);`,
         horario.aluno_id, data, horario.hora_inicio, horario.duracao_minutos, horario.id
       );
       console.log(`[RECORRENCIA] ✅ SALVA: Aula criada com sucesso`);

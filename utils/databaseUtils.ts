@@ -147,6 +147,10 @@ export const checkAndFixDatabase = async () => {
           observacoes TEXT,
           tipo_aula TEXT,
           horario_recorrente_id INTEGER,
+          rrule TEXT,
+          data_avulsa TEXT,
+          sobrescrita_id INTEGER,
+          cancelada_por_id INTEGER,
           FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
         );
       `);
@@ -206,6 +210,10 @@ export const migrarTabelaAulas = async () => {
   await addIfMissing('duracao_minutos', 'INTEGER');
   await addIfMissing('tipo_aula', 'TEXT');
   await addIfMissing('horario_recorrente_id', 'INTEGER');
+  await addIfMissing('rrule', 'TEXT'); // NOVO: recorrência
+  await addIfMissing('data_avulsa', 'TEXT'); // NOVO: data única
+  await addIfMissing('sobrescrita_id', 'INTEGER'); // NOVO: sobrescrita
+  await addIfMissing('cancelada_por_id', 'INTEGER'); // NOVO: cancelamento
 };
 
 export const resetDatabase = async () => {
@@ -320,10 +328,17 @@ export const resetDatabase = async () => {
       CREATE TABLE aulas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         aluno_id INTEGER,
-        data TEXT,
-        hora TEXT,
-        descricao TEXT,
+        data_aula TEXT,
+        hora_inicio TEXT,
+        duracao_minutos INTEGER,
         presenca INTEGER DEFAULT 0,
+        observacoes TEXT,
+        tipo_aula TEXT,
+        horario_recorrente_id INTEGER,
+        rrule TEXT,
+        data_avulsa TEXT,
+        sobrescrita_id INTEGER,
+        cancelada_por_id INTEGER,
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );
 
@@ -523,7 +538,7 @@ export const limparTodasAulas = async () => {
 };
 
 /**
- * Remove apenas aulas duplicadas (mantém uma de cada combinação aluno/data/hora/tipo)
+ * Remove apenas aulas duplicadas (mantém uma de cada combinação aluno/data/hora/observacoes)
  */
 export const limparAulasDuplicadas = async () => {
   const db = await getDatabase();
@@ -533,7 +548,7 @@ export const limparAulasDuplicadas = async () => {
     const duplicatas = await db.getAllAsync<any>(`
       SELECT id FROM aulas WHERE id NOT IN (
         SELECT MIN(id) FROM aulas
-        GROUP BY aluno_id, data, hora, descricao
+        GROUP BY aluno_id, data_aula, hora_inicio, observacoes
       )
     `);
     if (duplicatas.length === 0) {
@@ -574,7 +589,7 @@ export const limparTodasAulasRecorrentes = async () => {
     
     // 4. Executar limpeza
     console.log('🧹 Executando limpeza...');
-    const result = await db.runAsync('DELETE FROM aulas WHERE descricao LIKE \'%RECORRENTE%\';');
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
     
     console.log(`✅ Removidas ${result.changes} aulas recorrentes!`);
     return result.changes;
@@ -598,17 +613,17 @@ export const listarDadosBanco = async () => {
       SELECT a.*, al.nome as aluno_nome 
       FROM aulas a 
       LEFT JOIN alunos al ON a.aluno_id = al.id 
-      ORDER BY a.data, a.hora
+      ORDER BY a.data_aula, a.hora_inicio
     `);
     console.log(`Total de aulas: ${aulas.length}`);
     
     // Agrupar por data para facilitar visualização
     const aulasPorData: { [key: string]: any[] } = {};
     aulas.forEach((aula: any) => {
-      if (!aulasPorData[aula.data]) {
-        aulasPorData[aula.data] = [];
+      if (!aulasPorData[aula.data_aula]) {
+        aulasPorData[aula.data_aula] = [];
       }
-      aulasPorData[aula.data].push(aula);
+      aulasPorData[aula.data_aula].push(aula);
     });
     
     Object.keys(aulasPorData).sort().forEach(data => {
@@ -619,24 +634,24 @@ export const listarDadosBanco = async () => {
       
       console.log(`\n📅 ${data} (${diaSemana}) - ${aulasDoDia.length} aula(s):`);
       aulasDoDia.forEach((aula: any) => {
-        console.log(`  • ID: ${aula.id} | Aluno: ${aula.aluno_nome || aula.aluno_id} | Hora: ${aula.hora} | Descrição: ${aula.descricao} | Presença: ${aula.presenca}`);
+        console.log(`  • ID: ${aula.id} | Aluno: ${aula.aluno_nome || aula.aluno_id} | Hora: ${aula.hora_inicio} | Descrição: ${aula.observacoes} | Presença: ${aula.presenca}`);
       });
     });
     
     // Verificar duplicações
     console.log('\n--- VERIFICAÇÃO DE DUPLICAÇÕES ---');
     const duplicadas = await db.getAllAsync<any>(`
-      SELECT aluno_id, data, hora, descricao, COUNT(*) as count
+      SELECT aluno_id, data_aula, hora_inicio, observacoes, COUNT(*) as count
       FROM aulas 
-      WHERE descricao LIKE '%RECORRENTE%'
-      GROUP BY aluno_id, data, hora, descricao
+      WHERE tipo_aula = 'RECORRENTE'
+      GROUP BY aluno_id, data_aula, hora_inicio, observacoes
       HAVING COUNT(*) > 1
     `);
     
     if (duplicadas.length > 0) {
       console.log(`⚠️  ENCONTRADAS ${duplicadas.length} COMBINAÇÕES DUPLICADAS:`);
       duplicadas.forEach((dup: any) => {
-        console.log(`  • ${dup.data} ${dup.hora} - Aluno ${dup.aluno_id} - ${dup.count} aulas`);
+        console.log(`  • ${dup.data_aula} ${dup.hora_inicio} - Aluno ${dup.aluno_id} - ${dup.count} aulas`);
       });
     } else {
       console.log('✅ Nenhuma duplicação encontrada!');
@@ -659,16 +674,8 @@ export const regenerarAulasRecorrentes = async () => {
     
     // 1. Remover todas as aulas recorrentes existentes
     console.log('Removendo aulas recorrentes antigas...');
-    const aulasRemovidas = await db.runAsync('DELETE FROM aulas WHERE descricao LIKE \'%RECORRENTE%\';');
+    const aulasRemovidas = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
     console.log(`Removidas ${aulasRemovidas.changes} aulas recorrentes antigas`);
-    
-    // 2. Buscar horários recorrentes ativos
-    // Remover todas as funções, migrações, queries e utilitários relacionados à tabela horarios_recorrentes, incluindo:
-    // - Criação da tabela (CREATE TABLE horarios_recorrentes...)
-    // - Funções: inserirHorarioRecorrente, buscarHorariosRecorrentes, atualizarHorarioRecorrente, desativarHorarioRecorrente, listarDadosBanco (parte de horarios_recorrentes), limparTodasAulasRecorrentes, regenerarAulasRecorrentes (parte de recorrentes)
-    // - Qualquer referência à tabela horarios_recorrentes
-    // const horarios = await buscarHorariosRecorrentes(); // Removido
-    // console.log(`Encontrados ${horarios.length} horários recorrentes ativos`); // Removido
     
     // 3. Definir período para gerar aulas (próximos 6 meses)
     const hoje = new Date();
@@ -702,18 +709,113 @@ export async function verificarAulasNoBanco(aluno_id?: number) {
     params.push(aluno_id);
   }
   
-  query += ' ORDER BY data, hora LIMIT 20';
+  query += ' ORDER BY data_aula, hora_inicio LIMIT 20';
   
   const aulas = await db.getAllAsync<any>(query, params);
   console.log(`📚 Aulas encontradas: ${aulas.length}`);
   
   aulas.forEach((aula, i) => {
-    const data = new Date(aula.data);
+    const data = new Date(aula.data_aula);
     const diaSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'][data.getDay()];
-    console.log(`  ${i + 1}. ${aula.data} (${diaSemana}) ${aula.hora} - ${aula.aluno_nome} (${aula.descricao})`);
+    console.log(`  ${i + 1}. ${aula.data_aula} (${diaSemana}) ${aula.hora_inicio} - ${aula.aluno_nome} (${aula.observacoes})`);
   });
   
   console.log('=== FIM DA VERIFICAÇÃO ===\n');
   
   return { aulas };
 } 
+
+/**
+ * Limpa todas as RRULEs das aulas recorrentes (seta rrule = NULL)
+ * Retorna o número de RRULEs limpas.
+ */
+export const limparTodasRRules = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🧹 Limpando todas as RRULEs das aulas...');
+    const result = await db.runAsync('UPDATE aulas SET rrule = NULL WHERE rrule IS NOT NULL;');
+    console.log(`✅ RRULE limpas em ${result.changes} aulas!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao limpar RRULEs:', error);
+    throw error;
+  }
+};
+
+/**
+ * Deleta todas as aulas recorrentes (tipo_aula = 'RECORRENTE') do banco.
+ * Retorna o número de aulas deletadas.
+ */
+export const deletarTodasAulasRecorrentes = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🗑️ Deletando todas as aulas recorrentes...');
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
+    console.log(`✅ ${result.changes} aulas recorrentes deletadas!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao deletar aulas recorrentes:', error);
+    throw error;
+  }
+};
+
+/**
+ * Limpa RRULEs e deleta todas as aulas recorrentes (debug completo de recorrência)
+ */
+export const limparRecorrentesCompleto = async () => {
+  const limpas = await limparTodasRRules();
+  const deletadas = await deletarTodasAulasRecorrentes();
+  console.log(`🧹 Limpeza completa: ${limpas} RRULEs limpas, ${deletadas} recorrentes deletadas.`);
+  return { limpas, deletadas };
+}; 
+
+/**
+ * Deleta todas as aulas avulsas (tipo_aula = 'AVULSA') do banco.
+ * Retorna o número de aulas deletadas.
+ */
+export const deletarTodasAulasAvulsas = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🗑️ Deletando todas as aulas avulsas...');
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'AVULSA';");
+    console.log(`✅ ${result.changes} aulas avulsas deletadas!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao deletar aulas avulsas:', error);
+    throw error;
+  }
+}; 
+
+/**
+ * Deleta todas as aulas sobrescritas (tipo_aula = 'SOBREESCRITA') do banco.
+ * Retorna o número de aulas deletadas.
+ */
+export const deletarTodasAulasSobrescritas = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🗑️ Deletando todas as aulas sobrescritas...');
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'SOBREESCRITA';");
+    console.log(`✅ ${result.changes} aulas sobrescritas deletadas!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao deletar aulas sobrescritas:', error);
+    throw error;
+  }
+};
+
+/**
+ * Deleta todas as aulas canceladas (tipo_aula = 'CANCELADA_RECORRENTE') do banco.
+ * Retorna o número de aulas deletadas.
+ */
+export const deletarTodasAulasCanceladas = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🗑️ Deletando todas as aulas canceladas...');
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'CANCELADA_RECORRENTE';");
+    console.log(`✅ ${result.changes} aulas canceladas deletadas!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao deletar aulas canceladas:', error);
+    throw error;
+  }
+}; 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
+import { RRule, rrulestr } from 'rrule';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -49,6 +50,7 @@ export default function CalendarioScreen() {
     tipo_aula: string;
     presenca: number;
     observacoes?: string;
+    rrule?: string; // Adicionado para aulas recorrentes
   };
 
   const { aulas, carregarAulas } = useAulasStore();
@@ -77,14 +79,53 @@ export default function CalendarioScreen() {
     })();
   }, [carregarAulas]);
 
-  // Gera lista mesclada de aulas (banco + recorrentes)
-  const hoje = new Date();
-  const mesAtual = hoje.getMonth();
-  const anoAtual = hoje.getFullYear();
-  const aulasComRecorrentes = useMemo(() =>
-    aulas, // Retorna apenas as aulas do banco
-    [aulas]
-  );
+  // Gera lista mesclada de aulas (banco + recorrentes dinâmicas)
+  const aulasComRecorrentes = useMemo(() => {
+    // Separar aulas recorrentes (com RRULE) e exceções
+    const recorrentes = aulas.filter(a => a.tipo_aula === 'RECORRENTE' && a.rrule);
+    const avulsas = aulas.filter(a => a.tipo_aula === 'AVULSA');
+    const sobrescritas = aulas.filter(a => a.tipo_aula === 'SOBREESCRITA');
+    const canceladas = aulas.filter(a => a.tipo_aula === 'CANCELADA_RECORRENTE');
+
+    // Período do mês atual
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+    const inicio = new Date(ano, mes, 1);
+    const fim = new Date(ano, mes + 1, 0);
+
+    // Gerar ocorrências recorrentes do mês
+    let ocorrencias: Aula[] = [];
+    for (const rec of recorrentes) {
+      try {
+        const rule = rrulestr(rec.rrule!);
+        const datas = rule.between(inicio, fim, true);
+        for (const dataObj of datas) {
+          const dataStr = dataObj.toISOString().slice(0, 10);
+          // Verifica se existe sobrescrita/cancelada/avulsa para esse dia/aluno/hora
+          const sobrescrita = sobrescritas.find(s => s.aluno_id === rec.aluno_id && s.data_aula === dataStr && s.hora_inicio === rec.hora_inicio);
+          const cancelada = canceladas.find(c => c.aluno_id === rec.aluno_id && c.data_aula === dataStr && c.hora_inicio === rec.hora_inicio);
+          const avulsa = avulsas.find(a => a.aluno_id === rec.aluno_id && a.data_aula === dataStr && a.hora_inicio === rec.hora_inicio);
+          if (!sobrescrita && !cancelada && !avulsa) {
+            ocorrencias.push({
+              ...rec,
+              id: `recorrente_${rec.aluno_id}_${dataStr}_${rec.hora_inicio}`,
+              data_aula: dataStr,
+            });
+          }
+        }
+      } catch (e) {
+        // Se a RRULE estiver inválida, ignora
+      }
+    }
+    // Junta todas as aulas: avulsas, sobrescritas, canceladas e recorrentes geradas
+    return [
+      ...ocorrencias,
+      ...avulsas,
+      ...sobrescritas,
+      ...canceladas,
+    ];
+  }, [aulas]);
 
   // Marca os dias com aulas (usando a lista mesclada)
   const markedDates = aulasComRecorrentes.reduce((acc, aula) => {

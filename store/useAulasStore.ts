@@ -14,6 +14,10 @@ export interface Aula {
   observacoes?: string;
   tipo_aula: TipoAula;
   horario_recorrente_id?: number | null;
+  rrule?: string;
+  data_avulsa?: string;
+  sobrescrita_id?: number | null;
+  cancelada_por_id?: number | null;
 }
 
 interface AulasState {
@@ -73,6 +77,10 @@ const useAulasStore = create<AulasState>((set, get) => ({
       observacoes: row.observacoes,
       tipo_aula: row.tipo_aula,
       horario_recorrente_id: row.horario_recorrente_id,
+      rrule: row.rrule,
+      data_avulsa: row.data_avulsa,
+      sobrescrita_id: row.sobrescrita_id,
+      cancelada_por_id: row.cancelada_por_id,
     })) });
     
     console.log(`[AULAS] ✅ Estado atualizado com ${rows.length} aulas`);
@@ -80,23 +88,8 @@ const useAulasStore = create<AulasState>((set, get) => ({
   adicionarAula: async (aula) => {
     const db = await getDatabase();
     await db.runAsync(
-      `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-      aula.aluno_id,
-      aula.data_aula,
-      aula.hora_inicio,
-      aula.duracao_minutos,
-      aula.presenca,
-      aula.observacoes ?? null,
-      aula.tipo_aula,
-      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null
-    );
-    await get().carregarAulas();
-  },
-  editarAula: async (aula) => {
-    const db = await getDatabase();
-    await db.runAsync(
-      `UPDATE aulas SET aluno_id = ?, data_aula = ?, hora_inicio = ?, duracao_minutos = ?, presenca = ?, observacoes = ?, tipo_aula = ?, horario_recorrente_id = ? WHERE id = ?;`,
+      `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id, rrule, data_avulsa, sobrescrita_id, cancelada_por_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       aula.aluno_id,
       aula.data_aula,
       aula.hora_inicio,
@@ -105,6 +98,29 @@ const useAulasStore = create<AulasState>((set, get) => ({
       aula.observacoes ?? null,
       aula.tipo_aula,
       aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null,
+      aula.rrule ?? null,
+      aula.data_avulsa ?? null,
+      aula.sobrescrita_id ?? null,
+      aula.cancelada_por_id ?? null
+    );
+    await get().carregarAulas();
+  },
+  editarAula: async (aula) => {
+    const db = await getDatabase();
+    await db.runAsync(
+      `UPDATE aulas SET aluno_id = ?, data_aula = ?, hora_inicio = ?, duracao_minutos = ?, presenca = ?, observacoes = ?, tipo_aula = ?, horario_recorrente_id = ?, rrule = ?, data_avulsa = ?, sobrescrita_id = ?, cancelada_por_id = ? WHERE id = ?;`,
+      aula.aluno_id,
+      aula.data_aula,
+      aula.hora_inicio,
+      aula.duracao_minutos,
+      aula.presenca,
+      aula.observacoes ?? null,
+      aula.tipo_aula,
+      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null,
+      aula.rrule ?? null,
+      aula.data_avulsa ?? null,
+      aula.sobrescrita_id ?? null,
+      aula.cancelada_por_id ?? null,
       aula.id !== undefined ? aula.id : 0
     );
     await get().carregarAulas();

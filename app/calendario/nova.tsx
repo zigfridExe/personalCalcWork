@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
+import { RRule } from 'rrule';
 
 // Funções utilitárias para data/hora
 function formatHora(hora: string) {
@@ -82,36 +83,39 @@ export default function NovaAulaScreen() {
       return;
     }
     if (tipoAula === 'RECORRENTE') {
-      // Gerar datas recorrentes até o final do mês em foco (máx 4 semanas)
-      const dataInicial = formatDataISO(dataInicioRecorrente);
-      const [ano, mes, dia] = dataInicial.split('-').map(Number);
-      const dataRef = new Date(ano, mes - 1, dia);
-      const diaSemana = dataRef.getDay();
-      const datas: string[] = [];
-      let atual = new Date(dataRef);
-      let count = 0;
-      // Limite: até o último dia do mês ou 4 ocorrências
-      const ultimoDiaMes = new Date(ano, mes, 0).getDate();
-      while (atual.getMonth() === mes - 1 && count < 4) {
-        if (atual.getDay() === diaSemana && atual.getDate() >= dia) {
-          datas.push(atual.toISOString().slice(0, 10));
-          count++;
-        }
-        atual.setDate(atual.getDate() + 7);
+      if (diasSemana.length === 0) {
+        Alert.alert('Selecione pelo menos um dia da semana para a recorrência!');
+        return;
       }
-      for (const dataRecorrente of datas) {
-        await adicionarAula({
-          aluno_id: alunoId,
-          data_aula: dataRecorrente,
-          hora_inicio: hora,
-          duracao_minutos: Number(duracao),
-          presenca: 0,
-          observacoes: descricao,
-          tipo_aula: tipoAula,
-          horario_recorrente_id: null,
-        });
-      }
-      Alert.alert('Aulas recorrentes adicionadas com sucesso!');
+      // Gerar RRULE
+      const weekdayMap = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
+      const byweekday = diasSemana.map(idx => weekdayMap[idx]);
+      const dtstart = new Date(formatDataISO(dataInicioRecorrente) + 'T' + hora + ':00');
+      // Limite: 6 meses para recorrência
+      const until = new Date(dtstart);
+      until.setMonth(until.getMonth() + 6);
+      const rule = new RRule({
+        freq: RRule.WEEKLY,
+        byweekday,
+        dtstart,
+        until,
+      });
+      const rruleString = rule.toString();
+      await adicionarAula({
+        aluno_id: alunoId,
+        data_aula: formatDataISO(dataInicioRecorrente),
+        hora_inicio: hora,
+        duracao_minutos: Number(duracao),
+        presenca: presenca ? 1 : 0,
+        observacoes: descricao,
+        tipo_aula: 'RECORRENTE',
+        horario_recorrente_id: null,
+        rrule: rruleString,
+        data_avulsa: undefined,
+        sobrescrita_id: undefined,
+        cancelada_por_id: undefined,
+      });
+      Alert.alert('Aula recorrente adicionada com sucesso!');
       router.back();
       return;
     }
@@ -121,12 +125,16 @@ export default function NovaAulaScreen() {
       data_aula: formatDataISO(data),
       hora_inicio: hora,
       duracao_minutos: Number(duracao),
-      presenca: 0,
+      presenca: presenca ? 1 : 0,
       observacoes: descricao,
-      tipo_aula: tipoAula,
+      tipo_aula: 'AVULSA',
       horario_recorrente_id: null,
+      rrule: undefined,
+      data_avulsa: formatDataISO(data),
+      sobrescrita_id: undefined,
+      cancelada_por_id: undefined,
     });
-    Alert.alert('Aula adicionada com sucesso!');
+    Alert.alert('Aula avulsa adicionada com sucesso!');
     router.back();
   };
 

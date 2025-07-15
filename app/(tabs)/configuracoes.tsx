@@ -1,10 +1,12 @@
 import { Text, View, Button, Alert, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
-import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas } from '../../utils/databaseUtils';
+import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, deletarTodasAulasCanceladas } from '../../utils/databaseUtils';
+import useAulasStore from '../../store/useAulasStore';
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
+  const { carregarAulas } = useAulasStore();
 
   const handleResetDatabase = () => {
     Alert.alert(
@@ -112,21 +114,30 @@ export default function ConfiguracoesScreen() {
 
   const handleLimpezaEmergencia = () => {
     Alert.alert(
-      "🚨 LIMPEZA DE EMERGÊNCIA",
-      "ATENÇÃO: Isso irá remover TODAS as aulas recorrentes do banco. Use apenas se houver problemas graves de duplicação. Continuar?",
+      "🚨 LIMPEZA DE EMERGÊNCIA (APOCALIPSE)",
+      "ATENÇÃO: Isso irá executar todas as limpezas possíveis: aulas duplicadas, RRULEs, recorrências e avulsas. O banco de aulas ficará praticamente vazio. Tem certeza que deseja continuar?",
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "LIMPAR TUDO", 
+        {
+          text: "APOCALIPSE!",
+          style: "destructive",
           onPress: async () => {
             try {
-              const removidas = await limparTodasAulasRecorrentes();
-              Alert.alert("✅ Limpeza Concluída", `Removidas ${removidas} aulas recorrentes!`);
+              let log = '';
+              const duplicadas = await limparAulasDuplicadas();
+              log += `🧹 Duplicadas limpas: ${duplicadas || 'ok'}\n`;
+              const rrules = await limparTodasRRules();
+              log += `🧹 RRULEs limpas: ${rrules}\n`;
+              const { limpas, deletadas } = await limparRecorrentesCompleto();
+              log += `🧹 Limpeza completa: ${limpas} RRULEs limpas, ${deletadas} recorrentes deletadas\n`;
+              const avulsas = await deletarTodasAulasAvulsas();
+              log += `🗑️ Aulas avulsas deletadas: ${avulsas}\n`;
+              await carregarAulas();
+              Alert.alert("💥 APOCALIPSE CONCLUÍDA", log);
             } catch (error) {
-              Alert.alert("❌ Erro", "Erro na limpeza: " + error);
+              Alert.alert("❌ Erro", "Erro na limpeza apocalipse: " + error);
             }
           },
-          style: "destructive"
         },
       ]
     );
@@ -147,6 +158,120 @@ export default function ConfiguracoesScreen() {
               Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas do banco!`);
             } catch (error) {
               Alert.alert('❌ Erro', 'Erro ao apagar todas as aulas: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLimparTodasRRules = () => {
+    Alert.alert(
+      'Limpar TODAS as RRULEs',
+      'Isso irá remover todas as regras de recorrência (RRULE) das aulas. O calendário não exibirá mais aulas recorrentes virtuais. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'LIMPAR RRULEs',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const removidas = await limparTodasRRules();
+              Alert.alert('✅ Limpeza Concluída', `RRULE removidas de ${removidas} aulas!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro ao limpar RRULEs: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLimparRecorrentesCompleto = () => {
+    Alert.alert(
+      'Limpeza Completa de Recorrências',
+      'Isso irá limpar todas as RRULEs e deletar todas as aulas recorrentes do banco. O calendário não exibirá mais recorrências virtuais. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'LIMPAR TUDO',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { limpas, deletadas } = await limparRecorrentesCompleto();
+              await carregarAulas(); // Garante atualização da store
+              Alert.alert('✅ Limpeza Completa', `RRULE limpas em ${limpas} aulas.\n${deletadas} aulas recorrentes deletadas!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro na limpeza completa: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeletarAulasAvulsas = () => {
+    Alert.alert(
+      'Deletar TODAS as Aulas Avulsas',
+      'Isso irá remover todas as aulas avulsas do banco. As aulas recorrentes, sobrescritas e canceladas serão mantidas. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'DELETAR AVULSAS',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const removidas = await deletarTodasAulasAvulsas();
+              await carregarAulas();
+              Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas avulsas do banco!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro ao deletar aulas avulsas: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeletarAulasSobrescritas = () => {
+    Alert.alert(
+      'Deletar TODAS as Aulas Sobrescritas',
+      'Isso irá remover todas as aulas sobrescritas do banco. As demais aulas serão mantidas. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'DELETAR SOBRESCRITAS',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const removidas = await deletarTodasAulasSobrescritas();
+              await carregarAulas();
+              Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas sobrescritas do banco!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro ao deletar aulas sobrescritas: ' + error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeletarAulasCanceladas = () => {
+    Alert.alert(
+      'Deletar TODAS as Aulas Canceladas',
+      'Isso irá remover todas as aulas canceladas do banco. As demais aulas serão mantidas. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'DELETAR CANCELADAS',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const removidas = await deletarTodasAulasCanceladas();
+              await carregarAulas();
+              Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas canceladas do banco!`);
+            } catch (error) {
+              Alert.alert('❌ Erro', 'Erro ao deletar aulas canceladas: ' + error);
             }
           },
         },
@@ -217,6 +342,15 @@ export default function ConfiguracoesScreen() {
 
       <View style={styles.buttonsRow}>
         <View style={styles.buttonWrapper}>
+          <Button title="🧹 Limpar TODAS as RRULEs" onPress={handleLimparTodasRRules} color="#8e24aa" />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🧹 Limpeza Completa de Recorrências" color="#F44336" onPress={handleLimparRecorrentesCompleto} />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
           <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
         </View>
         <View style={styles.buttonWrapper}>
@@ -235,7 +369,22 @@ export default function ConfiguracoesScreen() {
           <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
         </View>
         <View style={styles.buttonWrapper}>
-          <Button title="��️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
+          <Button title="🗑️ Deletar TODAS as Aulas Avulsas" color="#FF9800" onPress={handleDeletarAulasAvulsas} />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="🗑️ Deletar TODAS as Aulas Sobrescritas" color="#607D8B" onPress={handleDeletarAulasSobrescritas} />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <Button title="🗑️ Deletar TODAS as Aulas Canceladas" color="#9E9E9E" onPress={handleDeletarAulasCanceladas} />
+        </View>
+      </View>
+
+      <View style={styles.buttonsRow}>
+        <View style={styles.buttonWrapper}>
+          <Button title="️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
         </View>
       </View>
     </View>
