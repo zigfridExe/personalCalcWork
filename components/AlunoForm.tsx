@@ -60,12 +60,24 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
     return v;
   }
 
+  // Função para validar data no formato DD/MM/AAAA
+  function isDataValidaBR(data: string) {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return false;
+    const [d, m, y] = data.split('/');
+    const date = new Date(`${y}-${m}-${d}`);
+    return !isNaN(date.getTime()) && Number(d) > 0 && Number(m) > 0 && Number(m) <= 12 && Number(y) > 1900;
+  }
+
   const handleSubmit = () => {
-    if (nome.trim() && telefone.trim() && dataNascimento.trim()) {
-      onSubmit({ nome, telefone, dataNascimento, fotoUri });
-    } else {
+    if (!nome.trim() || !telefone.trim() || !dataNascimento.trim()) {
       alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
     }
+    if (!isDataValidaBR(dataNascimento)) {
+      alert('Data de nascimento inválida! Use o formato DD/MM/AAAA.');
+      return;
+    }
+    onSubmit({ nome, telefone, dataNascimento, fotoUri });
   };
 
   return (
