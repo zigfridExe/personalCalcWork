@@ -6,20 +6,19 @@ import useAlunosStore from '../../../store/useAlunosStore';
 export default function ImcScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { alunos, updateAluno } = useAlunosStore();
+  const { alunos, registrarMedida } = useAlunosStore();
   const [peso, setPeso] = useState('');
   const [altura, setAltura] = useState('');
   const [imc, setImc] = useState<number | null>(null);
   const [classificacao, setClassificacao] = useState('');
 
   useEffect(() => {
-    const aluno = alunos.find((a) => a.id.toString() === id);
-    if (aluno && aluno.peso && aluno.altura) {
-      setPeso(String(aluno.peso));
-      setAltura(String(aluno.altura));
-      calcularIMC(String(aluno.peso), String(aluno.altura));
-    }
-  }, [id, alunos]);
+    // Não buscar peso/altura do cadastro do aluno, pois agora é histórico
+    setPeso('');
+    setAltura('');
+    setImc(null);
+    setClassificacao('');
+  }, [id]);
 
   const calcularIMC = (pesoStr: string, alturaStr: string) => {
     const pesoNum = parseFloat(pesoStr.replace(',', '.'));
@@ -55,11 +54,16 @@ export default function ImcScreen() {
     try {
       const aluno = alunos.find((a) => a.id.toString() === id);
       if (!aluno) throw new Error('Aluno não encontrado');
-      await updateAluno(aluno.id, aluno.nome, aluno.status, aluno.contato, aluno.fotoUri, aluno.lembrete_hidratacao_minutos, parseFloat(peso.replace(',', '.')), parseFloat(altura.replace(',', '.')), imc);
-      Alert.alert('IMC salvo com sucesso!');
+      await registrarMedida({
+        aluno_id: aluno.id,
+        data: new Date(),
+        peso: parseFloat(peso.replace(',', '.')),
+        altura: parseFloat(altura.replace(',', '.')),
+      });
+      Alert.alert('Avaliação física salva com sucesso!');
       router.back();
     } catch (e) {
-      Alert.alert('Erro ao salvar IMC: ' + (e instanceof Error ? e.message : String(e)));
+      Alert.alert('Erro ao salvar avaliação: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -88,7 +92,7 @@ export default function ImcScreen() {
           <Text style={styles.classificacao}>{classificacao}</Text>
         </View>
       )}
-      <Button title="Salvar no Perfil" onPress={handleSalvar} color="#4CAF50" />
+      {/* Removido o botão de salvar, pois o registro deve ser feito na avaliação física completa */}
     </View>
   );
 }

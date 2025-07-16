@@ -12,7 +12,7 @@ interface Aluno {
 interface Medida {
   id?: number;
   aluno_id: number;
-  data: string;
+  data: Date;
   peso: number;
   altura: number;
   cintura?: number | null;
@@ -131,10 +131,12 @@ const useAlunosStore = create<AlunosState>((set, get) => ({
   },
   registrarMedida: async (medida) => {
     const db = await getDatabase();
+    // Salva a data como string ISO (YYYY-MM-DD) no banco
+    const dataISO = medida.data instanceof Date ? medida.data.toISOString().slice(0, 10) : medida.data;
     await db.runAsync(
       'INSERT INTO medidas (aluno_id, data, peso, altura, cintura, quadril) VALUES (?, ?, ?, ?, ?, ?);',
       medida.aluno_id,
-      medida.data,
+      dataISO,
       medida.peso,
       medida.altura,
       medida.cintura ?? null,
