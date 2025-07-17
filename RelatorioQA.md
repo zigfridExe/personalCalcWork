@@ -65,24 +65,50 @@ Guia de Testes QA
     - Visualizar histórico de medidas ok
 
 6. Calendário de Aulas
-    - Visualizar aulas agendadas no calendário (mensal/diário)
-    - Diferenciar aulas avulsas, recorrentes, sobrescritas e canceladas
-    - Agendar nova aula (selecionar aluno, data, hora, duração, tipo, observações)
+    - Layout
+        Calendário mais largo ocupando laterais esquerda e direita da tela
+            Identifiquei que as palavras estão se repetindo muitas vezes tem calendário no rodapé no titulo em cima e em cima do calendário muitas repetições
     - Agendar aula recorrente (selecionar dias da semana, data de início, limite de recorrência)
-    - Editar aula avulsa ou recorrente
-    - Sobrescrever/cancelar ocorrência individual de aula recorrente
+        Não existe opção para adicionar data final da recorrência.
+        Criação da aula recorrente para o mês subsequente não é exibida no calendário (talvez seja necessário persistir criar uma função para atualizar as aulas de acordo com o mês)
+        *Tipo de aula devera ser a primeira opção antes do nome do aluno
+
+    - Agendar nova aula (selecionar aluno, data, hora, duração, tipo, observações) ok
+    - Visualizar aulas agendadas no calendário (mensal/diário)
+        tratamento de aulas duplicadas no calendário marquei uma aula avulsa e uma recorrente para o mesmo dia e ele so mostra uma(criar chave unica de aula e separalas como tal)
+    - Diferenciar (adicionar legenda das cores de ocorrência)
+        Adicionar status da aula no card de aula
+            Agendada
+            Cancelada
+            Sobrescrita
+        aulas avulsas
+        recorrentes
+        sobrescritas
+        canceladas
+    - Editar aula
+        avulsa
+        recorrente
+    - Sobrescrever/cancelar ocorrência individual de aula recorrente ok
     - Cancelar toda a recorrência
-    - Marcar/desmarcar presença do aluno na aula
+        Função apagar todas as aulas não esta apagando elas de verdade O botão apocalipse faz isso
+    - Marcar/desmarcar presença do aluno na aula ok
     - Atualização imediata do calendário após qualquer operação
+        faltou atualizar quando usei a função apagar todas as aulas
 
 7. Backup e Restauração
     - Exportar backup do banco de dados SQLite
+        o botao exportar banco de dados exibe a mensagem banco de dados não encontrado
     - Importar backup (com aviso de perda de dados)
+        Não foi possivel fazer o backup.
+        Botão importar funciona e abre o gerenciador de arquivos porem como nao foi possivel exportar o arquivo.
     - Confirmar integridade dos dados após restauração
 
 8. Configurações
     - Alterar tema (claro/escuro)
+        Não implementado mas segue o configuração do sistema do celular
     - Limpar banco de dados (reset total)
     - Testar funções de limpeza e regeneração de aulas
+        Limpeza de emergencia funcionando corretamente
+        Tegeneração de aulas recorrentes esta regenerando aula avulsa
+        implementar que a limpeza de todas as aulas não apague as aulas que já estão com presença
 
-// Adicione abaixo os próximos testes conforme for executando
