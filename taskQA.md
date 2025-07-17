@@ -2,11 +2,11 @@
 
 ## Prioridade Alta
 
-- [ ] Corrigir erro no cálculo de IMC
-- [ ] Centralizar e exibir histórico completo do aluno em um só lugar
-- [ ] Corrigir exportação do banco de dados (backup)
-- [ ] Corrigir duplicidade de aulas no calendário (aulas avulsas e recorrentes no mesmo dia)
-- [ ] Corrigir problema ao iniciar treino sem exercícios (looping)
+- [x] Corrigir erro no cálculo de IMC
+- [x] Centralizar e exibir histórico completo do aluno em um só lugar
+- [x] Corrigir exportação do banco de dados (backup)
+- [x] Corrigir duplicidade de aulas no calendário (aulas avulsas e recorrentes no mesmo dia)
+- [x] Corrigir problema ao iniciar treino sem exercícios (looping)
 - [ ] Normalizar datas em todos os cadastros (ex: nova medida)
 
 ## Prioridade Média

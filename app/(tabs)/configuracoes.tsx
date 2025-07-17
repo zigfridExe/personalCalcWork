@@ -12,7 +12,7 @@ export default function ConfiguracoesScreen() {
   const { carregarAulas } = useAulasStore();
 
   // Caminho do banco no Expo SQLite
-  const dbName = 'personalcalcwork.db';
+  const dbName = 'personaltrainer.db';
   const dbPath = FileSystem.documentDirectory + 'SQLite/' + dbName;
 
   // Exportar backup

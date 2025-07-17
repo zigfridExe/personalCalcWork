@@ -5,6 +5,19 @@ import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 import { format } from 'date-fns';
 
+// Função para formatar telefone
+function formatarTelefone(telefone: string) {
+  let v = telefone.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 6) {
+    return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+  } else if (v.length > 2) {
+    return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+  } else {
+    return v;
+  }
+}
+
 export default function AlunosScreen() {
   const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
 
@@ -88,7 +101,7 @@ export default function AlunosScreen() {
                     Data de Nascimento: {item.data_nascimento.length === 10 ? item.data_nascimento : format(new Date(item.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
                   </Text>
                 )}
-                {item.contato && <Text style={styles.alunoDetail}>Telefone: {item.contato}</Text>}
+                {item.contato && <Text style={styles.alunoDetail}>Telefone: {formatarTelefone(item.contato)}</Text>}
               </View>
             </View>
             <View style={styles.buttonsRow}>

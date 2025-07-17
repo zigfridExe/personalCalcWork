@@ -30,9 +30,31 @@ export default function EditAlunoScreen() {
     fotoUri: aluno?.fotoUri || null,
   };
 
+  // Função para aplicar máscara de telefone
+  function maskPhone(value: string) {
+    let v = value.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    if (v.length > 6) {
+      return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+    } else if (v.length > 2) {
+      return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+    } else {
+      return v;
+    }
+  }
+  function isTelefoneValido(telefone: string) {
+    const v = telefone.replace(/\D/g, '');
+    return v.length === 10 || v.length === 11;
+  }
+
   const handleSubmit = async (data: { nome: string; telefone: string; dataNascimento: string; fotoUri: string | null }) => {
+    if (!isTelefoneValido(data.telefone)) {
+      alert('Telefone inválido! Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX.');
+      return;
+    }
+    const telefoneNumeros = data.telefone.replace(/\D/g, '');
     try {
-      await updateAluno(Number(id), data.nome, data.telefone, data.dataNascimento, data.fotoUri || '');
+      await updateAluno(Number(id), data.nome, telefoneNumeros, data.dataNascimento, data.fotoUri || '');
       alert('Aluno atualizado com sucesso!');
       router.back();
     } catch (e) {

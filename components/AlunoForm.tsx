@@ -68,6 +68,27 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
     return !isNaN(date.getTime()) && Number(d) > 0 && Number(m) > 0 && Number(m) <= 12 && Number(y) > 1900;
   }
 
+  // Função para aplicar máscara de telefone
+  function maskPhone(value: string) {
+    let v = value.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    if (v.length > 6) {
+      // Celular: (XX) XXXXX-XXXX
+      return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+    } else if (v.length > 2) {
+      // Fixo: (XX) XXXX-XXXX
+      return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+    } else {
+      return v;
+    }
+  }
+
+  // Função para validar telefone
+  function isTelefoneValido(telefone: string) {
+    const v = telefone.replace(/\D/g, '');
+    return v.length === 10 || v.length === 11;
+  }
+
   const handleSubmit = () => {
     if (!nome.trim() || !telefone.trim() || !dataNascimento.trim()) {
       alert('Por favor, preencha todos os campos obrigatórios.');
@@ -77,7 +98,13 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
       alert('Data de nascimento inválida! Use o formato DD/MM/AAAA.');
       return;
     }
-    onSubmit({ nome, telefone, dataNascimento, fotoUri });
+    if (!isTelefoneValido(telefone)) {
+      alert('Telefone inválido! Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX.');
+      return;
+    }
+    // Salvar só os números no banco
+    const telefoneNumeros = telefone.replace(/\D/g, '');
+    onSubmit({ nome, telefone: telefoneNumeros, dataNascimento, fotoUri });
   };
 
   return (
@@ -105,8 +132,8 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
       <TextInput
         style={styles.input}
         placeholder="Telefone"
-        value={telefone}
-        onChangeText={setTelefone}
+        value={maskPhone(telefone)}
+        onChangeText={text => setTelefone(maskPhone(text))}
         keyboardType="phone-pad"
       />
       <TextInput

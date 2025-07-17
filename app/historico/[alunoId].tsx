@@ -29,21 +29,24 @@ export default function HistoricoScreen() {
   const router = useRouter();
   
   const { loadHistoricoByAluno, historicos } = useHistoricoStore();
-  const { alunos, initializeDatabase } = useAlunosStore();
+  const { alunos, initializeDatabase, buscarMedidas } = useAlunosStore();
 
   const [aluno, setAluno] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [historicoMedidas, setHistoricoMedidas] = useState<any[]>([]);
 
   useEffect(() => {
     const initData = async () => {
       await initializeDatabase();
       if (alunoId) {
         await loadHistoricoByAluno(Number(alunoId));
+        const medidas = await buscarMedidas(Number(alunoId));
+        setHistoricoMedidas(medidas);
       }
       setLoading(false);
     };
     initData();
-  }, [alunoId, initializeDatabase, loadHistoricoByAluno]);
+  }, [alunoId, initializeDatabase, loadHistoricoByAluno, buscarMedidas]);
 
   useEffect(() => {
     // Encontrar o aluno
@@ -73,8 +76,8 @@ export default function HistoricoScreen() {
   };
 
   // Agrupa as séries por exercício_nome para exibição
-  const agruparExercicios = (series) => {
-    const agrupado = {};
+  const agruparExercicios = (series: any[]): { nome: string; series: any[] }[] => {
+    const agrupado: { [key: string]: any[] } = {};
     for (const serie of series) {
       if (!agrupado[serie.exercicio_nome]) agrupado[serie.exercicio_nome] = [];
       agrupado[serie.exercicio_nome].push(serie);
@@ -82,18 +85,28 @@ export default function HistoricoScreen() {
     return Object.entries(agrupado).map(([nome, series]) => ({ nome, series }));
   };
 
-  const handleVerDetalhes = (historico) => {
+  const handleVerDetalhes = (historico: any) => {
     const exercicios = agruparExercicios(historico.series);
-    Alert.alert(
-      'Detalhes do Treino',
-      `Data: ${formatarData(historico.treino.data_inicio)}\n` +
+    let detalhes = `Data: ${formatarData(historico.treino.data_inicio)}\n` +
       `Duração: ${formatarDuracao(historico.treino.duracao_minutos)}\n` +
       `Ficha: ${historico.treino.ficha_id}\n\n` +
-      `Exercícios realizados:\n${exercicios.map(ex => 
-        `• ${ex.nome}: ${ex.series.length} séries`
-      ).join('\n')}`,
+      `Exercícios realizados:\n`;
+    detalhes += exercicios.map((ex: { nome: string; series: any[] }) => {
+      return `• ${ex.nome}:\n` +
+        ex.series.map((serie: any, idx: number) =>
+          `   Série ${serie.serie_numero || idx + 1}: ${serie.repeticoes} reps | ${serie.carga}kg${serie.tempo_cadencia ? ' | Cadência: ' + serie.tempo_cadencia + 's' : ''}`
+        ).join('\n');
+    }).join('\n');
+    Alert.alert(
+      'Detalhes do Treino',
+      detalhes,
       [{ text: 'OK' }]
     );
+  };
+
+  const calcularIMC = (peso: number, altura: number) => {
+    if (!peso || !altura) return null;
+    return peso / Math.pow(altura / 100, 2);
   };
 
   if (loading) {
@@ -117,10 +130,11 @@ export default function HistoricoScreen() {
       <StatusBar style="light" />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Histórico de Treinos</Text>
+        <Text style={styles.title}>Histórico Completo</Text>
         <Text style={styles.subtitle}>{aluno.nome}</Text>
       </View>
       <ScrollView style={styles.content}>
+        {/* Resumo Geral de Treinos */}
         {historicos.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>📊</Text>
@@ -133,7 +147,7 @@ export default function HistoricoScreen() {
           <>
             {/* Resumo */}
             <View style={styles.resumoSection}>
-              <Text style={styles.sectionTitle}>Resumo Geral</Text>
+              <Text style={styles.sectionTitle}>Resumo Geral de Treinos</Text>
               <View style={styles.resumoCard}>
                 <View style={styles.resumoItem}>
                   <Text style={styles.resumoLabel}>Total de Treinos</Text>
@@ -180,11 +194,11 @@ export default function HistoricoScreen() {
                         {exercicios.length} exercícios
                       </Text>
                       <Text style={styles.treinoStatsText}>
-                        {exercicios.reduce((total, ex) => total + ex.series.length, 0)} séries
+                        {exercicios.reduce((total: number, ex: { series: any[] }) => total + ex.series.length, 0)} séries
                       </Text>
                     </View>
                     <View style={styles.treinoExercicios}>
-                      {exercicios.slice(0, 3).map((exercicio, idx) => (
+                      {exercicios.slice(0, 3).map((exercicio: { nome: string; series: any[] }, idx: number) => (
                         <Text key={idx} style={styles.exercicioItem}>
                           • {exercicio.nome} ({exercicio.series.length} séries)
                         </Text>
@@ -195,12 +209,33 @@ export default function HistoricoScreen() {
                         </Text>
                       )}
                     </View>
+                    <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
+                      <TouchableOpacity onPress={() => handleVerDetalhes(historico)} style={styles.detalhesButton}>
+                        <Text style={styles.detalhesButtonText}>Detalhes</Text>
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
           </>
         )}
+        {/* Histórico de Medidas */}
+        <View style={styles.medidasSection}>
+          <Text style={styles.sectionTitle}>Histórico de Medidas</Text>
+          {historicoMedidas.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhum registro de medidas encontrado.</Text>
+          ) : (
+            historicoMedidas.map((medida, idx) => (
+              <View key={idx} style={styles.medidaCard}>
+                <Text style={styles.medidaData}>{medida.data}</Text>
+                <Text style={styles.medidaInfo}>Peso: {medida.peso} kg | Altura: {medida.altura} cm | IMC: {calcularIMC(medida.peso, medida.altura)?.toFixed(2)}</Text>
+                {medida.cintura && <Text style={styles.medidaInfo}>Cintura: {medida.cintura} cm</Text>}
+                {medida.quadril && <Text style={styles.medidaInfo}>Quadril: {medida.quadril} cm</Text>}
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -358,5 +393,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginBottom: 2,
+  },
+  medidasSection: {
+    marginTop: 30,
+    marginBottom: 20,
+  },
+  medidaCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    elevation: 1,
+  },
+  medidaData: {
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 2,
+  },
+  medidaInfo: {
+    fontSize: 14,
+    color: '#333',
+  },
+  emptyText: {
+    fontSize: 15,
+    color: '#888',
+    marginBottom: 20,
+  },
+  detalhesButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  detalhesButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 }); 

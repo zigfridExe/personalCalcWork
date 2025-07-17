@@ -27,6 +27,7 @@ interface AulasState {
   editarAula: (aula: Aula) => Promise<void>;
   excluirAula: (id: number) => Promise<void>;
   marcarPresenca: (id: number, presenca: number) => Promise<void>;
+  excluirRecorrencia?: (aluno_id: number, hora_inicio: string, rrule: string) => Promise<string[] | null>;
 }
 
 const useAulasStore = create<AulasState>((set, get) => ({
@@ -134,6 +135,32 @@ const useAulasStore = create<AulasState>((set, get) => ({
     const db = await getDatabase();
     await db.runAsync('UPDATE aulas SET presenca = ? WHERE id = ?;', presenca, id);
     await get().carregarAulas();
+  },
+  excluirRecorrencia: async (aluno_id, hora_inicio, rrule) => {
+    const db = await getDatabase();
+    // Buscar todas as aulas geradas por essa recorrência
+    const aulas = await db.getAllAsync<any>(
+      `SELECT * FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ?`,
+      aluno_id, hora_inicio, rrule
+    );
+    // Verificar se alguma tem presença registrada
+    const aulasComPresenca = aulas.filter((a: any) => a.presenca && a.presenca !== 0);
+    if (aulasComPresenca.length > 0) {
+      // Retorna as datas das aulas com presença para exibir alerta
+      return aulasComPresenca.map((a: any) => a.data_aula);
+    }
+    // Apaga o registro mestre da recorrência
+    await db.runAsync(
+      `DELETE FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ? AND tipo_aula = 'RECORRENTE'`,
+      aluno_id, hora_inicio, rrule
+    );
+    // Opcional: apagar sobrescritas/canceladas futuras sem presença
+    await db.runAsync(
+      `DELETE FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ? AND tipo_aula IN ('SOBREESCRITA', 'CANCELADA_RECORRENTE') AND presenca = 0`,
+      aluno_id, hora_inicio, rrule
+    );
+    await get().carregarAulas();
+    return null;
   },
 }));
 

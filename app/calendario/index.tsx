@@ -53,7 +53,7 @@ export default function CalendarioScreen() {
     rrule?: string; // Adicionado para aulas recorrentes
   };
 
-  const { aulas, carregarAulas, adicionarAula, marcarPresenca } = useAulasStore();
+  const { aulas, carregarAulas, adicionarAula, marcarPresenca, excluirRecorrencia } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
@@ -106,11 +106,10 @@ export default function CalendarioScreen() {
         const datas = rule.between(inicio, fim, true);
         for (const dataObj of datas) {
           const dataStr = dataObj.toISOString().slice(0, 10);
-          // Verifica se existe sobrescrita/cancelada/avulsa para esse dia/aluno/hora
-          const sobrescrita = sobrescritas.find(s => s.aluno_id === rec.aluno_id && s.data_aula === dataStr && s.hora_inicio === rec.hora_inicio);
-          const cancelada = canceladas.find(c => c.aluno_id === rec.aluno_id && c.data_aula === dataStr && c.hora_inicio === rec.hora_inicio);
-          const avulsa = avulsas.find(a => a.aluno_id === rec.aluno_id && a.data_aula === dataStr && a.hora_inicio === rec.hora_inicio);
-          if (!sobrescrita && !cancelada && !avulsa) {
+          // Permitir coexistência de avulsa e recorrente no mesmo horário
+          // Só filtrar se já houver outra recorrente (não avulsa) para o mesmo horário
+          const outraRecorrente = ocorrencias.find(o => o.aluno_id === rec.aluno_id && o.data_aula === dataStr && o.hora_inicio === rec.hora_inicio && o.tipo_aula === 'RECORRENTE');
+          if (!outraRecorrente) {
             ocorrencias.push({
               ...rec,
               id: `recorrente_${rec.aluno_id}_${dataStr}_${rec.hora_inicio}`,
@@ -286,6 +285,86 @@ export default function CalendarioScreen() {
     }
   }
 
+  // Função para apagar todas as recorrências:
+  async function apagarTodasRecorrencias() {
+    fecharModal();
+    if (!modalAula || !excluirRecorrencia) return;
+    const datasComPresenca = await excluirRecorrencia(modalAula.aluno_id, modalAula.hora_inicio, modalAula.rrule!);
+    if (datasComPresenca && datasComPresenca.length > 0) {
+      Alert.alert(
+        'Atenção',
+        `Existem aulas desta recorrência com presença registrada nas datas:\n${datasComPresenca.join(', ')}\n\nApague manualmente essas aulas antes de remover a recorrência.`
+      );
+    } else {
+      Alert.alert('Sucesso', 'Todas as recorrências foram apagadas!');
+    }
+  }
+
+  // Função para marcar presença em aula recorrente:
+  async function marcarPresencaRecorrente() {
+    fecharModal();
+    if (!modalAula) return;
+    try {
+      await adicionarAula({
+        aluno_id: modalAula.aluno_id,
+        data_aula: modalAula.data_aula,
+        hora_inicio: modalAula.hora_inicio,
+        duracao_minutos: modalAula.duracao_minutos,
+        presenca: 1, // Presente
+        observacoes: modalAula.observacoes || '',
+        tipo_aula: 'SOBREESCRITA', // Cria ocorrência sobrescrita com presença
+        horario_recorrente_id: null,
+        rrule: modalAula.rrule,
+        data_avulsa: modalAula.data_aula,
+        sobrescrita_id: undefined,
+        cancelada_por_id: undefined,
+      });
+      await carregarAulas();
+      Alert.alert('Presença marcada!', 'A presença foi registrada para esta ocorrência.');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível marcar presença.');
+    }
+  }
+
+  // Função para marcar presença direto do card:
+  async function marcarPresencaRecorrenteDireto(aula: Aula) {
+    try {
+      await adicionarAula({
+        aluno_id: aula.aluno_id,
+        data_aula: aula.data_aula,
+        hora_inicio: aula.hora_inicio,
+        duracao_minutos: aula.duracao_minutos,
+        presenca: 1, // Presente
+        observacoes: aula.observacoes || '',
+        tipo_aula: 'SOBREESCRITA',
+        horario_recorrente_id: null,
+        rrule: aula.rrule,
+        data_avulsa: aula.data_aula,
+        sobrescrita_id: undefined,
+        cancelada_por_id: undefined,
+      });
+      await carregarAulas();
+      Alert.alert('Presença marcada!', 'A presença foi registrada para esta ocorrência.');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível marcar presença.');
+    }
+  }
+
+  // 2. Detectar conflitos
+  function detectarConflitos(aulas: Aula[]): Record<string, boolean> {
+    // Chave: aluno_id+data_aula+hora_inicio+tipo_aula, valor: true se houver mais de uma do mesmo tipo
+    const mapa: Record<string, number> = {};
+    aulas.forEach(a => {
+      const chave = `${a.aluno_id}_${a.data_aula}_${a.hora_inicio}_${a.tipo_aula}`;
+      mapa[chave] = (mapa[chave] || 0) + 1;
+    });
+    const conflitos: Record<string, boolean> = {};
+    Object.entries(mapa).forEach(([chave, count]) => {
+      if (count > 1) conflitos[chave] = true;
+    });
+    return conflitos;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Calendário de Aulas</Text>
@@ -320,41 +399,102 @@ export default function CalendarioScreen() {
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => {
             const isRecorrenteVirtual = typeof item.id === 'string' && item.id.startsWith('recorrente_');
+            const conflitos = detectarConflitos(aulasDoDia);
             return (
-              <TouchableOpacity
-                activeOpacity={isRecorrenteVirtual ? 0.7 : 1}
-                onPress={() => isRecorrenteVirtual ? handleAulaPress(item) : undefined}
-                style={styles.aulaCard}
-              >
-                <Text style={styles.aulaHora}>{item.hora_inicio} ({item.duracao_minutos}min)</Text>
-                <Text style={styles.aulaAluno}>
-                  {item.aluno_nome || 'Aluno'}
-                  {'  '}
-                  <Text style={styles.diaSemana}>({getDiaSemana(item.data_aula)})</Text>
-                </Text>
-                <Text style={styles.aulaTipo}>
-                  {item.tipo_aula === 'RECORRENTE' && 'Recorrente'}
-                  {item.tipo_aula === 'AVULSA' && 'Avulsa'}
-                  {item.tipo_aula === 'SOBREESCRITA' && 'Sobreescrita'}
-                  {item.tipo_aula === 'CANCELADA_RECORRENTE' && 'Cancelada'}
-                </Text>
-                <Text style={styles.aulaStatus}>
-                  {item.presenca === 1 && 'Presente'}
-                  {item.presenca === 2 && 'Faltou'}
-                  {item.presenca === 3 && 'Cancelada'}
-                  {item.presenca === 0 && 'Agendada'}
-                </Text>
-                {item.observacoes ? <Text style={styles.aulaObs}>{item.observacoes}</Text> : null}
-                {/* Botões de ação para cada aula */}
-                {typeof item.id === 'number' && (
+              isRecorrenteVirtual ? (
+                <View style={styles.aulaCard}>
+                  {conflitos[`${item.aluno_id}_${item.data_aula}_${item.hora_inicio}_${item.tipo_aula}`] && (
+                    <Text style={{ color: 'red', fontWeight: 'bold', marginBottom: 4 }}>
+                      ⚠️ Conflito: existe outra aula para este aluno neste horário
+                    </Text>
+                  )}
+                  <Text style={styles.aulaHora}>{item.hora_inicio} ({item.duracao_minutos}min)</Text>
+                  <Text style={styles.aulaAluno}>
+                    {item.aluno_nome || 'Aluno'}
+                    {'  '}
+                    <Text style={styles.diaSemana}>({getDiaSemana(item.data_aula)})</Text>
+                  </Text>
+                  <Text style={styles.aulaTipo}>
+                    Recorrente
+                  </Text>
+                  <Text style={styles.aulaStatus}>
+                    {item.presenca === 1 && 'Presente'}
+                    {item.presenca === 2 && 'Faltou'}
+                    {item.presenca === 3 && 'Cancelada'}
+                    {item.presenca === 0 && 'Agendada'}
+                  </Text>
+                  {item.observacoes ? <Text style={styles.aulaObs}>{item.observacoes}</Text> : null}
                   <View style={styles.aulaButtons}>
-                    <Link href={`/calendario/editar?id=${item.id}`} asChild>
-                      <Button title="✏️ Editar" color="#2196F3" />
-                    </Link>
-                    <Button title="Presença" color="#4CAF50" onPress={() => abrirModalPresenca(item.id as number)} />
+                    <Button
+                      title="✏️ Editar"
+                      color="#2196F3"
+                      onPress={() => handleAulaPress(item)}
+                    />
+                    <Button
+                      title="Presença"
+                      color="#4CAF50"
+                      onPress={() => marcarPresencaRecorrenteDireto(item)}
+                    />
                   </View>
-                )}
-              </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={undefined}
+                  style={styles.aulaCard}
+                >
+                  {conflitos[`${item.aluno_id}_${item.data_aula}_${item.hora_inicio}_${item.tipo_aula}`] && (
+                    <Text style={{ color: 'red', fontWeight: 'bold', marginBottom: 4 }}>
+                      ⚠️ Conflito: existe outra aula para este aluno neste horário
+                    </Text>
+                  )}
+                  <Text style={styles.aulaHora}>{item.hora_inicio} ({item.duracao_minutos}min)</Text>
+                  <Text style={styles.aulaAluno}>
+                    {item.aluno_nome || 'Aluno'}
+                    {'  '}
+                    <Text style={styles.diaSemana}>({getDiaSemana(item.data_aula)})</Text>
+                  </Text>
+                  <Text style={styles.aulaTipo}>
+                    {item.tipo_aula === 'RECORRENTE' && 'Recorrente'}
+                    {item.tipo_aula === 'AVULSA' && 'Avulsa'}
+                    {item.tipo_aula === 'SOBREESCRITA' && 'Sobreescrita'}
+                    {item.tipo_aula === 'CANCELADA_RECORRENTE' && 'Cancelada'}
+                  </Text>
+                  <Text style={styles.aulaStatus}>
+                    {item.presenca === 1 && 'Presente'}
+                    {item.presenca === 2 && 'Faltou'}
+                    {item.presenca === 3 && 'Cancelada'}
+                    {item.presenca === 0 && 'Agendada'}
+                  </Text>
+                  {item.observacoes ? <Text style={styles.aulaObs}>{item.observacoes}</Text> : null}
+                  {/* Botões de ação para cada aula */}
+                  {(typeof item.id === 'number' || isRecorrenteVirtual) && (
+                    <View style={styles.aulaButtons}>
+                      {typeof item.id === 'number' && (
+                        <Link href={`/calendario/editar?id=${item.id}`} asChild>
+                          <Button title="✏️ Editar" color="#2196F3" />
+                        </Link>
+                      )}
+                      {isRecorrenteVirtual && (
+                        <Button
+                          title="✏️ Editar"
+                          color="#2196F3"
+                          onPress={() => handleAulaPress(item)}
+                        />
+                      )}
+                      <Button
+                        title="Presença"
+                        color="#4CAF50"
+                        onPress={() =>
+                          isRecorrenteVirtual
+                            ? marcarPresencaRecorrenteDireto(item)
+                            : abrirModalPresenca(item.id as number)
+                        }
+                      />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )
             );
           }}
           style={{ width: '100%' }}
@@ -379,7 +519,9 @@ export default function CalendarioScreen() {
             <Button title="❌ Cancelar apenas esta ocorrência" onPress={cancelarOcorrencia} color="#F44336" />
             <View style={{ height: 10 }} />
             <Button title="❌ Cancelar toda a recorrência" onPress={cancelarRecorrencia} color="#B71C1C" />
-            <View style={{ height: 20 }} />
+            <View style={{ height: 10 }} />
+            <Button title="🗑️ Apagar todas as recorrências" color="#F44336" onPress={apagarTodasRecorrencias} />
+            <View style={{ height: 10 }} />
             <Button title="Fechar" onPress={fecharModal} color="#888" />
           </View>
         </View>

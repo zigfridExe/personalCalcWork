@@ -512,6 +512,15 @@ export const initializeDatabase = async () => {
         COMMIT;
         PRAGMA foreign_keys=on;
       `).catch(() => {}); // Ignora erro se a coluna já existir
+
+      // Migração: adicionar coluna tempo_cadencia se não existir
+      try {
+        await db.execAsync('ALTER TABLE historico_series ADD COLUMN tempo_cadencia INTEGER;');
+        console.log('Coluna tempo_cadencia adicionada à tabela historico_series.');
+      } catch (error) {
+        // Coluna já existe, ignorar erro
+        console.log('Coluna tempo_cadencia já existe na tabela historico_series.');
+      }
     });
     
     console.log('Banco de dados inicializado com sucesso.');

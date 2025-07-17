@@ -20,6 +20,7 @@ interface HistoricoSerie {
   repeticoes: string;
   carga: string;
   observacoes?: string;
+  tempo_cadencia?: number;
 }
 
 interface HistoricoCompleto {
@@ -42,6 +43,7 @@ interface HistoricoState {
       repeticoes: string;
       carga: string;
       observacoes?: string;
+      tempoCadencia?: number;
     }>,
     observacoes?: string
   ) => Promise<void>;
@@ -95,7 +97,11 @@ const useHistoricoStore = create<HistoricoState>((set, get) => ({
       
       for (const treino of treinos) {
         const series = await db.getAllAsync<HistoricoSerie>(
-          'SELECT * FROM historico_series WHERE historico_treino_id = ? ORDER BY serie_numero;',
+          `SELECT hs.*, e.nome as exercicio_nome
+           FROM historico_series hs
+           JOIN exercicios e ON hs.exercicio_id = e.id
+           WHERE hs.historico_treino_id = ?
+           ORDER BY hs.serie_numero;`,
           treino.id
         );
         
@@ -122,6 +128,7 @@ const useHistoricoStore = create<HistoricoState>((set, get) => ({
       repeticoes: string;
       carga: string;
       observacoes?: string;
+      tempoCadencia?: number;
     }>,
     observacoes?: string
   ) => {
@@ -145,13 +152,14 @@ const useHistoricoStore = create<HistoricoState>((set, get) => ({
       // Inserir as séries
       for (const serie of series) {
         await db.runAsync(
-          'INSERT INTO historico_series (historico_treino_id, exercicio_id, serie_numero, repeticoes, carga, observacoes) VALUES (?, ?, ?, ?, ?, ?);',
+          'INSERT INTO historico_series (historico_treino_id, exercicio_id, serie_numero, repeticoes, carga, observacoes, tempo_cadencia) VALUES (?, ?, ?, ?, ?, ?, ?);',
           historicoTreinoId,
           serie.exercicio_id,
           serie.serie_numero,
           serie.repeticoes,
           serie.carga,
-          serie.observacoes || null
+          serie.observacoes || null,
+          serie.tempoCadencia || null
         );
       }
 
