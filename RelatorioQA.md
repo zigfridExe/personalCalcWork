@@ -29,35 +29,40 @@ Guia de Testes QA
         * IMC: calcular e visualizar IMC
             Erro no calculo de IMC
         * Nova medida: adicionar nova medida corporal
+            *data encontrase nao normalizada e deve trazer a data atual para registro
         * Histórico: visualizar histórico de treinos e medidas
+            *Historico de medidas nao é exibido assim que retorna para tela de historico apos salvar os dados
 
 2. Fichas de Treino
-    - Criar ficha de treino para aluno
-    - Adicionar/excluir/editar exercícios na ficha
+    - Criar ficha de treino para aluno ok
+    - Adicionar/excluir/editar exercícios na ficha ok
     - Copiar ficha para outro dia/aluno
-    - Visualizar ficha de treino atual do aluno
-    - Visualizar ficha durante o treino ativo
+        *Ficha de aluno quando copiada para outro aluno é exibida na ficha do aluno atual apos voltar a tela e conferir no outro aluno voltando ele ja nao exibi a duplicidade
+    - Visualizar ficha de treino atual do aluno ok
+    - Visualizar ficha durante o treino ativo ok
 
 3. Execução do Treino (Treino Ativo)
-    - Iniciar sessão de treino para um aluno
-    - Exibir exercício atual, séries, repetições/tempo, carga
-    - Marcar série como concluída
+    - Iniciar sessão de treino para um aluno ok
+    - Exibir exercício atual, séries, repetições/tempo, carga ok
+    - Marcar série como concluída ok
     - Registrar carga/repetições reais por série
-    - Anotações rápidas durante o treino
-    - Cronômetro integrado para exercícios de tempo
-    - Temporizador de descanso com alerta sonoro/vibração
-    - Resumo rápido do histórico do exercício
-    - Salvamento automático do treino no histórico
+        Informação nao pode adicionada por falta de campos
+    - Anotações rápidas durante o treino ok
+    - Cronômetro integrado para exercícios de tempo ok
+    - Temporizador de descanso com alerta sonoro/vibração ok
+    - Resumo rápido do histórico do exercício ok
+    - Salvamento automático do treino no histórico ok
 
 4. Histórico
-    - Visualizar histórico completo do aluno
-    - Visualizar histórico de medidas
-    - Visualizar histórico de treinos
+    *critico os historicos estão de forma espalhada no cadastro do aluno tem um botão historico que não exibi um historico completo
+    - Visualizar histórico completo do aluno Parcial
+    - Visualizar histórico de medidas ok (esta em avaliação fisica)
+    - Visualizar histórico de treinos ok (esta na ficha de avliação do aluno)
 
 5. Avaliação Física Simplificada
-    - Calcular IMC e salvar resultado no perfil do aluno
-    - Registrar peso, altura e circunferências
-    - Visualizar histórico de medidas
+    - Calcular IMC e salvar resultado no perfil do aluno ok
+    - Registrar peso, altura e circunferências ok
+    - Visualizar histórico de medidas ok
 
 6. Calendário de Aulas
     - Visualizar aulas agendadas no calendário (mensal/diário)
