@@ -1,7 +1,7 @@
 import { Text, View, Button, Alert, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
-import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, deletarTodasAulasCanceladas } from '../../utils/databaseUtils';
+import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, deletarTodasAulasCanceladas, migrarBancoCalendario } from '../../utils/databaseUtils';
 import useAulasStore from '../../store/useAulasStore';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
@@ -352,6 +352,15 @@ export default function ConfiguracoesScreen() {
     }
   };
 
+  const handleMigrarCalendario = async () => {
+    try {
+      await migrarBancoCalendario();
+      Alert.alert('Migração concluída', 'Banco de dados do calendário atualizado com sucesso!');
+    } catch (error) {
+      Alert.alert('Erro', 'Erro ao migrar banco do calendário: ' + error);
+    }
+  };
+
   const styles = StyleSheet.create({
     buttonsRow: {
       flexDirection: 'row',
@@ -454,6 +463,10 @@ export default function ConfiguracoesScreen() {
         <Button title="Exportar Backup (.db)" color="#1976D2" onPress={handleExportarBackup} />
         <View style={{ height: 12 }} />
         <Button title="Importar Backup (.db)" color="#FF9800" onPress={handleImportarBackup} />
+      </View>
+
+      <View style={{ marginVertical: 16 }}>
+        <Button title="Rodar Migração do Calendário" color="#1976D2" onPress={handleMigrarCalendario} />
       </View>
     </View>
   );

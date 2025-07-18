@@ -128,8 +128,8 @@ export default function AlunosScreen() {
                 </Link>
               </View>
               <View style={styles.buttonWrapper}>
-                <Link href={{ pathname: "/aluno/[id]/horarios-padrao", params: { id: item.id } }} asChild>
-                  <Button title="📅 Horários" color="#FF9800" />
+                <Link href={{ pathname: "/aluno/[id]/horarios", params: { id: item.id } }} asChild>
+                  <Button title="📚 Aulas" color="#FF9800" />
                 </Link>
               </View>
               <View style={styles.buttonWrapper}>

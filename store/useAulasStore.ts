@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getDatabase } from '../utils/databaseUtils';
 
-export type TipoAula = 'RECORRENTE' | 'AVULSA' | 'SOBREESCRITA' | 'CANCELADA_RECORRENTE';
+export type TipoAula = 'RECORRENTE_GERADA' | 'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO';
 
 export interface Aula {
   id?: number;
@@ -14,10 +14,6 @@ export interface Aula {
   observacoes?: string;
   tipo_aula: TipoAula;
   horario_recorrente_id?: number | null;
-  rrule?: string;
-  data_avulsa?: string;
-  sobrescrita_id?: number | null;
-  cancelada_por_id?: number | null;
 }
 
 interface AulasState {
@@ -27,17 +23,11 @@ interface AulasState {
   editarAula: (aula: Aula) => Promise<void>;
   excluirAula: (id: number) => Promise<void>;
   marcarPresenca: (id: number, presenca: number) => Promise<void>;
-  excluirRecorrencia?: (aluno_id: number, hora_inicio: string, rrule: string) => Promise<string[] | null>;
 }
 
 const useAulasStore = create<AulasState>((set, get) => ({
   aulas: [],
   carregarAulas: async (periodoInicio, periodoFim, aluno_id) => {
-    console.log(`[AULAS] 🔍 Carregando aulas: ${periodoInicio} até ${periodoFim}${aluno_id ? ` (Aluno ${aluno_id})` : ''}`);
-    console.log(`[AULAS] 📅 Período inicial: ${periodoInicio}`);
-    console.log(`[AULAS] 📅 Período final: ${periodoFim}`);
-    console.log(`[AULAS] 👤 Aluno ID: ${aluno_id || 'Todos'}`);
-    
     const db = await getDatabase();
     let query = `SELECT aulas.*, alunos.nome as aluno_nome FROM aulas LEFT JOIN alunos ON aulas.aluno_id = alunos.id WHERE 1=1`;
     const params: any[] = [];
@@ -54,19 +44,8 @@ const useAulasStore = create<AulasState>((set, get) => ({
       params.push(aluno_id);
     }
     query += ' ORDER BY data_aula, hora_inicio';
-    
-    console.log(`[AULAS] 📋 Query: ${query}`);
-    console.log(`[AULAS] 📋 Params:`, params);
-    
     const rows = await db.getAllAsync<any>(query, params);
-    console.log(`[AULAS] 📊 Encontradas ${rows.length} aulas no banco`);
-    
-    // Log das primeiras 5 aulas para debug
-    rows.slice(0, 5).forEach((row, index) => {
-      console.log(`[AULAS] 📅 Aula ${index + 1}: ${row.data_aula} ${row.hora_inicio} - ${row.aluno_nome} (${row.tipo_aula})`);
-    });
-    
-    set({ aulas: [] }); // Limpa o estado antes de setar as novas aulas
+    set({ aulas: [] });
     set({ aulas: rows.map((row: any) => ({
       id: row.id,
       aluno_id: row.aluno_id,
@@ -78,19 +57,13 @@ const useAulasStore = create<AulasState>((set, get) => ({
       observacoes: row.observacoes,
       tipo_aula: row.tipo_aula,
       horario_recorrente_id: row.horario_recorrente_id,
-      rrule: row.rrule,
-      data_avulsa: row.data_avulsa,
-      sobrescrita_id: row.sobrescrita_id,
-      cancelada_por_id: row.cancelada_por_id,
     })) });
-    
-    console.log(`[AULAS] ✅ Estado atualizado com ${rows.length} aulas`);
   },
   adicionarAula: async (aula) => {
     const db = await getDatabase();
     await db.runAsync(
-      `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id, rrule, data_avulsa, sobrescrita_id, cancelada_por_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
       aula.aluno_id,
       aula.data_aula,
       aula.hora_inicio,
@@ -98,18 +71,14 @@ const useAulasStore = create<AulasState>((set, get) => ({
       aula.presenca,
       aula.observacoes ?? null,
       aula.tipo_aula,
-      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null,
-      aula.rrule ?? null,
-      aula.data_avulsa ?? null,
-      aula.sobrescrita_id ?? null,
-      aula.cancelada_por_id ?? null
+      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null
     );
     await get().carregarAulas();
   },
   editarAula: async (aula) => {
     const db = await getDatabase();
     await db.runAsync(
-      `UPDATE aulas SET aluno_id = ?, data_aula = ?, hora_inicio = ?, duracao_minutos = ?, presenca = ?, observacoes = ?, tipo_aula = ?, horario_recorrente_id = ?, rrule = ?, data_avulsa = ?, sobrescrita_id = ?, cancelada_por_id = ? WHERE id = ?;`,
+      `UPDATE aulas SET aluno_id = ?, data_aula = ?, hora_inicio = ?, duracao_minutos = ?, presenca = ?, observacoes = ?, tipo_aula = ?, horario_recorrente_id = ? WHERE id = ?;`,
       aula.aluno_id,
       aula.data_aula,
       aula.hora_inicio,
@@ -118,10 +87,6 @@ const useAulasStore = create<AulasState>((set, get) => ({
       aula.observacoes ?? null,
       aula.tipo_aula,
       aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null,
-      aula.rrule ?? null,
-      aula.data_avulsa ?? null,
-      aula.sobrescrita_id ?? null,
-      aula.cancelada_por_id ?? null,
       aula.id !== undefined ? aula.id : 0
     );
     await get().carregarAulas();
@@ -135,32 +100,6 @@ const useAulasStore = create<AulasState>((set, get) => ({
     const db = await getDatabase();
     await db.runAsync('UPDATE aulas SET presenca = ? WHERE id = ?;', presenca, id);
     await get().carregarAulas();
-  },
-  excluirRecorrencia: async (aluno_id, hora_inicio, rrule) => {
-    const db = await getDatabase();
-    // Buscar todas as aulas geradas por essa recorrência
-    const aulas = await db.getAllAsync<any>(
-      `SELECT * FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ?`,
-      aluno_id, hora_inicio, rrule
-    );
-    // Verificar se alguma tem presença registrada
-    const aulasComPresenca = aulas.filter((a: any) => a.presenca && a.presenca !== 0);
-    if (aulasComPresenca.length > 0) {
-      // Retorna as datas das aulas com presença para exibir alerta
-      return aulasComPresenca.map((a: any) => a.data_aula);
-    }
-    // Apaga o registro mestre da recorrência
-    await db.runAsync(
-      `DELETE FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ? AND tipo_aula = 'RECORRENTE'`,
-      aluno_id, hora_inicio, rrule
-    );
-    // Opcional: apagar sobrescritas/canceladas futuras sem presença
-    await db.runAsync(
-      `DELETE FROM aulas WHERE aluno_id = ? AND hora_inicio = ? AND rrule = ? AND tipo_aula IN ('SOBREESCRITA', 'CANCELADA_RECORRENTE') AND presenca = 0`,
-      aluno_id, hora_inicio, rrule
-    );
-    await get().carregarAulas();
-    return null;
   },
 }));
 

@@ -521,6 +521,25 @@ export const initializeDatabase = async () => {
         // Coluna já existe, ignorar erro
         console.log('Coluna tempo_cadencia já existe na tabela historico_series.');
       }
+
+      // Migração: adicionar coluna presencas_recorrentes se não existir
+      try {
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS presencas_recorrentes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            aluno_id INTEGER,
+            data_aula TEXT,
+            hora_inicio TEXT,
+            rrule TEXT,
+            status INTEGER DEFAULT 0, -- 0=Agendada, 1=Presente, 2=Faltou, 3=Cancelada
+            observacoes TEXT,
+            FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+          );
+        `);
+        console.log('Tabela presencas_recorrentes criada/verificada com sucesso.');
+      } catch (error) {
+        console.error('Erro ao criar/verificar tabela presencas_recorrentes:', error);
+      }
     });
     
     console.log('Banco de dados inicializado com sucesso.');
@@ -827,4 +846,48 @@ export const deletarTodasAulasCanceladas = async () => {
     console.error('❌ Erro ao deletar aulas canceladas:', error);
     throw error;
   }
+}; 
+
+// MIGRAÇÃO: Refatoração do calendário (remover legados e criar novas estruturas)
+export const migrarBancoCalendario = async () => {
+  const db = await getDatabase();
+  // Remover tabela presencas_recorrentes se existir
+  await db.execAsync('DROP TABLE IF EXISTS presencas_recorrentes;');
+
+  // Remover colunas legadas da tabela aulas (se existirem)
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN rrule;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN data_avulsa;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN sobrescrita_id;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN cancelada_por_id;'); } catch (e) {}
+
+  // Criar/ajustar tabela horarios_recorrentes
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS horarios_recorrentes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      aluno_id INTEGER NOT NULL,
+      dia_semana INTEGER NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      duracao_minutos INTEGER NOT NULL,
+      data_inicio_vigencia TEXT,
+      data_fim_vigencia TEXT,
+      FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
+    );
+  `);
+
+  // Criar/ajustar tabela aulas
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS aulas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      aluno_id INTEGER NOT NULL,
+      data_aula TEXT NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      duracao_minutos INTEGER NOT NULL,
+      presenca INTEGER DEFAULT 0,
+      observacoes TEXT,
+      tipo_aula TEXT NOT NULL,
+      horario_recorrente_id INTEGER,
+      FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+      FOREIGN KEY (horario_recorrente_id) REFERENCES horarios_recorrentes(id) ON DELETE SET NULL
+    );
+  `);
 }; 

@@ -1,4 +1,4 @@
-# Task List QA
+rr# Task List QA
 
 ## Prioridade Alta
 
@@ -19,7 +19,7 @@
 - [ ] Implementar legenda de cores e status nos cards de aula (agendada, cancelada, sobrescrita, etc)
 - [ ] Impedir que limpeza de todas as aulas apague aulas já marcadas como presença
 
-## Prioridade Baixa
+## Prioridade Baixar
 
 - [ ] Implementar opção manual de tema claro/escuro nas configurações
 - [ ] Melhorar layout do calendário (evitar repetições de palavras)
