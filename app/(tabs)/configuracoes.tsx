@@ -6,6 +6,8 @@ import useAulasStore from '../../store/useAulasStore';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
@@ -361,6 +363,19 @@ export default function ConfiguracoesScreen() {
     }
   };
 
+  // Estado para look-ahead
+  const [lookAheadMeses, setLookAheadMeses] = useState<number>(1);
+  useEffect(() => {
+    AsyncStorage.getItem('lookAheadMeses').then(val => {
+      if (val) setLookAheadMeses(Number(val));
+    });
+  }, []);
+  const handleChangeLookAhead = async (novo: number) => {
+    setLookAheadMeses(novo);
+    await AsyncStorage.setItem('lookAheadMeses', String(novo));
+    Alert.alert('Configuração salva', `Aulas recorrentes serão geradas para os próximos ${novo} meses.`);
+  };
+
   const styles = StyleSheet.create({
     buttonsRow: {
       flexDirection: 'row',
@@ -467,6 +482,15 @@ export default function ConfiguracoesScreen() {
 
       <View style={{ marginVertical: 16 }}>
         <Button title="Rodar Migração do Calendário" color="#1976D2" onPress={handleMigrarCalendario} />
+      </View>
+
+      <View style={{ marginVertical: 20 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 6 }}>Período de geração de aulas recorrentes (meses à frente):</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Button title="-" onPress={() => lookAheadMeses > 1 && handleChangeLookAhead(lookAheadMeses - 1)} />
+          <Text style={{ marginHorizontal: 16, fontSize: 18 }}>{lookAheadMeses}</Text>
+          <Button title="+" onPress={() => handleChangeLookAhead(lookAheadMeses + 1)} />
+        </View>
       </View>
     </View>
   );

@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Button, Alert, Modal } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
-import { RRule, rrulestr } from 'rrule';
+import { gerarAulasRecorrentesParaPeriodo } from '../../utils/recorrenciaUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -25,45 +26,19 @@ LocaleConfig.locales['pt-br'] = {
 };
 LocaleConfig.defaultLocale = 'pt-br';
 
-// Funções utilitárias fora do componente
 function formatarDataBR(dataISO: string) {
   const [ano, mes, dia] = dataISO.split('-');
   return `${dia}/${mes}/${ano}`;
 }
 
-function getDiaSemana(dataISO: string) {
-  const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const [ano, mes, dia] = dataISO.split('-');
-  const data = new Date(Number(ano), Number(mes) - 1, Number(dia));
-  return dias[data.getDay()];
-}
-
 export default function CalendarioScreen() {
-  // Tipos auxiliares para robustez
-  type Aula = {
-    id?: number;
-    aluno_id: number;
-    aluno_nome?: string;
-    data_aula: string;
-    hora_inicio: string;
-    duracao_minutos: number;
-    tipo_aula: string;
-    presenca: number;
-    observacoes?: string;
-    horario_recorrente_id?: number | null;
-  };
-
-  const { aulas, carregarAulas, adicionarAula, marcarPresenca, excluirAula } = useAulasStore();
+  const { aulas, carregarAulas, marcarPresenca, excluirAula } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
   const [loading, setLoading] = useState<boolean>(true);
-  const [modalAula, setModalAula] = useState<Aula | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalPresencaId, setModalPresencaId] = useState<number | null>(null);
-  const [modalPresencaVisible, setModalPresencaVisible] = useState(false);
 
-  // Marca os dias com aulas
+  // Marcação dos dias com aulas
   const markedDates = useMemo(() => {
     const acc: Record<string, any> = {};
     aulas.forEach(aula => {
@@ -81,33 +56,63 @@ export default function CalendarioScreen() {
     return acc;
   }, [aulas, dataSelecionada]);
 
-  // Filtra aulas do dia selecionado
-  const aulasDoDia = aulas.filter(a => a.data_aula === dataSelecionada);
+  // Exibe apenas uma aula por aluno/hora, priorizando exceções/cancelamentos
+  const aulasDoDia = useMemo(() => {
+    const aulasDia = aulas.filter(a => a.data_aula === dataSelecionada);
+    const key = (a: any) => `${a.aluno_id}_${a.hora_inicio}`;
+    const map = new Map<string, any>();
+    for (const aula of aulasDia) {
+      const k = key(aula);
+      if (map.has(k)) continue;
+      if (aula.tipo_aula === 'EXCECAO_HORARIO' || aula.tipo_aula === 'EXCECAO_CANCELAMENTO') {
+        map.set(k, aula);
+      } else if (aula.tipo_aula === 'RECORRENTE_GERADA') {
+        if (!map.has(k)) map.set(k, aula);
+      } else {
+        map.set(k, aula);
+      }
+    }
+    return Array.from(map.values());
+  }, [aulas, dataSelecionada]);
 
-  // Função para marcar presença
-  async function marcarPresencaAula(aula: Aula, presenca: number) {
+  // Marcar presença/falta/cancelamento
+  async function marcarPresencaAula(aula: any, presenca: number) {
     if (!aula.id) return;
     await marcarPresenca(aula.id, presenca);
-    Alert.alert('Presença atualizada!');
   }
 
-  // Função para apagar aula
-  async function apagarAula(aula: Aula) {
+  // Apagar aula
+  async function apagarAula(aula: any) {
     if (!aula.id) return;
     await excluirAula(aula.id);
-    Alert.alert('Aula apagada!');
   }
 
+  // Geração automática de recorrentes conforme look-ahead
   useEffect(() => {
     setLoading(true);
-    const hoje = new Date();
-    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    carregarAulas(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10)).then(() => setLoading(false));
+    const gerarComLookAhead = async () => {
+      const hoje = new Date();
+      let lookAheadMeses = 1;
+      try {
+        const val = await AsyncStorage.getItem('lookAheadMeses');
+        if (val) lookAheadMeses = Number(val);
+      } catch {}
+      const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + lookAheadMeses, 0);
+      await gerarAulasRecorrentesParaPeriodo(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
+      await carregarAulas(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
+      setLoading(false);
+    };
+    gerarComLookAhead();
   }, [carregarAulas]);
 
   return (
     <View style={styles.container}>
+      <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
+        <Link href="/calendario/nova" asChild>
+          <Button title="Adicionar Aula" color="#1976D2" />
+        </Link>
+      </View>
       <Text style={styles.title}>Calendário de Aulas</Text>
       <Calendar
         markedDates={markedDates}
@@ -134,7 +139,20 @@ export default function CalendarioScreen() {
             <View style={styles.aulaCard}>
               <Text style={styles.aulaHora}><Text style={{fontWeight:'bold'}}>Horário:</Text> {item.hora_inicio} ({item.duracao_minutos}min)</Text>
               <Text style={styles.aulaAluno}><Text style={{fontWeight:'bold'}}>Aluno:</Text> {item.aluno_nome || 'Aluno'}</Text>
-              <Text style={styles.aulaTipo}><Text style={{fontWeight:'bold'}}>Tipo:</Text> {item.tipo_aula}</Text>
+              <Text style={[styles.aulaTipo, {
+                color:
+                  item.tipo_aula === 'RECORRENTE_GERADA' ? '#1976D2' :
+                  item.tipo_aula === 'AVULSA' ? '#4CAF50' :
+                  item.tipo_aula === 'EXCECAO_HORARIO' ? '#FF9800' :
+                  item.tipo_aula === 'EXCECAO_CANCELAMENTO' ? '#F44336' : '#888',
+                fontWeight: 'bold'
+              }]}
+              >
+                {item.tipo_aula === 'RECORRENTE_GERADA' && 'Recorrente'}
+                {item.tipo_aula === 'AVULSA' && 'Avulsa'}
+                {item.tipo_aula === 'EXCECAO_HORARIO' && 'Exceção de Horário'}
+                {item.tipo_aula === 'EXCECAO_CANCELAMENTO' && 'Exceção de Cancelamento'}
+              </Text>
               <Text style={styles.aulaStatus}><Text style={{fontWeight:'bold'}}>Status:</Text> {item.presenca === 1 ? 'Presente' : item.presenca === 2 ? 'Faltou' : item.presenca === 3 ? 'Cancelada' : 'Agendada'}</Text>
               {item.observacoes ? <Text style={styles.aulaObs}><Text style={{fontWeight:'bold'}}>Observações:</Text> {item.observacoes}</Text> : null}
               <View style={styles.aulaButtons}>
@@ -171,13 +189,6 @@ const styles = StyleSheet.create({
     color: '#1976D2',
     marginVertical: 10,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
   aulaCard: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -201,7 +212,8 @@ const styles = StyleSheet.create({
   },
   aulaTipo: {
     fontSize: 13,
-    color: '#888',
+    marginTop: 2,
+    marginBottom: 2,
   },
   aulaStatus: {
     fontSize: 13,
@@ -216,15 +228,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 10,
-  },
-  diaSemana: {
-    fontSize: 13,
-    color: '#1976D2',
-    fontWeight: 'bold',
-  },
-  diaSemanaRecorrente: {
-    fontSize: 12,
-    color: '#FF9800',
-    fontWeight: 'bold',
   },
 });

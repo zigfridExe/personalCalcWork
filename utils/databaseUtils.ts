@@ -521,25 +521,6 @@ export const initializeDatabase = async () => {
         // Coluna já existe, ignorar erro
         console.log('Coluna tempo_cadencia já existe na tabela historico_series.');
       }
-
-      // Migração: adicionar coluna presencas_recorrentes se não existir
-      try {
-        await db.execAsync(`
-          CREATE TABLE IF NOT EXISTS presencas_recorrentes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            aluno_id INTEGER,
-            data_aula TEXT,
-            hora_inicio TEXT,
-            rrule TEXT,
-            status INTEGER DEFAULT 0, -- 0=Agendada, 1=Presente, 2=Faltou, 3=Cancelada
-            observacoes TEXT,
-            FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
-          );
-        `);
-        console.log('Tabela presencas_recorrentes criada/verificada com sucesso.');
-      } catch (error) {
-        console.error('Erro ao criar/verificar tabela presencas_recorrentes:', error);
-      }
     });
     
     console.log('Banco de dados inicializado com sucesso.');
@@ -827,23 +808,6 @@ export const deletarTodasAulasSobrescritas = async () => {
     return result.changes;
   } catch (error) {
     console.error('❌ Erro ao deletar aulas sobrescritas:', error);
-    throw error;
-  }
-};
-
-/**
- * Deleta todas as aulas canceladas (tipo_aula = 'CANCELADA_RECORRENTE') do banco.
- * Retorna o número de aulas deletadas.
- */
-export const deletarTodasAulasCanceladas = async () => {
-  const db = await getDatabase();
-  try {
-    console.log('🗑️ Deletando todas as aulas canceladas...');
-    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'CANCELADA_RECORRENTE';");
-    console.log(`✅ ${result.changes} aulas canceladas deletadas!`);
-    return result.changes;
-  } catch (error) {
-    console.error('❌ Erro ao deletar aulas canceladas:', error);
     throw error;
   }
 }; 

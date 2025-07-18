@@ -4,7 +4,11 @@ import { useRouter } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
-import { RRule } from 'rrule';
+// Remover importação e uso de RRule
+// Ajustar estados e selects para não usar mais 'RECORRENTE'
+// Usar apenas os tipos: 'RECORRENTE_GERADA', 'AVULSA', 'EXCECAO_HORARIO', 'EXCECAO_CANCELAMENTO'
+// Remover toda lógica de manipulação de rrule
+// Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
 
 // Funções utilitárias para data/hora
 function formatHora(hora: string) {
@@ -65,16 +69,19 @@ export default function NovaAulaScreen() {
   const [duracao, setDuracao] = useState('60');
   const [descricao, setDescricao] = useState('');
   const [presenca, setPresenca] = useState(false);
-  const [tipoAula, setTipoAula] = useState<'AVULSA' | 'RECORRENTE'>('AVULSA');
-  const [diasSemana, setDiasSemana] = useState<number[]>([]);
-  const [dataInicioRecorrente, setDataInicioRecorrente] = useState(maskDataBR(String(hoje.getDate()).padStart(2, '0') + String(hoje.getMonth() + 1).padStart(2, '0') + String(hoje.getFullYear())));
+  // Adicionar estado para tipo de aula
+  const [tipoAula, setTipoAula] = useState<'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO'>('AVULSA');
+  // Remover estado 'diasSemana'
+  // const [diasSemana, setDiasSemana] = useState<number[]>([]);
+  // Remover estado 'dataInicioRecorrente'
+  // const [dataInicioRecorrente, setDataInicioRecorrente] = useState(maskDataBR(String(hoje.getDate()).padStart(2, '0') + String(hoje.getMonth() + 1).padStart(2, '0') + String(hoje.getFullYear())));
 
   const handleSalvar = async () => {
     if (!alunoId || !data || !hora || !duracao) {
       Alert.alert('Preencha todos os campos!');
       return;
     }
-    if (!isDataValidaBR(tipoAula === 'RECORRENTE' ? dataInicioRecorrente : data)) {
+    if (!isDataValidaBR(data)) { // Ajustado para usar apenas 'data'
       Alert.alert('Data inválida! Use o formato DD/MM/AAAA.');
       return;
     }
@@ -82,44 +89,8 @@ export default function NovaAulaScreen() {
       Alert.alert('Horário inválido! Use o formato HH:MM.');
       return;
     }
-    if (tipoAula === 'RECORRENTE') {
-      if (diasSemana.length === 0) {
-        Alert.alert('Selecione pelo menos um dia da semana para a recorrência!');
-        return;
-      }
-      // Gerar RRULE
-      const weekdayMap = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
-      const byweekday = diasSemana.map(idx => weekdayMap[idx]);
-      const dtstart = new Date(formatDataISO(dataInicioRecorrente) + 'T' + hora + ':00');
-      // Limite: 6 meses para recorrência
-      const until = new Date(dtstart);
-      until.setMonth(until.getMonth() + 6);
-      const rule = new RRule({
-        freq: RRule.WEEKLY,
-        byweekday,
-        dtstart,
-        until,
-      });
-      const rruleString = rule.toString();
-      await adicionarAula({
-        aluno_id: alunoId,
-        data_aula: formatDataISO(dataInicioRecorrente),
-        hora_inicio: hora,
-        duracao_minutos: Number(duracao),
-        presenca: presenca ? 1 : 0,
-        observacoes: descricao,
-        tipo_aula: 'RECORRENTE',
-        horario_recorrente_id: null,
-        rrule: rruleString,
-        data_avulsa: undefined,
-        sobrescrita_id: undefined,
-        cancelada_por_id: undefined,
-      });
-      Alert.alert('Aula recorrente adicionada com sucesso!');
-      router.back();
-      return;
-    }
-    // Aula avulsa
+    // Remover toda lógica de rrule e tipo_aula = 'RECORRENTE'
+    // Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
     await adicionarAula({
       aluno_id: alunoId,
       data_aula: formatDataISO(data),
@@ -127,20 +98,17 @@ export default function NovaAulaScreen() {
       duracao_minutos: Number(duracao),
       presenca: presenca ? 1 : 0,
       observacoes: descricao,
-      tipo_aula: 'AVULSA',
+      tipo_aula: tipoAula,
       horario_recorrente_id: null,
-      rrule: undefined,
-      data_avulsa: formatDataISO(data),
-      sobrescrita_id: undefined,
-      cancelada_por_id: undefined,
     });
-    Alert.alert('Aula avulsa adicionada com sucesso!');
+    Alert.alert('Aula adicionada com sucesso!');
     router.back();
   };
 
-  const handleToggleDia = (dia: number) => {
-    setDiasSemana(prev => prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]);
-  };
+  // Remover handleToggleDia
+  // const handleToggleDia = (dia: number) => {
+  //   setDiasSemana(prev => prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]);
+  // };
 
   return (
     <View style={styles.container}>
@@ -158,19 +126,43 @@ export default function NovaAulaScreen() {
           ))}
         </Picker>
       </View>
+      <Text style={styles.label}>Tipo de Aula</Text>
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <TouchableOpacity
+          style={[styles.tipoBtn, tipoAula === 'AVULSA' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('AVULSA')}
+        >
+          <Text style={tipoAula === 'AVULSA' ? { color: '#fff' } : {}}>Avulsa</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('EXCECAO_HORARIO')}
+        >
+          <Text style={tipoAula === 'EXCECAO_HORARIO' ? { color: '#fff' } : {}}>Exceção de Horário</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tipoBtn, tipoAula === 'EXCECAO_CANCELAMENTO' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('EXCECAO_CANCELAMENTO')}
+        >
+          <Text style={tipoAula === 'EXCECAO_CANCELAMENTO' ? { color: '#fff' } : {}}>Exceção de Cancelamento</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.label}>Data</Text>
       <TextInput
         style={[
           styles.input,
-          tipoAula === 'RECORRENTE' && styles.inputDisabled
+          // Remover estilo inputDisabled
+          // tipoAula === 'RECORRENTE' && styles.inputDisabled
         ]}
         placeholder="DD/MM/AAAA"
         value={data}
         onChangeText={t => setData(maskDataBR(t))}
         maxLength={10}
-        editable={tipoAula !== 'RECORRENTE'}
+        // Remover prop editable
+        // editable={tipoAula !== 'RECORRENTE'}
       />
-      {tipoAula === 'RECORRENTE' && (
+      {/* Remover seção de data inicio recorrente */}
+      {/* {tipoAula === 'RECORRENTE' && (
         <>
           <Text style={styles.label}>A partir de qual data?</Text>
           <TextInput
@@ -181,7 +173,7 @@ export default function NovaAulaScreen() {
             maxLength={10}
           />
         </>
-      )}
+      )} */}
       <Text style={styles.label}>Hora</Text>
       <TextInput
         style={styles.input}
@@ -207,22 +199,8 @@ export default function NovaAulaScreen() {
         value={descricao}
         onChangeText={setDescricao}
       />
-      <Text style={styles.label}>Tipo de Aula</Text>
-      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-        <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'AVULSA' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('AVULSA')}
-        >
-          <Text style={tipoAula === 'AVULSA' ? { color: '#fff' } : {}}>Avulsa</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'RECORRENTE' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('RECORRENTE')}
-        >
-          <Text style={tipoAula === 'RECORRENTE' ? { color: '#fff' } : {}}>Recorrente</Text>
-        </TouchableOpacity>
-      </View>
-      {tipoAula === 'RECORRENTE' && (
+      {/* Remover seção de tipo de aula */}
+      {/* {tipoAula === 'RECORRENTE' && (
         <View style={styles.diasSemanaContainer}>
           <Text style={styles.label}>Dias da Semana</Text>
           <View style={styles.diasSemanaRow}>
@@ -237,7 +215,7 @@ export default function NovaAulaScreen() {
             ))}
           </View>
         </View>
-      )}
+      )} */}
       <Button title="Salvar" onPress={handleSalvar} color="#4CAF50" />
     </View>
   );
@@ -279,10 +257,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     fontSize: 16,
   },
-  inputDisabled: {
-    backgroundColor: '#eee',
-    color: '#888',
-  },
+  // Remover estilo inputDisabled
+  // inputDisabled: {
+  //   backgroundColor: '#eee',
+  //   color: '#888',
+  // },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',

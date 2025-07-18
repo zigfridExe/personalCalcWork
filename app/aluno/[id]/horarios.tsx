@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import useAulasStore, { Aula } from '../../../store/useAulasStore';
-import { rrulestr } from 'rrule';
 
 export default function HorariosAlunoScreen() {
   const { id } = useLocalSearchParams();
@@ -38,44 +37,30 @@ export default function HorariosAlunoScreen() {
     return () => { cancelado = true; };
   }, [alunoId, carregarAulas]);
 
-  // Gera todas as ocorrências futuras de aulas recorrentes no range
-  function gerarOcorrenciasRecorrentes(aula: Aula) {
-    if (!aula.rrule) return [];
-    try {
-      const rule = rrulestr(aula.rrule);
-      const datas = rule.between(inicio, fim, true);
-      return datas.map(dataObj => ({
-        ...aula,
-        data_aula: dataObj.toISOString().slice(0, 10),
-      }));
-    } catch {
-      return [];
-    }
-  }
-
-  // Agrupa aulas recorrentes e avulsas futuras (status agendada)
+  // Substituir o filtro aulasAtivas por uma lógica que prioriza exceções/cancelamentos sobre recorrentes geradas
   const aulasAtivas = useMemo(() => {
-    const recorrentes = aulas.filter(a => a.aluno_id === alunoId && a.tipo_aula === 'RECORRENTE');
-    const avulsas = aulas.filter(a => a.aluno_id === alunoId && a.tipo_aula === 'AVULSA' && a.presenca === 0 && a.data_aula >= inicioStr && a.data_aula <= fimStr);
-    // Buscar sobrescritas/canceladas/avulsas reais para o range
-    const registrosReais = aulas.filter(a =>
-      a.aluno_id === alunoId &&
-      (a.tipo_aula === 'SOBREESCRITA' || a.tipo_aula === 'AVULSA' || a.tipo_aula === 'CANCELADA_RECORRENTE') &&
-      a.data_aula >= inicioStr && a.data_aula <= fimStr
-    );
-    const ocorrenciasRecorrentes = recorrentes.flatMap(gerarOcorrenciasRecorrentes)
-      .filter(a => {
-        // Só exibe se não existe registro real para esse aluno/data/hora
-        return !registrosReais.some(r => r.data_aula === a.data_aula && r.hora_inicio === a.hora_inicio);
-      })
-      .filter(a => a.presenca === 0 && a.data_aula >= inicioStr && a.data_aula <= fimStr);
-    const todas = [...ocorrenciasRecorrentes, ...avulsas];
-    return todas.sort((a, b) => a.data_aula.localeCompare(b.data_aula) || a.hora_inicio.localeCompare(b.hora_inicio));
+    // Filtra aulas do range
+    const aulasRange = aulas.filter(a => a.aluno_id === alunoId && a.data_aula >= inicioStr && a.data_aula <= fimStr);
+    // Agrupa por data/hora
+    const key = (a: Aula) => `${a.data_aula}_${a.hora_inicio}`;
+    const map = new Map<string, Aula>();
+    for (const aula of aulasRange) {
+      const k = key(aula);
+      if (map.has(k)) continue;
+      if (aula.tipo_aula === 'EXCECAO_HORARIO' || aula.tipo_aula === 'EXCECAO_CANCELAMENTO') {
+        map.set(k, aula);
+      } else if (aula.tipo_aula === 'RECORRENTE_GERADA') {
+        if (!map.has(k)) map.set(k, aula);
+      } else {
+        map.set(k, aula);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.data_aula.localeCompare(b.data_aula) || a.hora_inicio.localeCompare(b.hora_inicio));
   }, [aulas, alunoId, inicioStr, fimStr]);
 
   // Agrupa aulas passadas (até hoje), normalizando recorrentes
   const aulasHistorico = useMemo(() => {
-    const recorrentes = aulas.filter(a => a.aluno_id === alunoId && a.tipo_aula === 'RECORRENTE');
+    const recorrentes = aulas.filter(a => a.aluno_id === alunoId && a.tipo_aula === 'RECORRENTE_GERADA');
     const avulsas = aulas.filter(a => a.aluno_id === alunoId && a.tipo_aula === 'AVULSA' && a.data_aula < inicioStr);
     const ocorrenciasRecorrentes = recorrentes.flatMap(aula => {
       if (!aula.rrule) return [];

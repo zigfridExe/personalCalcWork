@@ -4,7 +4,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
-import { RRule, rrulestr } from 'rrule';
+// Remover importação e uso de RRule, rrulestr
+// Ajustar estados e selects para não usar mais 'RECORRENTE' ou 'CANCELADA_RECORRENTE'
+// Usar apenas os tipos: 'RECORRENTE_GERADA', 'AVULSA', 'EXCECAO_HORARIO', 'EXCECAO_CANCELAMENTO'
+// Remover toda lógica de manipulação de rrule
+// Simplificar o handleSalvar para não gerar nem salvar rrule
 
 export default function EditarAulaScreen() {
   const { id } = useLocalSearchParams();
@@ -20,57 +24,58 @@ export default function EditarAulaScreen() {
   const [duracao, setDuracao] = useState(aula?.duracao_minutos ? String(aula.duracao_minutos) : '60');
   const [descricao, setDescricao] = useState(aula?.observacoes || '');
   const [presenca, setPresenca] = useState(aula?.presenca === 1);
-  const [tipoAula, setTipoAula] = useState<'AVULSA' | 'RECORRENTE' | 'SOBREESCRITA' | 'CANCELADA_RECORRENTE'>(aula?.tipo_aula as any || 'AVULSA');
-  const [diasSemana, setDiasSemana] = useState<number[]>(() => {
-    if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
-      try {
-        const rule = rrulestr(aula.rrule);
-        if (rule.options.byweekday) {
-          if (Array.isArray(rule.options.byweekday)) {
-            return rule.options.byweekday.map((d: any) => {
-              if (typeof d === 'number') return d;
-              if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return d.weekday;
-              return 0;
-            });
-          } else {
-            const d = rule.options.byweekday;
-            if (typeof d === 'number') return [d];
-            if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return [d.weekday];
-            return [0];
-          }
-        }
-        return [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
-  const [dataInicioRec, setDataInicioRec] = useState(() => {
-    if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
-      try {
-        const rule = rrulestr(aula.rrule);
-        return rule.options.dtstart ? maskDataBR(rule.options.dtstart.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula);
-      } catch {
-        return maskDataBR(aula.data_aula);
-      }
-    }
-    return maskDataBR(aula?.data_aula || '');
-  });
-  const [dataFimRec, setDataFimRec] = useState(() => {
-    if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
-      try {
-        const rule = rrulestr(aula.rrule);
-        return rule.options.until ? maskDataBR(rule.options.until.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula);
-      } catch {
-        return maskDataBR(aula.data_aula);
-      }
-    }
-    return maskDataBR(aula?.data_aula || '');
-  });
-  function handleToggleDia(idx: number) {
-    setDiasSemana(prev => prev.includes(idx) ? prev.filter(d => d !== idx) : [...prev, idx]);
-  }
+  const [tipoAula, setTipoAula] = useState<'RECORRENTE_GERADA' | 'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO'>(aula?.tipo_aula as any || 'AVULSA');
+  // Remover estados relacionados a dias da semana e rrule
+  // const [diasSemana, setDiasSemana] = useState<number[]>(() => {
+  //   if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
+  //     try {
+  //       const rule = rrulestr(aula.rrule);
+  //       if (rule.options.byweekday) {
+  //         if (Array.isArray(rule.options.byweekday)) {
+  //           return rule.options.byweekday.map((d: any) => {
+  //             if (typeof d === 'number') return d;
+  //             if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return d.weekday;
+  //             return 0;
+  //           });
+  //         } else {
+  //           const d = rule.options.byweekday;
+  //           if (typeof d === 'number') return [d];
+  //           if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return [d.weekday];
+  //           return [0];
+  //         }
+  //       }
+  //       return [];
+  //     } catch {
+  //       return [];
+  //     }
+  //   }
+  //   return [];
+  // });
+  // const [dataInicioRec, setDataInicioRec] = useState(() => {
+  //   if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
+  //     try {
+  //       const rule = rrulestr(aula.rrule);
+  //       return rule.options.dtstart ? maskDataBR(rule.options.dtstart.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula);
+  //     } catch {
+  //       return maskDataBR(aula.data_aula);
+  //     }
+  //   }
+  //   return maskDataBR(aula?.data_aula || '');
+  // });
+  // const [dataFimRec, setDataFimRec] = useState(() => {
+  //   if (aula?.tipo_aula === 'RECORRENTE' && aula.rrule) {
+  //     try {
+  //       const rule = rrulestr(aula.rrule);
+  //       return rule.options.until ? maskDataBR(rule.options.until.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula);
+  //     } catch {
+  //       return maskDataBR(aula.data_aula);
+  //     }
+  //   }
+  //   return maskDataBR(aula?.data_aula || '');
+  // });
+  // function handleToggleDia(idx: number) {
+  //   setDiasSemana(prev => prev.includes(idx) ? prev.filter(d => d !== idx) : [...prev, idx]);
+  // }
 
   useEffect(() => {
     if (aula) {
@@ -81,27 +86,28 @@ export default function EditarAulaScreen() {
       setDescricao(aula.observacoes || '');
       setPresenca(aula.presenca === 1);
       setTipoAula(aula.tipo_aula);
-      if (aula.tipo_aula === 'RECORRENTE' && aula.rrule) {
-        try {
-          const rule = rrulestr(aula.rrule);
-          setDiasSemana(rule.options.byweekday ? (Array.isArray(rule.options.byweekday) ? rule.options.byweekday.map((d: any) => {
-            if (typeof d === 'number') return d;
-            if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return d.weekday;
-            return 0;
-          }) : [typeof rule.options.byweekday === 'number' ? rule.options.byweekday : (rule.options.byweekday && typeof rule.options.byweekday === 'object' && rule.options.byweekday !== null && 'weekday' in rule.options.byweekday && typeof rule.options.byweekday.weekday === 'number' ? rule.options.byweekday.weekday : 0)]) : []);
-          setDataInicioRec(rule.options.dtstart ? maskDataBR(rule.options.dtstart.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula));
-          setDataFimRec(rule.options.until ? maskDataBR(rule.options.until.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula));
-        } catch {
-          // Fallback if rrule parsing fails
-          setDiasSemana([]);
-          setDataInicioRec(maskDataBR(aula.data_aula));
-          setDataFimRec(maskDataBR(aula.data_aula));
-        }
-      } else {
-        setDiasSemana([]);
-        setDataInicioRec(maskDataBR(aula.data_aula));
-        setDataFimRec(maskDataBR(aula.data_aula));
-      }
+      // Remover toda lógica de manipulação de rrule
+      // if (aula.tipo_aula === 'RECORRENTE' && aula.rrule) {
+      //   try {
+      //     const rule = rrulestr(aula.rrule);
+      //     setDiasSemana(rule.options.byweekday ? (Array.isArray(rule.options.byweekday) ? rule.options.byweekday.map((d: any) => {
+      //       if (typeof d === 'number') return d;
+      //       if (d && typeof d === 'object' && d !== null && 'weekday' in d && typeof d.weekday === 'number') return d.weekday;
+      //       return 0;
+      //     }) : [typeof rule.options.byweekday === 'number' ? rule.options.byweekday : (rule.options.byweekday && typeof rule.options.byweekday === 'object' && rule.options.byweekday !== null && 'weekday' in rule.options.byweekday && typeof rule.options.byweekday.weekday === 'number' ? rule.options.byweekday.weekday : 0)]) : []);
+      //     setDataInicioRec(rule.options.dtstart ? maskDataBR(rule.options.dtstart.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula));
+      //     setDataFimRec(rule.options.until ? maskDataBR(rule.options.until.toISOString().slice(0, 10)) : maskDataBR(aula.data_aula));
+      //   } catch {
+      //     // Fallback if rrule parsing fails
+      //     setDiasSemana([]);
+      //     setDataInicioRec(maskDataBR(aula.data_aula));
+      //     setDataFimRec(maskDataBR(aula.data_aula));
+      //   }
+      // } else {
+      //   setDiasSemana([]);
+      //   setDataInicioRec(maskDataBR(aula.data_aula));
+      //   setDataFimRec(maskDataBR(aula.data_aula));
+      // }
     }
   }, [aula]);
 
@@ -159,45 +165,46 @@ export default function EditarAulaScreen() {
       Alert.alert('Aula não encontrada!');
       return;
     }
-    if (tipoAula === 'RECORRENTE') {
-      if (diasSemana.length === 0) {
-        Alert.alert('Selecione pelo menos um dia da semana para a recorrência!');
-        return;
-      }
-      if (!isDataValidaBR(dataInicioRec) || !isDataValidaBR(dataFimRec)) {
-        Alert.alert('Datas de início e fim da recorrência inválidas!');
-        return;
-      }
-      const weekdayMap = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
-      const byweekday = diasSemana.map(idx => weekdayMap[idx]);
-      const dtstart = new Date(formatDataISO(dataInicioRec) + 'T' + hora + ':00');
-      const until = new Date(formatDataISO(dataFimRec) + 'T' + hora + ':00');
-      const rule = new RRule({
-        freq: RRule.WEEKLY,
-        byweekday,
-        dtstart,
-        until,
-      });
-      const rruleString = rule.toString();
-      await editarAula({
-        id: Number(id),
-        aluno_id: alunoId,
-        data_aula: formatDataISO(dataInicioRec),
-        hora_inicio: hora,
-        duracao_minutos: Number(duracao),
-        observacoes: descricao,
-        presenca: presenca ? 1 : 0,
-        tipo_aula: 'RECORRENTE',
-        horario_recorrente_id: aula.horario_recorrente_id ?? null,
-        rrule: rruleString,
-        data_avulsa: undefined,
-        sobrescrita_id: aula.sobrescrita_id ?? undefined,
-        cancelada_por_id: aula.cancelada_por_id ?? undefined,
-      });
-      Alert.alert('Aula recorrente editada com sucesso!');
-      router.back();
-      return;
-    }
+    // Remover toda lógica de gerar rrule
+    // if (tipoAula === 'RECORRENTE') {
+    //   if (diasSemana.length === 0) {
+    //     Alert.alert('Selecione pelo menos um dia da semana para a recorrência!');
+    //     return;
+    //   }
+    //   if (!isDataValidaBR(dataInicioRec) || !isDataValidaBR(dataFimRec)) {
+    //     Alert.alert('Datas de início e fim da recorrência inválidas!');
+    //     return;
+    //   }
+    //   const weekdayMap = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
+    //   const byweekday = diasSemana.map(idx => weekdayMap[idx]);
+    //   const dtstart = new Date(formatDataISO(dataInicioRec) + 'T' + hora + ':00');
+    //   const until = new Date(formatDataISO(dataFimRec) + 'T' + hora + ':00');
+    //   const rule = new RRule({
+    //     freq: RRule.WEEKLY,
+    //     byweekday,
+    //     dtstart,
+    //     until,
+    //   });
+    //   const rruleString = rule.toString();
+    //   await editarAula({
+    //     id: Number(id),
+    //     aluno_id: alunoId,
+    //     data_aula: formatDataISO(dataInicioRec),
+    //     hora_inicio: hora,
+    //     duracao_minutos: Number(duracao),
+    //     observacoes: descricao,
+    //     presenca: presenca ? 1 : 0,
+    //     tipo_aula: 'RECORRENTE',
+    //     horario_recorrente_id: aula.horario_recorrente_id ?? null,
+    //     rrule: rruleString,
+    //     data_avulsa: undefined,
+    //     sobrescrita_id: aula.sobrescrita_id ?? undefined,
+    //     cancelada_por_id: aula.cancelada_por_id ?? undefined,
+    //   });
+    //   Alert.alert('Aula recorrente editada com sucesso!');
+    //   router.back();
+    //   return;
+    // }
     // Aula avulsa ou outros tipos
     await editarAula({
       id: Number(id),
@@ -256,15 +263,16 @@ export default function EditarAulaScreen() {
       <TextInput
         style={[
           styles.input,
-          tipoAula === 'RECORRENTE' && styles.inputDisabled
+          tipoAula === 'RECORRENTE_GERADA' && styles.inputDisabled
         ]}
         placeholder="DD/MM/AAAA"
         value={maskDataBR(data)}
         onChangeText={t => setData(maskDataBR(t))}
         maxLength={10}
-        editable={tipoAula !== 'RECORRENTE'}
+        editable={tipoAula !== 'RECORRENTE_GERADA'}
       />
-      {tipoAula === 'RECORRENTE' && (
+      {/* Remover campos de recorrência */}
+      {/* {tipoAula === 'RECORRENTE' && (
         <>
           <Text style={styles.label}>A partir de qual data?</Text>
           <TextInput
@@ -275,7 +283,7 @@ export default function EditarAulaScreen() {
             maxLength={10}
           />
         </>
-      )}
+      )} */}
       <Text style={styles.label}>Hora</Text>
       <TextInput
         style={styles.input}
@@ -310,25 +318,26 @@ export default function EditarAulaScreen() {
           <Text style={tipoAula === 'AVULSA' ? { color: '#fff' } : {}}>Avulsa</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'RECORRENTE' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('RECORRENTE')}
+          style={[styles.tipoBtn, tipoAula === 'RECORRENTE_GERADA' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('RECORRENTE_GERADA')}
         >
-          <Text style={tipoAula === 'RECORRENTE' ? { color: '#fff' } : {}}>Recorrente</Text>
+          <Text style={tipoAula === 'RECORRENTE_GERADA' ? { color: '#fff' } : {}}>Recorrente Gerada</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'SOBREESCRITA' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('SOBREESCRITA')}
+          style={[styles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('EXCECAO_HORARIO')}
         >
-          <Text style={tipoAula === 'SOBREESCRITA' ? { color: '#fff' } : {}}>Sobreescrita</Text>
+          <Text style={tipoAula === 'EXCECAO_HORARIO' ? { color: '#fff' } : {}}>Exceção de Horário</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'CANCELADA_RECORRENTE' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('CANCELADA_RECORRENTE')}
+          style={[styles.tipoBtn, tipoAula === 'EXCECAO_CANCELAMENTO' && styles.tipoBtnAtivo]}
+          onPress={() => setTipoAula('EXCECAO_CANCELAMENTO')}
         >
-          <Text style={tipoAula === 'CANCELADA_RECORRENTE' ? { color: '#fff' } : {}}>Cancelada</Text>
+          <Text style={tipoAula === 'EXCECAO_CANCELAMENTO' ? { color: '#fff' } : {}}>Exceção de Cancelamento</Text>
         </TouchableOpacity>
       </View>
-      {tipoAula === 'RECORRENTE' && (
+      {/* Remover campos de dias da semana */}
+      {/* {tipoAula === 'RECORRENTE' && (
         <View style={styles.diasSemanaContainer}>
           <Text style={styles.label}>Dias da Semana</Text>
           <View style={styles.diasSemanaRow}>
@@ -343,7 +352,7 @@ export default function EditarAulaScreen() {
             ))}
           </View>
         </View>
-      )}
+      )} */}
       <Button title="Salvar" onPress={handleSalvar} color="#2196F3" />
     </View>
   );
