@@ -6,6 +6,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import useExerciciosStore from '../store/useExerciciosStore';
 import useAlunosStore from '../store/useAlunosStore';
+import { exerciciosPorGrupo } from '../utils/exerciciosPorGrupo';
+import { Picker } from '@react-native-picker/picker';
 
 export default function ModalExercicioScreen() {
   const router = useRouter();
@@ -106,32 +108,128 @@ export default function ModalExercicioScreen() {
           ))}
         </View>
         <Text style={styles.label}>Exercício</Text>
+        <Picker
+          enabled={!!grupoMuscular}
+          selectedValue={nome}
+          onValueChange={setNome}
+          style={{ width: '80%', marginBottom: 10 }}
+        >
+          <Picker.Item label={grupoMuscular ? 'Selecione o exercício' : 'Selecione o grupo muscular primeiro'} value="" />
+          {grupoMuscular && exerciciosPorGrupo[grupoMuscular]?.map((ex, idx) => (
+            <Picker.Item key={idx} label={ex} value={ex} />
+          ))}
+        </Picker>
         <TextInput
           style={styles.input}
-          placeholder="Nome do Exercício"
+          placeholder="Ou digite o nome do exercício"
           value={nome}
           onChangeText={setNome}
         />
         <Text style={styles.label}>Execução</Text>
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Série</Text>
-          <TextInput style={styles.execucaoInput} value={series} onChangeText={setSeries} placeholder="" />
+          <Picker
+            selectedValue={series}
+            onValueChange={setSeries}
+            style={{ flex: 1, height: 36 }}
+          >
+            <Picker.Item label="Selecione" value="" />
+            <Picker.Item label="1" value="1" />
+            <Picker.Item label="3" value="3" />
+            <Picker.Item label="4" value="4" />
+            <Picker.Item label="5" value="5" />
+          </Picker>
+          <TextInput
+            style={[styles.execucaoInput, { marginLeft: 8 }]}
+            placeholder="Ou digite"
+            value={series}
+            onChangeText={setSeries}
+          />
         </View>
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Repetição</Text>
-          <TextInput style={styles.execucaoInput} value={repeticoes} onChangeText={setRepeticoes} placeholder="" />
+          <Picker
+            selectedValue={repeticoes}
+            onValueChange={setRepeticoes}
+            style={{ flex: 1, height: 36 }}
+          >
+            <Picker.Item label="Selecione" value="" />
+            <Picker.Item label="12" value="12" />
+            <Picker.Item label="15" value="15" />
+            <Picker.Item label="Falha" value="Falha" />
+          </Picker>
+          <TextInput
+            style={[styles.execucaoInput, { marginLeft: 8 }]}
+            placeholder="Ou digite"
+            value={repeticoes}
+            onChangeText={setRepeticoes}
+          />
         </View>
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Carga</Text>
-          <TextInput style={styles.execucaoInput} value={carga} onChangeText={setCarga} placeholder="" />
+          <Picker
+            selectedValue={carga}
+            onValueChange={setCarga}
+            style={{ flex: 1, height: 36 }}
+          >
+            <Picker.Item label="Selecione" value="" />
+            <Picker.Item label="1" value="1" />
+            <Picker.Item label="5" value="5" />
+            <Picker.Item label="10" value="10" />
+            <Picker.Item label="15" value="15" />
+            <Picker.Item label="20" value="20" />
+            <Picker.Item label="25" value="25" />
+            <Picker.Item label="30" value="30" />
+            <Picker.Item label="35" value="35" />
+            <Picker.Item label="40" value="40" />
+          </Picker>
+          <TextInput
+            style={[styles.execucaoInput, { marginLeft: 8 }]}
+            placeholder="Ou digite"
+            value={carga}
+            onChangeText={setCarga}
+          />
         </View>
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Ajuste</Text>
-          <TextInput style={styles.execucaoInput} value={ajuste} onChangeText={setAjuste} placeholder="" />
+          <Picker
+            selectedValue={ajuste}
+            onValueChange={setAjuste}
+            style={{ flex: 1, height: 36 }}
+          >
+            <Picker.Item label="Selecione" value="" />
+            {Array.from({ length: 10 }, (_, i) => (
+              <Picker.Item key={i+1} label={`${i+1}`} value={`${i+1}`} />
+            ))}
+          </Picker>
+          <TextInput
+            style={[styles.execucaoInput, { marginLeft: 8 }]}
+            placeholder="Ou digite"
+            value={ajuste}
+            onChangeText={setAjuste}
+          />
         </View>
         <View style={styles.execucaoRow}>
           <Text style={styles.execucaoLabel}>Descanso</Text>
-          <TextInput style={styles.execucaoInput} value={descanso} onChangeText={setDescanso} placeholder="Ex: 60s" />
+          <Picker
+            selectedValue={descanso}
+            onValueChange={setDescanso}
+            style={{ flex: 1, height: 36 }}
+          >
+            <Picker.Item label="Selecione" value="" />
+            <Picker.Item label="5" value="5" />
+            <Picker.Item label="8" value="8" />
+            <Picker.Item label="10" value="10" />
+            <Picker.Item label="15" value="15" />
+            <Picker.Item label="30" value="30" />
+            <Picker.Item label="60" value="60" />
+          </Picker>
+          <TextInput
+            style={[styles.execucaoInput, { marginLeft: 8 }]}
+            placeholder="Ou digite"
+            value={descanso}
+            onChangeText={setDescanso}
+          />
         </View>
         <Button title="Salvar Exercício" onPress={handleSave} />
       </ScrollView>

@@ -1,0 +1,63 @@
+Ficha de treino
+
+Costas
+	Remada baixa
+	Puxada barra frente
+	Puxada com triângulo
+	Serrote
+	Serratil (Pull Down)
+Peitoral
+	Fly / Peck Deck
+	Supino Reto
+	Supino inclinado
+	Cross Over
+	Pull Over
+	Crucifixo Reto
+	Crucifixo Inclinado
+Tríceps
+	Tríceps Máquina
+	Tríceps Polia
+	Tríceps Corda
+	Tríceps Francês
+	Tríceps Testa
+Bíceps
+	Rosca Scott
+	Rosca Concentrada
+	Rosca Inversa
+	Rosca Direta
+	Rosca Alternada
+	Rosca Martelo
+
+Membros inferiores
+	Cadeira Extensora
+	Cadeira Flexora
+	Cadeira Abdutora
+	Cadeira Adutora
+	Mesa Flexora
+	Leg Press Horizontal
+	Cadeira extensora unilateral
+	Leg Press 45º
+	Agachamento Hack
+	Agachamento Smith
+	Agachamento Livre
+	Glúteo Polia
+	Glúteo Caneleira
+	Afundo
+	Stiff
+	Panturrilha em Pé
+	Panturrilha Sentado
+Ombro
+	Fly / Peck Deck Inverso
+	Desenvolvimento Máquina
+	Desenvolvimento Halter
+	Encolhimento
+	Elevação Lateral
+	Elevação Frontal
+	Remada Alta
+	Elevação Múltipla
+Abdômen / Lombar
+	Supra Solo
+	Infra Solo
+	Prancha Isométrica
+	Oblíquo Solo
+	Lombar Banco
