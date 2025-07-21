@@ -1,13 +1,42 @@
 import { Text, View, Button, Alert, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
-import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, deletarTodasAulasCanceladas, migrarBancoCalendario } from '../../utils/databaseUtils';
+import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, migrarBancoCalendario, limparTodosHorariosRecorrentes } from '../../utils/databaseUtils';
 import useAulasStore from '../../store/useAulasStore';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+async function logDiasAulasRecorrentes() {
+  const db = await getDatabase();
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  const primeiroDia = new Date(ano, mes, 1);
+  const ultimoDia = new Date(ano, mes + 1, 0);
+
+  // Buscar padrões recorrentes
+  const recorrentes = await db.getAllAsync<any>('SELECT * FROM horarios_recorrentes');
+  // Buscar aulas materializadas
+  const aulas = await db.getAllAsync<any>('SELECT * FROM aulas');
+
+  console.log('--- LOG DE DIAS DO CALENDÁRIO ---');
+  for (let d = 1; d <= ultimoDia.getDate(); d++) {
+    const data = new Date(ano, mes, d);
+    const dataISO = data.toISOString().slice(0, 10);
+    const diaSemana = data.getDay();
+    const temAula = aulas.some(a => a.data_aula === dataISO);
+    // Padrões recorrentes para esse dia da semana
+    const recorrentesDia = recorrentes.filter(r => Number(r.dia_semana) === diaSemana);
+    console.log(
+      `Dia: ${dataISO} (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][diaSemana]}) | Tem aula: ${temAula ? 'SIM' : 'NÃO'} | Padrão recorrente: ${recorrentesDia.length > 0 ? 'SIM' : 'NÃO'} | IDs padrões: [${recorrentesDia.map(r => r.id).join(', ')}]`
+    );
+  }
+  Alert.alert('Log gerado no console!');
+}
 
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
@@ -179,7 +208,7 @@ export default function ConfiguracoesScreen() {
   const handleLimpezaEmergencia = () => {
     Alert.alert(
       "🚨 LIMPEZA DE EMERGÊNCIA (APOCALIPSE)",
-      "ATENÇÃO: Isso irá executar todas as limpezas possíveis: aulas duplicadas, RRULEs, recorrências e avulsas. O banco de aulas ficará praticamente vazio. Tem certeza que deseja continuar?",
+      "ATENÇÃO: Isso irá remover absolutamente TODAS as aulas e TODOS os padrões recorrentes do banco. O banco ficará vazio para recomeçar do zero. Tem certeza que deseja continuar?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -187,17 +216,10 @@ export default function ConfiguracoesScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              let log = '';
-              const duplicadas = await limparAulasDuplicadas();
-              log += `🧹 Duplicadas limpas: ${duplicadas || 'ok'}\n`;
-              const rrules = await limparTodasRRules();
-              log += `🧹 RRULEs limpas: ${rrules}\n`;
-              const { limpas, deletadas } = await limparRecorrentesCompleto();
-              log += `🧹 Limpeza completa: ${limpas} RRULEs limpas, ${deletadas} recorrentes deletadas\n`;
-              const avulsas = await deletarTodasAulasAvulsas();
-              log += `🗑️ Aulas avulsas deletadas: ${avulsas}\n`;
+              const removidas = await limparTodasAulas();
+              const padroesRemovidos = await limparTodosHorariosRecorrentes();
               await carregarAulas();
-              Alert.alert("💥 APOCALIPSE CONCLUÍDA", log);
+              Alert.alert("💥 APOCALIPSE CONCLUÍDA", `Removidas ${removidas} aulas e ${padroesRemovidos} padrões recorrentes do banco!`);
             } catch (error) {
               Alert.alert("❌ Erro", "Erro na limpeza apocalipse: " + error);
             }
@@ -262,9 +284,9 @@ export default function ConfiguracoesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { limpas, deletadas } = await limparRecorrentesCompleto();
+              const { deletadas } = await limparRecorrentesCompleto();
               await carregarAulas(); // Garante atualização da store
-              Alert.alert('✅ Limpeza Completa', `RRULE limpas em ${limpas} aulas.\n${deletadas} aulas recorrentes deletadas!`);
+              Alert.alert('✅ Limpeza Completa', `${deletadas} aulas recorrentes deletadas!`);
             } catch (error) {
               Alert.alert('❌ Erro', 'Erro na limpeza completa: ' + error);
             }
@@ -313,29 +335,6 @@ export default function ConfiguracoesScreen() {
               Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas sobrescritas do banco!`);
             } catch (error) {
               Alert.alert('❌ Erro', 'Erro ao deletar aulas sobrescritas: ' + error);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDeletarAulasCanceladas = () => {
-    Alert.alert(
-      'Deletar TODAS as Aulas Canceladas',
-      'Isso irá remover todas as aulas canceladas do banco. As demais aulas serão mantidas. Continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'DELETAR CANCELADAS',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const removidas = await deletarTodasAulasCanceladas();
-              await carregarAulas();
-              Alert.alert('✅ Limpeza Concluída', `Removidas ${removidas} aulas canceladas do banco!`);
-            } catch (error) {
-              Alert.alert('❌ Erro', 'Erro ao deletar aulas canceladas: ' + error);
             }
           },
         },
@@ -396,7 +395,7 @@ export default function ConfiguracoesScreen() {
   });
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
       <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
 
       <View style={styles.buttonsRow}>
@@ -463,9 +462,6 @@ export default function ConfiguracoesScreen() {
         <View style={styles.buttonWrapper}>
           <Button title="🗑️ Deletar TODAS as Aulas Sobrescritas" color="#607D8B" onPress={handleDeletarAulasSobrescritas} />
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🗑️ Deletar TODAS as Aulas Canceladas" color="#9E9E9E" onPress={handleDeletarAulasCanceladas} />
-        </View>
       </View>
 
       <View style={styles.buttonsRow}>
@@ -492,6 +488,10 @@ export default function ConfiguracoesScreen() {
           <Button title="+" onPress={() => handleChangeLookAhead(lookAheadMeses + 1)} />
         </View>
       </View>
-    </View>
+
+      <View style={{ marginVertical: 10 }}>
+        <Button title="Log de Dias/Aulas Recorrentes (Console)" color="#1976D2" onPress={logDiasAulasRecorrentes} />
+      </View>
+    </ScrollView>
   );
 }

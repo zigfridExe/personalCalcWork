@@ -752,14 +752,14 @@ export const limparTodasRRules = async () => {
 };
 
 /**
- * Deleta todas as aulas recorrentes (tipo_aula = 'RECORRENTE') do banco.
+ * Deleta todas as aulas recorrentes (tipo_aula = 'RECORRENTE_GERADA') do banco.
  * Retorna o número de aulas deletadas.
  */
 export const deletarTodasAulasRecorrentes = async () => {
   const db = await getDatabase();
   try {
     console.log('🗑️ Deletando todas as aulas recorrentes...');
-    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
+    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE_GERADA';");
     console.log(`✅ ${result.changes} aulas recorrentes deletadas!`);
     return result.changes;
   } catch (error) {
@@ -772,10 +772,10 @@ export const deletarTodasAulasRecorrentes = async () => {
  * Limpa RRULEs e deleta todas as aulas recorrentes (debug completo de recorrência)
  */
 export const limparRecorrentesCompleto = async () => {
-  const limpas = await limparTodasRRules();
+  // Remove apenas aulas do tipo 'RECORRENTE_GERADA'
   const deletadas = await deletarTodasAulasRecorrentes();
-  console.log(`🧹 Limpeza completa: ${limpas} RRULEs limpas, ${deletadas} recorrentes deletadas.`);
-  return { limpas, deletadas };
+  console.log(`🧹 Limpeza completa: ${deletadas} recorrentes deletadas.`);
+  return { deletadas };
 }; 
 
 /**
@@ -854,4 +854,37 @@ export const migrarBancoCalendario = async () => {
       FOREIGN KEY (horario_recorrente_id) REFERENCES horarios_recorrentes(id) ON DELETE SET NULL
     );
   `);
+}; 
+
+// MIGRAÇÃO: Criação da tabela horarios_recorrentes se não existir
+export const migrarHorariosRecorrentes = async () => {
+  const db = await getDatabase();
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS horarios_recorrentes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      aluno_id INTEGER NOT NULL,
+      dia_semana INTEGER NOT NULL,
+      hora_inicio TEXT NOT NULL,
+      duracao_minutos INTEGER NOT NULL,
+      data_inicio_vigencia TEXT,
+      data_fim_vigencia TEXT,
+      FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
+    );
+  `);
+}; 
+
+/**
+ * Remove todos os padrões recorrentes (horarios_recorrentes) do banco
+ */
+export const limparTodosHorariosRecorrentes = async () => {
+  const db = await getDatabase();
+  try {
+    console.log('🧹 Limpando TODOS os padrões recorrentes (horarios_recorrentes)...');
+    const result = await db.runAsync('DELETE FROM horarios_recorrentes;');
+    console.log(`✅ Removidos ${result.changes} padrões recorrentes do banco!`);
+    return result.changes;
+  } catch (error) {
+    console.error('❌ Erro ao limpar padrões recorrentes:', error);
+    throw error;
+  }
 }; 

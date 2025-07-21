@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import { gerarAulasRecorrentesParaPeriodo } from '../../utils/recorrenciaUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AulaCard from '../../components/AulaCard';
+import { migrarHorariosRecorrentes } from '../../utils/databaseUtils';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -88,30 +90,46 @@ export default function CalendarioScreen() {
   }
 
   // Geração automática de recorrentes conforme look-ahead
-  useEffect(() => {
-    setLoading(true);
-    const gerarComLookAhead = async () => {
-      const hoje = new Date();
-      let lookAheadMeses = 1;
-      try {
-        const val = await AsyncStorage.getItem('lookAheadMeses');
-        if (val) lookAheadMeses = Number(val);
-      } catch {}
-      const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      const fim = new Date(hoje.getFullYear(), hoje.getMonth() + lookAheadMeses, 0);
-      await gerarAulasRecorrentesParaPeriodo(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
-      await carregarAulas(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
-      setLoading(false);
-    };
-    gerarComLookAhead();
-  }, [carregarAulas]);
+  useFocusEffect(
+    React.useCallback(() => {
+      migrarHorariosRecorrentes();
+      setLoading(true);
+      const gerarComLookAhead = async () => {
+        try {
+          const hoje = new Date();
+          let lookAheadMeses = 1;
+          try {
+            const val = await AsyncStorage.getItem('lookAheadMeses');
+            if (val) lookAheadMeses = Number(val);
+          } catch {}
+          const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+          const fim = new Date(hoje.getFullYear(), hoje.getMonth() + lookAheadMeses, 0);
+          await gerarAulasRecorrentesParaPeriodo(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
+          await carregarAulas(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
+        } catch (e) {
+          console.error('Erro ao carregar aulas:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      gerarComLookAhead();
+    }, [carregarAulas])
+  );
 
   return (
     <View style={styles.container}>
       <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
-        <Link href="/calendario/nova" asChild>
-          <Button title="Adicionar Aula" color="#1976D2" />
-        </Link>
+        <View style={{ width: '95%', backgroundColor: '#fff', borderRadius: 8, padding: 12, alignItems: 'center', elevation: 2, marginBottom: 8 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Nova Aula</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
+            <Link href="/calendario/nova" asChild>
+              <Button title="+ Avulsa" color="#4CAF50" />
+            </Link>
+            <Link href="/calendario/nova-recorrente" asChild>
+              <Button title="+ Recorrente" color="#1976D2" />
+            </Link>
+          </View>
+        </View>
       </View>
       <Text style={styles.title}>Calendário de Aulas</Text>
       <Calendar
@@ -136,32 +154,11 @@ export default function CalendarioScreen() {
           data={aulasDoDia}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => (
-            <View style={styles.aulaCard}>
-              <Text style={styles.aulaHora}><Text style={{fontWeight:'bold'}}>Horário:</Text> {item.hora_inicio} ({item.duracao_minutos}min)</Text>
-              <Text style={styles.aulaAluno}><Text style={{fontWeight:'bold'}}>Aluno:</Text> {item.aluno_nome || 'Aluno'}</Text>
-              <Text style={[styles.aulaTipo, {
-                color:
-                  item.tipo_aula === 'RECORRENTE_GERADA' ? '#1976D2' :
-                  item.tipo_aula === 'AVULSA' ? '#4CAF50' :
-                  item.tipo_aula === 'EXCECAO_HORARIO' ? '#FF9800' :
-                  item.tipo_aula === 'EXCECAO_CANCELAMENTO' ? '#F44336' : '#888',
-                fontWeight: 'bold'
-              }]}
-              >
-                {item.tipo_aula === 'RECORRENTE_GERADA' && 'Recorrente'}
-                {item.tipo_aula === 'AVULSA' && 'Avulsa'}
-                {item.tipo_aula === 'EXCECAO_HORARIO' && 'Exceção de Horário'}
-                {item.tipo_aula === 'EXCECAO_CANCELAMENTO' && 'Exceção de Cancelamento'}
-              </Text>
-              <Text style={styles.aulaStatus}><Text style={{fontWeight:'bold'}}>Status:</Text> {item.presenca === 1 ? 'Presente' : item.presenca === 2 ? 'Faltou' : item.presenca === 3 ? 'Cancelada' : 'Agendada'}</Text>
-              {item.observacoes ? <Text style={styles.aulaObs}><Text style={{fontWeight:'bold'}}>Observações:</Text> {item.observacoes}</Text> : null}
-              <View style={styles.aulaButtons}>
-                <Button title="Presença" color="#4CAF50" onPress={() => marcarPresencaAula(item, 1)} />
-                <Button title="Falta" color="#FF9800" onPress={() => marcarPresencaAula(item, 2)} />
-                <Button title="Cancelar" color="#F44336" onPress={() => marcarPresencaAula(item, 3)} />
-                <Button title="Apagar" color="#B71C1C" onPress={() => apagarAula(item)} />
-              </View>
-            </View>
+            <AulaCard
+              aula={item}
+              onMarcarPresenca={marcarPresencaAula}
+              onApagar={apagarAula}
+            />
           )}
           style={{ width: '100%' }}
           ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhuma aula agendada.</Text>}
