@@ -30,31 +30,38 @@ export default function ModalScreen() {
   );
 }
 
+
+import { CARD, INPUT, AVATAR, FONT, SPACING } from '../styles/AppStyles';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: SPACING.padding.card,
+    backgroundColor: CARD.backgroundColor,
   },
   title: {
-    fontSize: 20,
+    fontSize: FONT.sizes.h2,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: SPACING.margin.card,
+    color: '#212121',
   },
   input: {
     width: '80%',
     height: 40,
-    borderColor: 'gray',
+    borderColor: INPUT.borderColor,
     borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    marginBottom: SPACING.gap.medium,
+    paddingHorizontal: INPUT.padding,
+    borderRadius: INPUT.borderRadius,
+    backgroundColor: INPUT.backgroundColor,
   },
   imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
-    marginBottom: 20,
+    width: AVATAR.size,
+    height: AVATAR.size,
+    borderRadius: AVATAR.borderRadius,
+    marginTop: SPACING.gap.small,
+    marginBottom: SPACING.gap.medium,
   },
 });
