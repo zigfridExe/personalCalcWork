@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import React, { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
+import indexStyles from '../../styles/indexStyles';
 
 export default function TabOneScreen() {
   useEffect(() => {
@@ -23,6 +24,8 @@ export default function TabOneScreen() {
   }, []);
 
   return (
-    <Text>SQLite integrado! Veja o console para teste de banco.</Text>
+    <View style={indexStyles.container}>
+      <Text style={indexStyles.text}>SQLite integrado! Veja o console para teste de banco.</Text>
+    </View>
   );
 } 

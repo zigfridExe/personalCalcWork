@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Switch, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
-// Remover importação e uso de RRule
-// Ajustar estados e selects para não usar mais 'RECORRENTE'
-// Usar apenas os tipos: 'RECORRENTE_GERADA', 'AVULSA', 'EXCECAO_HORARIO', 'EXCECAO_CANCELAMENTO'
-// Remover toda lógica de manipulação de rrule
-// Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
+import novaAulaStyles from '../../styles/novaAulaStyles';
 
 // Funções utilitárias para data/hora
 function formatHora(hora: string) {
@@ -56,7 +52,6 @@ export default function NovaAulaScreen() {
   const { adicionarAula } = useAulasStore();
   const { alunos } = useAlunosStore();
   const [alunoId, setAlunoId] = useState<number | null>(alunos[0]?.id || null);
-  // Corrigido: inicializa a data com o horário local, evitando problemas de fuso horário/UTC
   const hoje = new Date();
   const [data, setData] = useState(
     maskDataBR(
@@ -69,19 +64,14 @@ export default function NovaAulaScreen() {
   const [duracao, setDuracao] = useState('60');
   const [descricao, setDescricao] = useState('');
   const [presenca, setPresenca] = useState(false);
-  // Adicionar estado para tipo de aula
   const [tipoAula, setTipoAula] = useState<'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO'>('AVULSA');
-  // Remover estado 'diasSemana'
-  // const [diasSemana, setDiasSemana] = useState<number[]>([]);
-  // Remover estado 'dataInicioRecorrente'
-  // const [dataInicioRecorrente, setDataInicioRecorrente] = useState(maskDataBR(String(hoje.getDate()).padStart(2, '0') + String(hoje.getMonth() + 1).padStart(2, '0') + String(hoje.getFullYear())));
 
   const handleSalvar = async () => {
     if (!alunoId || !data || !hora || !duracao) {
       Alert.alert('Preencha todos os campos!');
       return;
     }
-    if (!isDataValidaBR(data)) { // Ajustado para usar apenas 'data'
+    if (!isDataValidaBR(data)) {
       Alert.alert('Data inválida! Use o formato DD/MM/AAAA.');
       return;
     }
@@ -89,8 +79,6 @@ export default function NovaAulaScreen() {
       Alert.alert('Horário inválido! Use o formato HH:MM.');
       return;
     }
-    // Remover toda lógica de rrule e tipo_aula = 'RECORRENTE'
-    // Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
     await adicionarAula({
       aluno_id: alunoId,
       data_aula: formatDataISO(data),
@@ -105,117 +93,76 @@ export default function NovaAulaScreen() {
     router.back();
   };
 
-  // Remover handleToggleDia
-  // const handleToggleDia = (dia: number) => {
-  //   setDiasSemana(prev => prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]);
-  // };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adicionar Nova Aula</Text>
-      <Text style={styles.label}>Aluno</Text>
-      <View style={styles.pickerWrapper}>
+    <View style={novaAulaStyles.container}>
+      <Text style={novaAulaStyles.title}>Adicionar Nova Aula</Text>
+      <Text style={novaAulaStyles.label}>Aluno</Text>
+      <View style={novaAulaStyles.pickerWrapper}>
         <Picker
           selectedValue={alunoId}
           onValueChange={itemValue => setAlunoId(itemValue)}
-          style={styles.picker}
-          itemStyle={styles.pickerItem}
+          style={novaAulaStyles.picker}
+          itemStyle={novaAulaStyles.pickerItem}
         >
           {alunos.map(aluno => (
             <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} />
           ))}
         </Picker>
       </View>
-      <Text style={styles.label}>Tipo de Aula</Text>
-      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+      <Text style={novaAulaStyles.label}>Tipo de Aula</Text>
+      <View style={novaAulaStyles.tipoBtnContainer}>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'AVULSA' && styles.tipoBtnAtivo]}
+          style={[novaAulaStyles.tipoBtn, tipoAula === 'AVULSA' && novaAulaStyles.tipoBtnAtivo]}
           onPress={() => setTipoAula('AVULSA')}
         >
-          <Text style={tipoAula === 'AVULSA' ? { color: '#fff' } : {}}>Avulsa</Text>
+          <Text style={tipoAula === 'AVULSA' ? novaAulaStyles.tipoBtnTextAtivo : novaAulaStyles.tipoBtnTextInativo}>Avulsa</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnAtivo]}
+          style={[novaAulaStyles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && novaAulaStyles.tipoBtnAtivo]}
           onPress={() => setTipoAula('EXCECAO_HORARIO')}
         >
-          <Text style={tipoAula === 'EXCECAO_HORARIO' ? { color: '#fff' } : {}}>Exceção de Horário</Text>
+          <Text style={tipoAula === 'EXCECAO_HORARIO' ? novaAulaStyles.tipoBtnTextAtivo : novaAulaStyles.tipoBtnTextInativo}>Exceção de Horário</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'EXCECAO_CANCELAMENTO' && styles.tipoBtnAtivo]}
+          style={[novaAulaStyles.tipoBtn, tipoAula === 'EXCECAO_CANCELAMENTO' && novaAulaStyles.tipoBtnAtivo]}
           onPress={() => setTipoAula('EXCECAO_CANCELAMENTO')}
         >
-          <Text style={tipoAula === 'EXCECAO_CANCELAMENTO' ? { color: '#fff' } : {}}>Exceção de Cancelamento</Text>
+          <Text style={tipoAula === 'EXCECAO_CANCELAMENTO' ? novaAulaStyles.tipoBtnTextAtivo : novaAulaStyles.tipoBtnTextInativo}>Exceção de Cancelamento</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.label}>Data</Text>
+      <Text style={novaAulaStyles.label}>Data</Text>
       <TextInput
-        style={[
-          styles.input,
-          // Remover estilo inputDisabled
-          // tipoAula === 'RECORRENTE' && styles.inputDisabled
-        ]}
+        style={novaAulaStyles.input}
         placeholder="DD/MM/AAAA"
         value={data}
         onChangeText={t => setData(maskDataBR(t))}
         maxLength={10}
-        // Remover prop editable
-        // editable={tipoAula !== 'RECORRENTE'}
       />
-      {/* Remover seção de data inicio recorrente */}
-      {/* {tipoAula === 'RECORRENTE' && (
-        <>
-          <Text style={styles.label}>A partir de qual data?</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="DD/MM/AAAA"
-            value={dataInicioRecorrente}
-            onChangeText={t => setDataInicioRecorrente(maskDataBR(t))}
-            maxLength={10}
-          />
-        </>
-      )} */}
-      <Text style={styles.label}>Hora</Text>
+      <Text style={novaAulaStyles.label}>Hora</Text>
       <TextInput
-        style={styles.input}
+        style={novaAulaStyles.input}
         placeholder="HH:MM"
         value={hora}
         onChangeText={t => setHora(formatHora(t))}
         keyboardType="default"
         maxLength={5}
       />
-      <Text style={styles.label}>Duração (minutos)</Text>
+      <Text style={novaAulaStyles.label}>Duração (minutos)</Text>
       <TextInput
-        style={styles.input}
+        style={novaAulaStyles.input}
         placeholder="60"
         value={duracao}
         onChangeText={t => setDuracao(t.replace(/\D/g, ''))}
         keyboardType="numeric"
         maxLength={3}
       />
-      <Text style={styles.label}>Observações</Text>
+      <Text style={novaAulaStyles.label}>Observações</Text>
       <TextInput
-        style={styles.input}
+        style={novaAulaStyles.input}
         placeholder="Observações da Aula"
         value={descricao}
         onChangeText={setDescricao}
       />
-      {/* Remover seção de tipo de aula */}
-      {/* {tipoAula === 'RECORRENTE' && (
-        <View style={styles.diasSemanaContainer}>
-          <Text style={styles.label}>Dias da Semana</Text>
-          <View style={styles.diasSemanaRow}>
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dia, idx) => (
-              <TouchableOpacity
-                key={dia}
-                style={[styles.diaBtn, diasSemana.includes(idx) && styles.diaBtnAtivo]}
-                onPress={() => handleToggleDia(idx)}
-              >
-                <Text style={diasSemana.includes(idx) ? { color: '#fff' } : {}}>{dia}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )} */}
       <Button title="Salvar" onPress={handleSalvar} color="#4CAF50" />
     </View>
   );

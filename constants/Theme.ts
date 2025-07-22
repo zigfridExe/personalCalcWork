@@ -2,12 +2,32 @@
 // Cores, tipografia e estilos base
 
 export const COLORS = {
+  // Cores principais
   primary: '#FFB800', // amarelo
   secondary: '#232323', // cinza escuro
   tertiary: '#232A3D', // azul escuro
   background: '#232323',
   white: '#FFFFFF',
+  
+  // Tons de cinza
   grayLight: '#F2F2F2',
+  gray: '#CCCCCC',
+  grayDark: '#666666',
+  
+  // Cores semânticas
+  success: '#4CAF50', // verde
+  error: '#FF4444',   // vermelho
+  warning: '#FF9800', // laranja
+  info: '#2196F3',    // azul
+  
+  // Cores de texto
+  text: '#FFFFFF',
+  textSecondary: '#CCCCCC',
+  textTertiary: '#999999',
+  
+  // Cores de fundo
+  backgroundLight: '#2D2D2D',
+  backgroundDark: '#1A1A1A',
 };
 
 export const FONT_FAMILY = {

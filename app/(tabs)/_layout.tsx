@@ -15,31 +15,67 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: '#232323', // Cor de fundo escura da barra de navegação
+          borderTopWidth: 0,
+          elevation: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginBottom: 4,
+        },
+        headerStyle: {
+          backgroundColor: '#232323', // Cor de fundo do cabeçalho
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+        },
+        headerTintColor: '#fff', // Cor do texto do cabeçalho
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
       }}>
       <Tabs.Screen
         name="alunos"
         options={{
           title: 'Alunos',
-          tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon 
+              name="users" 
+              color={focused ? '#FFB800' : '#888888'} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendario"
         options={{
           title: 'Calendário',
-          tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon 
+              name="calendar" 
+              color={focused ? '#FFB800' : '#888888'} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="configuracoes"
         options={{
           title: 'Configurações',
-          tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon 
+              name="cog" 
+              color={focused ? '#FFB800' : '#888888'} 
+            />
+          ),
         }}
       />
     </Tabs>

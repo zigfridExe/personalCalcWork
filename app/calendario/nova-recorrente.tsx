@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, Alert, TouchableOpacity } from 'react-native';
 import useAlunosStore from '../../store/useAlunosStore';
 import { getDatabase } from '../../utils/databaseUtils';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
+import novaRecorrenteStyles from '../../styles/novaRecorrenteStyles';
 
 const diasSemanaLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -102,62 +103,62 @@ export default function NovaAulaRecorrenteScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Nova Aula Recorrente</Text>
-      <Text style={styles.label}>Aluno</Text>
-      <View style={styles.pickerWrapper}>
+    <View style={novaRecorrenteStyles.container}>
+      <Text style={novaRecorrenteStyles.title}>Nova Aula Recorrente</Text>
+      <Text style={novaRecorrenteStyles.label}>Aluno</Text>
+      <View style={novaRecorrenteStyles.pickerWrapper}>
         <Picker
           selectedValue={alunoId}
           onValueChange={itemValue => setAlunoId(itemValue)}
-          style={styles.picker}
-          itemStyle={styles.pickerItem}
+          style={novaRecorrenteStyles.picker}
+          itemStyle={novaRecorrenteStyles.pickerItem}
         >
           {alunos.map(aluno => (
             <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} />
           ))}
         </Picker>
       </View>
-      <Text style={styles.label}>Dias da Semana</Text>
-      <View style={styles.diasSemanaRow}>
+      <Text style={novaRecorrenteStyles.label}>Dias da Semana</Text>
+      <View style={novaRecorrenteStyles.diasSemanaRow}>
         {diasSemanaLabels.map((dia, idx) => (
           <TouchableOpacity
             key={dia}
-            style={[styles.diaBtn, diasSemana.includes(idx) && styles.diaBtnAtivo]}
+            style={[novaRecorrenteStyles.diaBtn, diasSemana.includes(idx) && novaRecorrenteStyles.diaBtnAtivo]}
             onPress={() => handleToggleDia(idx)}
           >
-            <Text style={diasSemana.includes(idx) ? { color: '#fff' } : {}}>{dia}</Text>
+            <Text style={diasSemana.includes(idx) ? novaRecorrenteStyles.diaBtnTextAtivo : novaRecorrenteStyles.diaBtnTextInativo}>{dia}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={styles.label}>Hora de Início</Text>
+      <Text style={novaRecorrenteStyles.label}>Hora de Início</Text>
       <TextInput
-        style={styles.input}
+        style={novaRecorrenteStyles.input}
         placeholder="HH:MM"
         value={hora}
         onChangeText={t => setHora(formatHora(t))}
         keyboardType="default"
         maxLength={5}
       />
-      <Text style={styles.label}>Duração (minutos)</Text>
+      <Text style={novaRecorrenteStyles.label}>Duração (minutos)</Text>
       <TextInput
-        style={styles.input}
+        style={novaRecorrenteStyles.input}
         placeholder="60"
         value={duracao}
         onChangeText={t => setDuracao(t.replace(/\D/g, ''))}
         keyboardType="numeric"
         maxLength={3}
       />
-      <Text style={styles.label}>Data de Início</Text>
+      <Text style={novaRecorrenteStyles.label}>Data de Início</Text>
       <TextInput
-        style={styles.input}
+        style={novaRecorrenteStyles.input}
         placeholder="DD/MM/AAAA"
         value={dataInicio}
         onChangeText={t => setDataInicio(maskDataBR(t))}
         maxLength={10}
       />
-      <Text style={styles.label}>Data de Fim (opcional)</Text>
+      <Text style={novaRecorrenteStyles.label}>Data de Fim (opcional)</Text>
       <TextInput
-        style={styles.input}
+        style={novaRecorrenteStyles.input}
         placeholder="DD/MM/AAAA"
         value={dataFim}
         onChangeText={t => setDataFim(maskDataBR(t))}
@@ -166,88 +167,4 @@ export default function NovaAulaRecorrenteScreen() {
       <Button title="Salvar" onPress={handleSalvar} color="#1976D2" />
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  label: {
-    alignSelf: 'flex-start',
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 2,
-  },
-  input: {
-    width: '95%',
-    height: 48,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    fontSize: 16,
-  },
-  pickerWrapper: {
-    width: '95%',
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 15,
-  },
-  picker: {
-    width: '100%',
-    height: 48,
-    justifyContent: 'center',
-  },
-  pickerItem: {
-    fontSize: 18,
-    height: 48,
-    textAlign: 'left',
-  },
-  diasSemanaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    marginBottom: 15,
-    width: '95%',
-  },
-  diaBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: '#eee',
-    marginHorizontal: 2,
-  },
-  diaBtnAtivo: {
-    backgroundColor: '#1976D2',
-  },
-  alunoDisplay: {
-    width: '95%',
-    minHeight: 40,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingHorizontal: 12,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  alunoNome: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#222',
-  },
-}); 
+} 

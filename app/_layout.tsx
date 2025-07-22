@@ -47,12 +47,57 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  
+  // Configuração personalizada do tema
+  const theme = colorScheme === 'dark' ? {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: '#FFB800', // Cor primária do tema (amarelo)
+      background: '#232323', // Cor de fundo escura
+      card: '#232323', // Cor do cabeçalho
+      text: '#FFFFFF', // Cor do texto
+      border: 'transparent', // Sem bordas
+    },
+  } : {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: '#FFB800', // Cor primária do tema (amarelo)
+      background: '#232323', // Cor de fundo escura
+      card: '#232323', // Cor do cabeçalho
+      text: '#FFFFFF', // Cor do texto
+      border: 'transparent', // Sem bordas
+    },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={theme}>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#232323',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          contentStyle: {
+            backgroundColor: '#232323',
+          },
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen 
+          name="modal" 
+          options={{ 
+            presentation: 'modal',
+            headerStyle: {
+              backgroundColor: '#232323',
+            },
+            headerTintColor: '#fff',
+          }} 
+        />
       </Stack>
     </ThemeProvider>
   );
