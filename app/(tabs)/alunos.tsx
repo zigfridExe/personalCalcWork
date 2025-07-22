@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, Alert, Image, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Alert, Image, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 import { format } from 'date-fns';
-import AppStyles from '../../constants/AppStyles';
+import globalStyles from '../../styles/globalStyles';
+import alunosStyles from '../../styles/alunosStyles';
 
 // Função para formatar telefone
 function formatarTelefone(telefone: string) {
@@ -20,7 +21,7 @@ function formatarTelefone(telefone: string) {
 }
 
 export default function AlunosScreen() {
-  const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
+  const { alunos, initializeDatabase, deleteAluno } = useAlunosStore();
 
   useEffect(() => {
     initializeDatabase();
@@ -73,183 +74,75 @@ export default function AlunosScreen() {
   };
 
   return (
-    <View style={AppStyles.container}>
-      <View style={AppStyles.navbar}>
-        <Text style={AppStyles.navbarTitle}>Alunos</Text>
+    <View style={globalStyles.container}>
+      <View style={globalStyles.navbar}>
+        <Text style={globalStyles.navbarTitle}>Alunos</Text>
       </View>
-      <TouchableOpacity style={AppStyles.button} activeOpacity={0.8}>
-        <Link href="/modal" style={AppStyles.buttonText}>Cadastrar Novo Aluno</Link>
+      <TouchableOpacity style={globalStyles.button} activeOpacity={0.8}>
+        <Link href="/modal" style={globalStyles.buttonText}>Cadastrar Novo Aluno</Link>
       </TouchableOpacity>
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={AppStyles.card}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <View style={globalStyles.card}>
+            <View style={alunosStyles.cardContent}>
               {item.fotoUri ? (
-                <Image source={{ uri: item.fotoUri }} style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: AppStyles.card.backgroundColor }} />
+                <Image source={{ uri: item.fotoUri }} style={alunosStyles.profileImage} />
               ) : (
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F2F2F2', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: AppStyles.card.backgroundColor }}>
-                  <Text style={{ fontSize: 24, fontFamily: 'Montserrat-Bold', color: '#232323' }}>{item.nome.charAt(0).toUpperCase()}</Text>
+                <View style={alunosStyles.profileInitialContainer}>
+                  <Text style={alunosStyles.profileInitialText}>{item.nome.charAt(0).toUpperCase()}</Text>
                 </View>
               )}
-              <View style={{ flex: 1, marginLeft: 10, marginBottom: 10 }}>
-                <Text style={AppStyles.title}>{item.nome}</Text>
+              <View style={alunosStyles.infoContainer}>
+                <Text style={globalStyles.title}>{item.nome}</Text>
                 {item.data_nascimento && (
-                  <Text style={AppStyles.text}>
+                  <Text style={globalStyles.text}>
                     Data de Nascimento: {item.data_nascimento.length === 10 ? item.data_nascimento : format(new Date(item.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
                   </Text>
                 )}
-                {item.contato && <Text style={AppStyles.text}>Telefone: {formatarTelefone(item.contato)}</Text>}
+                {item.contato && <Text style={globalStyles.text}>Telefone: {formatarTelefone(item.contato)}</Text>}
               </View>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 4, marginBottom: 2 }}>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
+            <View style={alunosStyles.buttonContainer}>
+              <View style={alunosStyles.buttonWrapper}>
                 <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
-                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Fichas</Text></TouchableOpacity>
+                  <TouchableOpacity style={globalStyles.button}><Text style={globalStyles.buttonText}>Fichas</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
+              <View style={alunosStyles.buttonWrapper}>
                 <Link href={`/historico/${item.id}`} asChild>
-                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Histórico</Text></TouchableOpacity>
+                  <TouchableOpacity style={globalStyles.button}><Text style={globalStyles.buttonText}>Histórico</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
+              <View style={alunosStyles.buttonWrapper}>
                 <Link href={`/edit-aluno/${item.id}`} asChild>
-                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Editar</Text></TouchableOpacity>
+                  <TouchableOpacity style={globalStyles.button}><Text style={globalStyles.buttonText}>Editar</Text></TouchableOpacity>
                 </Link>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 4, marginBottom: 2 }}>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
+            <View style={alunosStyles.buttonContainer}>
+              <View style={alunosStyles.buttonWrapper}>
                 <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
-                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Avaliação Física</Text></TouchableOpacity>
+                  <TouchableOpacity style={globalStyles.button}><Text style={globalStyles.buttonText}>Avaliação Física</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
+              <View style={alunosStyles.buttonWrapper}>
                 <Link href={{ pathname: "/aluno/[id]/horarios", params: { id: item.id } }} asChild>
-                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Aulas</Text></TouchableOpacity>
+                  <TouchableOpacity style={globalStyles.button}><Text style={globalStyles.buttonText}>Aulas</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={{ marginHorizontal: 2, flex: 1 }}>
-                <TouchableOpacity style={[AppStyles.button, { backgroundColor: 'red' }]} onPress={() => handleDelete(item.id)}>
-                  <Text style={[AppStyles.buttonText, { color: '#fff' }]}>Excluir</Text>
-                </TouchableOpacity>
+              <View style={alunosStyles.buttonWrapper}>
+                <TouchableOpacity style={alunosStyles.deleteButton} onPress={() => handleDelete(item.id)}>
+                  <Text style={alunosStyles.deleteButtonText}>Excluir</Text></TouchableOpacity>
               </View>
             </View>
           </View>
         )}
-        style={{ width: '100%', marginTop: 0 }}
+        style={alunosStyles.list}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 50,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  list: {
-    width: '100%',
-    marginTop: 20,
-  },
-  alunoContainer: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: '#fff',
-    marginBottom: 10,
-    borderRadius: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  alunoInfo: {
-    flex: 1,
-    marginLeft: 10,
-    marginBottom: 10, // Espaço extra abaixo dos dados do aluno
-  },
-  alunoItem: {
-    fontSize: 18,
-  },
-  alunoDetail: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  alunoImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  alunoImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alunoImagePlaceholderText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  buttonsContainer: {
-    flexDirection: 'column',
-    gap: 8,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'stretch',
-    marginTop: 5,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-    color: 'blue',
-  },
-  cadastrarButton: {
-    backgroundColor: '#1976D2',
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    marginTop: 10,
-    marginBottom: 10,
-    alignSelf: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  cadastrarButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  buttonWrapper: {
-    marginHorizontal: 2,
-    flex: 1,
-  },
-});
+

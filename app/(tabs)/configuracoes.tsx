@@ -1,6 +1,5 @@
-import { Text, View, Button, Alert, StyleSheet } from 'react-native';
+import { Text, View, Button, Alert } from 'react-native';
 import { ScrollView } from 'react-native';
-import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { limparAulasDuplicadas, listarDadosBanco, reiniciarConexaoBanco, testarBanco, regenerarAulasRecorrentes, verificarAulasNoBanco, limparTodasAulasRecorrentes, getDatabase, limparTodasAulas, limparTodasRRules, limparRecorrentesCompleto, deletarTodasAulasAvulsas, deletarTodasAulasSobrescritas, migrarBancoCalendario, limparTodosHorariosRecorrentes } from '../../utils/databaseUtils';
 import useAulasStore from '../../store/useAulasStore';
@@ -9,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import configuracoesStyles from '../../styles/configuracoesStyles';
 
 async function logDiasAulasRecorrentes() {
   const db = await getDatabase();
@@ -375,121 +375,102 @@ export default function ConfiguracoesScreen() {
     Alert.alert('Configuração salva', `Aulas recorrentes serão geradas para os próximos ${novo} meses.`);
   };
 
-  const styles = StyleSheet.create({
-    buttonsRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      width: '100%',
-      marginTop: 8,
-      marginBottom: 8,
-    },
-    buttonWrapper: {
-      marginHorizontal: 4,
-      flex: 1,
-      minWidth: 150,
-      maxWidth: 180,
-      height: 48,
-      justifyContent: 'center',
-    },
-  });
-
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
+    <ScrollView style={configuracoesStyles.container} contentContainerStyle={configuracoesStyles.contentContainer}>
+      <Text style={configuracoesStyles.title}>Configurações</Text>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🔧 Testar Banco" onPress={handleTestarBanco} color="green" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🔄 Reiniciar Conexão" onPress={handleReiniciarConexao} color="teal" />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="👁️ Visualizar Dados do Banco" onPress={handleVisualizarDados} color="blue" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🔍 Verificar Aulas no Banco" onPress={handleVerificarAulasNoBanco} color="navy" />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🧹 Limpar Aulas Duplicadas" onPress={handleLimparAulasDuplicadas} color="orange" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🚨 LIMPEZA DE EMERGÊNCIA" onPress={handleLimpezaEmergencia} color="red" />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🧹 Limpar TODAS as RRULEs" onPress={handleLimparTodasRRules} color="#8e24aa" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🧹 Limpeza Completa de Recorrências" color="#F44336" onPress={handleLimparRecorrentesCompleto} />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
         </View>
-        <View style={styles.buttonWrapper}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🗑️ Deletar TODAS as Aulas Avulsas" color="#FF9800" onPress={handleDeletarAulasAvulsas} />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="🗑️ Deletar TODAS as Aulas Sobrescritas" color="#607D8B" onPress={handleDeletarAulasSobrescritas} />
         </View>
       </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
+      <View style={configuracoesStyles.buttonsRow}>
+        <View style={configuracoesStyles.buttonWrapper}>
           <Button title="️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
         </View>
       </View>
 
-      <View style={{ marginTop: 32 }}>
+      <View style={configuracoesStyles.backupContainer}>
         <Button title="Exportar Backup (.db)" color="#1976D2" onPress={handleExportarBackup} />
-        <View style={{ height: 12 }} />
+        <View style={configuracoesStyles.backupButtonSpacer} />
         <Button title="Importar Backup (.db)" color="#FF9800" onPress={handleImportarBackup} />
       </View>
 
-      <View style={{ marginVertical: 16 }}>
+      <View style={configuracoesStyles.migrationContainer}>
         <Button title="Rodar Migração do Calendário" color="#1976D2" onPress={handleMigrarCalendario} />
       </View>
 
-      <View style={{ marginVertical: 20 }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 6 }}>Período de geração de aulas recorrentes (meses à frente):</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={configuracoesStyles.lookAheadContainer}>
+        <Text style={configuracoesStyles.lookAheadTitle}>Período de geração de aulas recorrentes (meses à frente):</Text>
+        <View style={configuracoesStyles.lookAheadControls}>
           <Button title="-" onPress={() => lookAheadMeses > 1 && handleChangeLookAhead(lookAheadMeses - 1)} />
-          <Text style={{ marginHorizontal: 16, fontSize: 18 }}>{lookAheadMeses}</Text>
+          <Text style={configuracoesStyles.lookAheadValue}>{lookAheadMeses}</Text>
           <Button title="+" onPress={() => handleChangeLookAhead(lookAheadMeses + 1)} />
         </View>
       </View>
 
-      <View style={{ marginVertical: 10 }}>
+      <View style={configuracoesStyles.logButtonContainer}>
         <Button title="Log de Dias/Aulas Recorrentes (Console)" color="#1976D2" onPress={logDiasAulasRecorrentes} />
       </View>
     </ScrollView>

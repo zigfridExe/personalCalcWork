@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import useAulasStore, { Aula } from '../../../store/useAulasStore';
+import horariosStyles from '../../../styles/horariosStyles';
 
 export default function HorariosAlunoScreen() {
   const { id } = useLocalSearchParams();
@@ -93,27 +94,27 @@ export default function HorariosAlunoScreen() {
   }, [aulas, alunoId, hoje]);
 
   if (loading) {
-    return <View style={styles.container}><Text>Carregando aulas...</Text></View>;
+    return <View style={horariosStyles.container}><Text>Carregando aulas...</Text></View>;
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Aulas Ativas (próx. 15 dias)</Text>
-      {aulasAtivas.length === 0 ? <Text style={styles.empty}>Nenhuma aula ativa agendada.</Text> : aulasAtivas.map(a => (
-        <View key={a.data_aula + a.hora_inicio + a.tipo_aula} style={styles.card}>
+    <ScrollView style={horariosStyles.container}>
+      <Text style={horariosStyles.title}>Aulas Ativas (próx. 15 dias)</Text>
+      {aulasAtivas.length === 0 ? <Text style={horariosStyles.empty}>Nenhuma aula ativa agendada.</Text> : aulasAtivas.map(a => (
+        <View key={a.data_aula + a.hora_inicio + a.tipo_aula} style={horariosStyles.card}>
           <Text>{formatarDataBR(a.data_aula)} {a.hora_inicio} - {a.tipo_aula} - Agendada</Text>
         </View>
       ))}
 
-      <Text style={styles.title}>Histórico Completo</Text>
-      {aulasHistorico.length === 0 ? <Text style={styles.empty}>Nenhuma aula no histórico.</Text> : aulasHistorico.map(a => (
-        <View key={a.data_aula + a.hora_inicio + a.tipo_aula} style={styles.card}>
+      <Text style={horariosStyles.title}>Histórico Completo</Text>
+      {aulasHistorico.length === 0 ? <Text style={horariosStyles.empty}>Nenhuma aula no histórico.</Text> : aulasHistorico.map(a => (
+        <View key={a.data_aula + a.hora_inicio + a.tipo_aula} style={horariosStyles.card}>
           <Text>{formatarDataBR(a.data_aula)} {a.hora_inicio} - {a.tipo_aula} - {a.presenca === 1 ? 'Presente' : a.presenca === 2 ? 'Faltou' : a.presenca === 3 ? 'Cancelada' : 'Agendada'}</Text>
         </View>
       ))}
 
-      <Text style={styles.title}>Resumo Anual</Text>
-      <View style={styles.card}>
+      <Text style={horariosStyles.title}>Resumo Anual</Text>
+      <View style={horariosStyles.card}>
         <Text>Presenças: {resumo.presencas}</Text>
         <Text>Faltas: {resumo.faltas}</Text>
         <Text>Canceladas: {resumo.canceladas}</Text>
@@ -121,11 +122,4 @@ export default function HorariosAlunoScreen() {
       </View>
     </ScrollView>
   );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', padding: 16 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 8, elevation: 1 },
-  empty: { color: '#888', marginBottom: 8 },
-}); 
+} 

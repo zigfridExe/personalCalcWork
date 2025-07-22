@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Button, ActivityIndicator } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link, useFocusEffect } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
@@ -7,6 +7,7 @@ import { gerarAulasRecorrentesParaPeriodo } from '../../utils/recorrenciaUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AulaCard from '../../components/AulaCard';
 import { migrarHorariosRecorrentes } from '../../utils/databaseUtils';
+import calendarioStyles from '../../styles/calendarioStyles';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -117,11 +118,11 @@ export default function CalendarioScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
-        <View style={{ width: '95%', backgroundColor: '#fff', borderRadius: 8, padding: 12, alignItems: 'center', elevation: 2, marginBottom: 8 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Nova Aula</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
+    <View style={calendarioStyles.container}>
+      <View style={calendarioStyles.novaAulaContainer}>
+        <View style={calendarioStyles.novaAulaBox}>
+          <Text style={calendarioStyles.novaAulaTitle}>Nova Aula</Text>
+          <View style={calendarioStyles.novaAulaButtons}>
             <Link href="/calendario/nova" asChild>
               <Button title="+ Avulsa" color="#4CAF50" />
             </Link>
@@ -131,7 +132,7 @@ export default function CalendarioScreen() {
           </View>
         </View>
       </View>
-      <Text style={styles.title}>Calendário de Aulas</Text>
+      <Text style={calendarioStyles.title}>Calendário de Aulas</Text>
       <Calendar
         markedDates={markedDates}
         onDayPress={day => setDataSelecionada(day.dateString)}
@@ -142,13 +143,13 @@ export default function CalendarioScreen() {
           dotColor: '#1976D2',
         }}
       />
-      <Text style={styles.subtitle}>
+      <Text style={calendarioStyles.subtitle}>
         {aulasDoDia.length > 0
           ? `Aulas em ${formatarDataBR(dataSelecionada)}`
           : `Nenhuma aula em ${formatarDataBR(dataSelecionada)}`}
       </Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#1976D2" style={{ marginTop: 20 }} />
+        <ActivityIndicator size="large" color="#1976D2" style={calendarioStyles.loadingIndicator} />
       ) : (
         <FlatList
           data={aulasDoDia}
@@ -160,70 +161,10 @@ export default function CalendarioScreen() {
               onApagar={apagarAula}
             />
           )}
-          style={{ width: '100%' }}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhuma aula agendada.</Text>}
+          style={calendarioStyles.list}
+          ListEmptyComponent={<Text style={calendarioStyles.emptyList}>Nenhuma aula agendada.</Text>}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    paddingTop: 30,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#1976D2',
-    marginVertical: 10,
-  },
-  aulaCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginVertical: 6,
-    marginHorizontal: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  aulaHora: {
-    fontWeight: 'bold',
-    color: '#1976D2',
-    fontSize: 16,
-  },
-  aulaAluno: {
-    fontSize: 15,
-    color: '#333',
-  },
-  aulaTipo: {
-    fontSize: 13,
-    marginTop: 2,
-    marginBottom: 2,
-  },
-  aulaStatus: {
-    fontSize: 13,
-    color: '#4CAF50',
-  },
-  aulaObs: {
-    fontSize: 12,
-    color: '#555',
-    marginTop: 4,
-  },
-  aulaButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
-  },
-});
