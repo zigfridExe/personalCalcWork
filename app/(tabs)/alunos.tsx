@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 import { format } from 'date-fns';
+import AppStyles from '../../constants/AppStyles';
 
 // Função para formatar telefone
 function formatarTelefone(telefone: string) {
@@ -72,73 +73,73 @@ export default function AlunosScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* <Text style={styles.title}>Alunos</Text> */}
-      <TouchableOpacity style={styles.cadastrarButton} activeOpacity={0.8} onPress={() => { /* navegação */ }}>
-        <Link href="/modal" style={styles.cadastrarButtonText}>Cadastrar Novo Aluno</Link>
+    <View style={AppStyles.container}>
+      <View style={AppStyles.navbar}>
+        <Text style={AppStyles.navbarTitle}>Alunos</Text>
+      </View>
+      <TouchableOpacity style={AppStyles.button} activeOpacity={0.8}>
+        <Link href="/modal" style={AppStyles.buttonText}>Cadastrar Novo Aluno</Link>
       </TouchableOpacity>
-      {/* <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" /> */}
-      {/* <Button title="🐛 Debug Fotos" onPress={debugAlunos} color="purple" /> */}
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.alunoContainer}>
-            <View style={styles.infoRow}>
+          <View style={AppStyles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               {item.fotoUri ? (
-                <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />
+                <Image source={{ uri: item.fotoUri }} style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: AppStyles.card.backgroundColor }} />
               ) : (
-                <View style={styles.alunoImagePlaceholder}>
-                  <Text style={styles.alunoImagePlaceholderText}>
-                    {item.nome.charAt(0).toUpperCase()}
-                  </Text>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#F2F2F2', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: AppStyles.card.backgroundColor }}>
+                  <Text style={{ fontSize: 24, fontFamily: 'Montserrat-Bold', color: '#232323' }}>{item.nome.charAt(0).toUpperCase()}</Text>
                 </View>
               )}
-              <View style={styles.alunoInfo}>
-                <Text style={styles.alunoItem}>{item.nome}</Text>
+              <View style={{ flex: 1, marginLeft: 10, marginBottom: 10 }}>
+                <Text style={AppStyles.title}>{item.nome}</Text>
                 {item.data_nascimento && (
-                  <Text style={styles.alunoDetail}>
+                  <Text style={AppStyles.text}>
                     Data de Nascimento: {item.data_nascimento.length === 10 ? item.data_nascimento : format(new Date(item.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
                   </Text>
                 )}
-                {item.contato && <Text style={styles.alunoDetail}>Telefone: {formatarTelefone(item.contato)}</Text>}
+                {item.contato && <Text style={AppStyles.text}>Telefone: {formatarTelefone(item.contato)}</Text>}
               </View>
             </View>
-            <View style={styles.buttonsRow}>
-              <View style={styles.buttonWrapper}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 4, marginBottom: 2 }}>
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
                 <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
-                  <Button title="Fichas" />
+                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Fichas</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={styles.buttonWrapper}>
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
                 <Link href={`/historico/${item.id}`} asChild>
-                  <Button title="Histórico" color="#4CAF50" />
+                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Histórico</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={styles.buttonWrapper}>
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
                 <Link href={`/edit-aluno/${item.id}`} asChild>
-                  <Button title="Editar" />
+                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Editar</Text></TouchableOpacity>
                 </Link>
               </View>
             </View>
-            <View style={styles.buttonsRow}>
-              <View style={styles.buttonWrapper}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 4, marginBottom: 2 }}>
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
                 <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
-                  <Button title="Avaliação Física" color="#2196F3" />
+                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Avaliação Física</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={styles.buttonWrapper}>
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
                 <Link href={{ pathname: "/aluno/[id]/horarios", params: { id: item.id } }} asChild>
-                  <Button title="📚 Aulas" color="#FF9800" />
+                  <TouchableOpacity style={AppStyles.button}><Text style={AppStyles.buttonText}>Aulas</Text></TouchableOpacity>
                 </Link>
               </View>
-              <View style={styles.buttonWrapper}>
-                <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
+              <View style={{ marginHorizontal: 2, flex: 1 }}>
+                <TouchableOpacity style={[AppStyles.button, { backgroundColor: 'red' }]} onPress={() => handleDelete(item.id)}>
+                  <Text style={[AppStyles.buttonText, { color: '#fff' }]}>Excluir</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         )}
-        style={styles.list}
+        style={{ width: '100%', marginTop: 0 }}
       />
     </View>
   );
