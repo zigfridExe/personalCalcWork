@@ -31,8 +31,8 @@
 - [ ] Lembrete de aula (notificações internas para o professor)
 - [ ] Notificação de progresso (alertas de marcos alcançados)
 
-## 5. Avaliação Física Simplificada
-- [x] Tela de cálculo de IMC (salvar resultado no perfil)
+## 5. Avaliação Física Simplificada ✅ CONCLUÍDO
+- [x] Tela de cálculo de IMC (salvar resultado no perfil) - CORRIGIDO
 - [x] Registro de medidas (peso, altura, circunferências)
 - [x] Histórico de medidas
 
@@ -43,11 +43,12 @@
 - [x] Manipulação de recorrências: sobrescrever/cancelar ocorrência individual e toda a série
 - [x] Atualização imediata do calendário após qualquer operação
 - [x] UX moderna e robusta para manipulação de aulas
+- [x] Configuração de quantidade de meses futuros para geração de aulas recorrentes - CORRIGIDO
 
 ## 7. Backup e Restauração de Dados ✅ CONCLUÍDO
-- [x] Opção de backup dos dados do SQLite (exportar arquivo .db)
-- [x] Opção de restauração/importação de backup (com aviso de perda de dados)
-- Backup local, seguro e com feedback claro ao usuário.
+- [x] Opção de backup dos dados do SQLite (exportar arquivo .db) - CORRIGIDO
+- [x] Opção de restauração/importação de backup (com aviso de perda de dados) - CORRIGIDO
+- [x] Backup local, seguro e com feedback claro ao usuário. - CORRIGIDO
 
 ## 8. Robustez e Usabilidade
 - [ ] Implementar testes de unidade e integração

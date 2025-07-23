@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Pressable } from 'react-native';
-import { Link } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { format, differenceInYears, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import alunosStyles from '../styles/alunosStyles';
@@ -102,6 +102,7 @@ const CustomButton = ({ onPress, children, style, textStyle, isDelete = false, d
 };
 
 export default function AlunoCard({ aluno, onDelete }: AlunoCardProps) {
+  const navigation = useNavigation();
   const [isDeleting, setIsDeleting] = useState(false);
   const idade = calcularIdade(aluno.data_nascimento);
   
@@ -146,38 +147,38 @@ export default function AlunoCard({ aluno, onDelete }: AlunoCardProps) {
 
       {/* Primeira linha de botões */}
       <View style={alunosStyles.buttonRow}>
-        <Link href={`/ficha/${aluno.id}/visualizar`} asChild>
-          <CustomButton onPress={() => {}}>
-            Fichas
-          </CustomButton>
-        </Link>
+        <TouchableOpacity onPress={() => navigation.navigate('VisualizarFichaScreen', { id: aluno.id })}>
+  <CustomButton onPress={() => navigation.navigate('VisualizarFichaScreen', { id: aluno.id })}>
+    Fichas
+  </CustomButton>
+</TouchableOpacity>
         
-        <Link href={`/historico/${aluno.id}`} asChild>
-          <CustomButton onPress={() => {}}>
-            Histórico
-          </CustomButton>
-        </Link>
+        <TouchableOpacity onPress={() => navigation.navigate('HistoricoScreen', { alunoId: aluno.id })}>
+  <CustomButton onPress={() => navigation.navigate('HistoricoScreen', { alunoId: aluno.id })}>
+    Histórico
+  </CustomButton>
+</TouchableOpacity>
         
-        <Link href={`/edit-aluno/${aluno.id}`} asChild>
-          <CustomButton onPress={() => {}}>
-            Editar
-          </CustomButton>
-        </Link>
+        <TouchableOpacity onPress={() => navigation.navigate('EditAlunoScreen', { id: aluno.id })}>
+  <CustomButton onPress={() => navigation.navigate('EditAlunoScreen', { id: aluno.id })}>
+    Editar
+  </CustomButton>
+</TouchableOpacity>
       </View>
 
       {/* Segunda linha de botões */}
       <View style={alunosStyles.buttonRow}>
-        <Link href={`/aluno/${aluno.id}/avaliacao`} asChild>
-          <CustomButton onPress={() => {}}>
-            Avaliação Física
-          </CustomButton>
-        </Link>
+        <TouchableOpacity onPress={() => navigation.navigate('AvaliacaoScreen', { id: aluno.id })}>
+  <CustomButton onPress={() => navigation.navigate('AvaliacaoScreen', { id: aluno.id })}>
+    Avaliação Física
+  </CustomButton>
+</TouchableOpacity>
         
-        <Link href="/calendario" asChild>
-          <CustomButton onPress={() => {}}>
-            Aulas
-          </CustomButton>
-        </Link>
+        <TouchableOpacity onPress={() => navigation.navigate('CalendarioScreen')}>
+  <CustomButton onPress={() => navigation.navigate('CalendarioScreen')}>
+    Aulas
+  </CustomButton>
+</TouchableOpacity>
         
         <CustomButton 
           onPress={handleDelete}

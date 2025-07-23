@@ -1,23 +1,21 @@
-import { Link } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Platform } from 'react-native';
 
 export function ExternalLink(
-  props: Omit<React.ComponentProps<typeof Link>, 'href'> & { href: string }
+  props: { href: string; children: React.ReactNode; style?: any; textStyle?: any }
 ) {
+  const navigation = useNavigation();
+
   return (
-    <Link
-      target="_blank"
-      {...props}
-      // @ts-expect-error: External URLs are not typed.
-      href={props.href}
-      onPress={(e) => {
-        if (Platform.OS !== 'web') {
-          // Prevent the default behavior of linking to the default browser on native.
-          e.preventDefault();
-          // Open the link in an in-app browser.
-          WebBrowser.openBrowserAsync(props.href as string);
+    <TouchableOpacity
+      onPress={() => {
+        if (props.href.startsWith('/')) {
+          navigation.navigate(props.href.substring(1));
+        } else {
+          WebBrowser.openBrowserAsync(props.href);
         }
       }}
     />
