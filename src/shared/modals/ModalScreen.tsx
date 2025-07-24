@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { View, Text } from 'react-native';
 import useAlunosStore from '../store/useAlunosStore';
-import AlunoForm from '../components/AlunoForm';
+import { AlunoForm } from '../../domains/aluno/components/AlunoForm';
 
 export default function ModalScreen() {
   const { addAluno } = useAlunosStore();

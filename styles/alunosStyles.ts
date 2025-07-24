@@ -145,6 +145,32 @@ const alunosStyles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#12121A',
   },
+  titulo: {
+    fontSize: 24,
+    fontFamily: FONT_FAMILY.bold,
+    color: COLORS.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  semAlunos: {
+    fontSize: 16,
+    fontFamily: FONT_FAMILY.regular,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 32,
+  },
+  resetButton: {
+    backgroundColor: COLORS.warning,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    color: COLORS.white,
+    fontFamily: FONT_FAMILY.semiBold,
+    fontSize: 14,
+  },
 });
 
 export default alunosStyles;

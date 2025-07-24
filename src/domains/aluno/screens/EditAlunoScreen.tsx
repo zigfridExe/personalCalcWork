@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import useAlunosStore from '../store/useAlunosStore';
-import AlunoForm from '../components/AlunoForm';
+import { AlunoForm } from '../components/AlunoForm';
 
 interface Aluno {
   id: number;

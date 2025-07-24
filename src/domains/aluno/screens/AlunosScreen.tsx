@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, Alert, TouchableOpacity } from 'react-native';
-import useAlunosStore from '../../../store/useAlunosStore';
-import { resetDatabase as resetDB } from '../../../utils/databaseUtils';
-import globalStyles from '../../../styles/globalStyles';
-import alunosStyles from '../../../styles/alunosStyles';
-import AlunoCard from '../../../components/AlunoCard';
+import useAlunosStore from '../store/useAlunosStore';
+import { resetDatabase as resetDB } from '../../../../utils/databaseUtils';
+import globalStyles from '../../../../styles/globalStyles';
+import alunosStyles from '../../../../styles/alunosStyles';
+import AlunoCard from '../../../../components/AlunoCard';
 
 export default function AlunosScreen() {
   const { alunos, initializeDatabase, deleteAluno } = useAlunosStore();
