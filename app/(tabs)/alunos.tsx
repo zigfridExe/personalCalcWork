@@ -1,22 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, Alert, Image, TouchableOpacity } from 'react-native';
+import { View, FlatList, Alert, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
-import { format } from 'date-fns';
-
-// Função para formatar telefone
-function formatarTelefone(telefone: string) {
-  let v = telefone.replace(/\D/g, '');
-  if (v.length > 11) v = v.slice(0, 11);
-  if (v.length > 6) {
-    return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
-  } else if (v.length > 2) {
-    return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
-  } else {
-    return v;
-  }
-}
+import AlunoCard from '../../components/AlunoCard';
+import alunosStyles from '@/styles/alunos.styles';
 
 export default function AlunosScreen() {
   const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
@@ -72,183 +61,63 @@ export default function AlunosScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* <Text style={styles.title}>Alunos</Text> */}
-      <TouchableOpacity style={styles.cadastrarButton} activeOpacity={0.8} onPress={() => { /* navegação */ }}>
-        <Link href="/modal" style={styles.cadastrarButtonText}>Cadastrar Novo Aluno</Link>
-      </TouchableOpacity>
-      {/* <Button title="🔧 Resetar Banco (Debug)" onPress={handleResetDatabase} color="orange" /> */}
-      {/* <Button title="🐛 Debug Fotos" onPress={debugAlunos} color="purple" /> */}
+    <View style={alunosStyles.container}>
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.alunoContainer}>
-            <View style={styles.infoRow}>
-              {item.fotoUri ? (
-                <Image source={{ uri: item.fotoUri }} style={styles.alunoImage} />
-              ) : (
-                <View style={styles.alunoImagePlaceholder}>
-                  <Text style={styles.alunoImagePlaceholderText}>
-                    {item.nome.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.alunoInfo}>
-                <Text style={styles.alunoItem}>{item.nome}</Text>
-                {item.data_nascimento && (
-                  <Text style={styles.alunoDetail}>
-                    Data de Nascimento: {item.data_nascimento.length === 10 ? item.data_nascimento : format(new Date(item.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
-                  </Text>
-                )}
-                {item.contato && <Text style={styles.alunoDetail}>Telefone: {formatarTelefone(item.contato)}</Text>}
-              </View>
-            </View>
-            <View style={styles.buttonsRow}>
-              <View style={styles.buttonWrapper}>
-                <Link href={{ pathname: "/aluno/[id]/fichas", params: { id: item.id } }} asChild>
-                  <Button title="Fichas" />
-                </Link>
-              </View>
-              <View style={styles.buttonWrapper}>
-                <Link href={`/historico/${item.id}`} asChild>
-                  <Button title="Histórico" color="#4CAF50" />
-                </Link>
-              </View>
-              <View style={styles.buttonWrapper}>
-                <Link href={`/edit-aluno/${item.id}`} asChild>
-                  <Button title="Editar" />
-                </Link>
-              </View>
-            </View>
-            <View style={styles.buttonsRow}>
-              <View style={styles.buttonWrapper}>
-                <Link href={{ pathname: "/aluno/[id]/avaliacao", params: { id: item.id } }} asChild>
-                  <Button title="Avaliação Física" color="#2196F3" />
-                </Link>
-              </View>
-              <View style={styles.buttonWrapper}>
-                <Link href={{ pathname: "/aluno/[id]/horarios", params: { id: item.id } }} asChild>
-                  <Button title="📚 Aulas" color="#FF9800" />
-                </Link>
-              </View>
-              <View style={styles.buttonWrapper}>
-                <Button title="Excluir" onPress={() => handleDelete(item.id)} color="red" />
-              </View>
-            </View>
-          </View>
+          <AlunoCard 
+            aluno={item} 
+            onDelete={handleDelete}
+          />
         )}
-        style={styles.list}
+        style={alunosStyles.list}
+        contentContainerStyle={alunosStyles.contentContainer}
+        ListEmptyComponent={
+          <View style={{
+            alignItems: 'center',
+            marginTop: 40,
+            padding: 20,
+          }}>
+            <MaterialIcons name="person-off" size={64} color="#555" />
+            <Text style={alunosStyles.emptyMessage}>
+              Nenhum aluno cadastrado ainda.{'\n'}
+              Clique no botão abaixo para começar.
+            </Text>
+          </View>
+        }
       />
+      
+      <Link href="/modal" asChild>
+        <TouchableOpacity style={alunosStyles.cadastrarButton}>
+          <MaterialIcons name="person-add" size={24} color="#000" style={{ marginRight: 8 }} />
+          <Text style={alunosStyles.cadastrarButtonText}>Cadastrar Novo Aluno</Text>
+        </TouchableOpacity>
+      </Link>
+      
+      {/* Botão de debug - remover em produção */}
+      <TouchableOpacity 
+        style={styles.debugButton}
+        onPress={handleResetDatabase}
+      >
+        <MaterialIcons name="bug-report" size={20} color="#FFF" />
+      </TouchableOpacity>
     </View>
   );
 }
 
+// Estilos locais (apenas para debug)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 50,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  list: {
-    width: '100%',
-    marginTop: 20,
-  },
-  alunoContainer: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: '#fff',
-    marginBottom: 10,
-    borderRadius: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  alunoInfo: {
-    flex: 1,
-    marginLeft: 10,
-    marginBottom: 10, // Espaço extra abaixo dos dados do aluno
-  },
-  alunoItem: {
-    fontSize: 18,
-  },
-  alunoDetail: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  alunoImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  alunoImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#e0e0e0',
+  debugButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#F44336',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  alunoImagePlaceholderText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  buttonsContainer: {
-    flexDirection: 'column',
-    gap: 8,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'stretch',
-    marginTop: 5,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-    color: 'blue',
-  },
-  cadastrarButton: {
-    backgroundColor: '#1976D2',
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    marginTop: 10,
-    marginBottom: 10,
-    alignSelf: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  cadastrarButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  buttonWrapper: {
-    marginHorizontal: 2,
-    flex: 1,
+    elevation: 4,
   },
 });
