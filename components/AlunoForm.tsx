@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Image, StyleSheet, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Image, 
+  useColorScheme 
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { StatusBar } from 'expo-status-bar';
+import { styles } from '@/styles/alunoForm.styles';
 
 interface AlunoFormProps {
   initialValues?: {
@@ -107,96 +114,77 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
     onSubmit({ nome, telefone: telefoneNumeros, dataNascimento, fotoUri });
   };
 
+  const colorScheme = useColorScheme() || 'dark'; // Padrão para tema escuro
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dados do Aluno</Text>
+      
       <View style={styles.imageContainer}>
         {fotoUri ? (
-          <Image source={{ uri: fotoUri }} style={styles.imagePreview} />
+          <Image 
+            source={{ uri: fotoUri }} 
+            style={styles.imagePreview}
+          />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>{nome.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.imagePlaceholderText}>
+              {nome ? nome.charAt(0).toUpperCase() : '?'}
+            </Text>
           </View>
         )}
       </View>
+
       <View style={styles.photoButtons}>
-        <Button title="📷 Selecionar Foto" onPress={pickImage} color="#2196F3" />
-        {fotoUri && <Button title="🗑️ Remover Foto" onPress={handleRemovePhoto} color="#f44336" />}
+        <TouchableOpacity 
+          style={styles.secondaryButton}
+          onPress={pickImage}
+        >
+          <Text style={[styles.buttonText, styles.secondaryButtonText]}>📷 Selecionar Foto</Text>
+        </TouchableOpacity>
+        
+        {fotoUri && (
+          <TouchableOpacity 
+            style={[styles.secondaryButton, { borderColor: '#f44336' }]}
+            onPress={handleRemovePhoto}
+          >
+            <Text style={[styles.buttonText, { color: '#f44336' }]}>🗑️ Remover</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.textInput]}
         placeholder="Nome do Aluno"
+        placeholderTextColor="rgba(255, 255, 255, 0.6)"
         value={nome}
         onChangeText={setNome}
       />
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.textInput]}
         placeholder="Telefone"
+        placeholderTextColor="rgba(255, 255, 255, 0.6)"
         value={maskPhone(telefone)}
         onChangeText={text => setTelefone(maskPhone(text))}
         keyboardType="phone-pad"
       />
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.textInput, styles.lastInput]}
         placeholder="Data de Nascimento (DD/MM/AAAA)"
+        placeholderTextColor="rgba(255, 255, 255, 0.6)"
         value={dataNascimento}
         onChangeText={text => setDataNascimento(maskDate(text))}
         keyboardType="number-pad"
       />
-      <Button title={submitLabel} onPress={handleSubmit} />
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+
+      <TouchableOpacity 
+        style={styles.primaryButton}
+        onPress={handleSubmit}
+      >
+        <Text style={styles.buttonText}>{submitLabel}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  imageContainer: {
-    marginBottom: 20,
-  },
-  imagePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  imagePlaceholderText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-}); 

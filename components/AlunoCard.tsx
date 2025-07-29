@@ -50,22 +50,43 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
     label,
     color,
     onPress,
+    isPrimary = false,
+    isDanger = false,
   }: {
     href?: string;
     label: string;
     color: string;
     onPress?: () => void;
-  }) => (
-    <View style={styles.buttonContainer}>
-      <TouchableOpacity 
-        style={[styles.button, { backgroundColor: color }]}
-        onPress={href ? () => handleNavigation(href) : onPress}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.buttonText}>{label}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    isPrimary?: boolean;
+    isDanger?: boolean;
+
+  }) => {
+    const buttonStyle = [
+      styles.button,
+      isPrimary && styles.primaryButton,
+      isDanger && styles.dangerButton,
+      !isPrimary && !isDanger && styles.secondaryButton,
+    ];
+    
+    const textStyle = [
+      styles.buttonText,
+      isPrimary && styles.primaryButtonText,
+      isDanger && styles.dangerButtonText,
+      !isPrimary && !isDanger && styles.secondaryButtonText,
+    ];
+    
+    return (
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={buttonStyle}
+          onPress={href ? () => handleNavigation(href) : onPress}
+          activeOpacity={0.8}
+        >
+          <Text style={textStyle}>{label}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -109,19 +130,22 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
         {renderActionButton({
           href: `/aluno/${aluno.id}/fichas`,
           label: 'Fichas',
-          color: buttonColors.secondary,
+          color: buttonColors.primary,
+          isPrimary: true,
         })}
         
         {renderActionButton({
           href: `/historico/${aluno.id}`,
           label: 'Histórico',
           color: buttonColors.info,
+          isPrimary: true,
         })}
         
         {renderActionButton({
           href: `/edit-aluno/${aluno.id}`,
           label: 'Editar',
           color: buttonColors.warning,
+          isPrimary: true,
         })}
       </View>
       
@@ -130,18 +154,21 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
           href: `/aluno/${aluno.id}/avaliacao`,
           label: 'Avaliação',
           color: buttonColors.primary,
+          isPrimary: true,
         })}
         
         {renderActionButton({
           href: `/aluno/${aluno.id}/horarios`,
           label: 'Aulas',
-          color: buttonColors.default,
+          color: buttonColors.primary,
+          isPrimary: true,
         })}
         
         {renderActionButton({
           label: 'Excluir',
           color: buttonColors.danger,
           onPress: handleDelete,
+          isDanger: true,
         })}
       </View>
     </View>

@@ -1,12 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TextInput, Button, Image } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-
-import * as FileSystem from 'expo-file-system';
-
-import { Text, View } from '@/components/Themed';
+import { Stack, useRouter } from 'expo-router';
+import { View } from 'react-native';
 import useAlunosStore from '../store/useAlunosStore';
 import AlunoForm from '../components/AlunoForm';
 
@@ -26,35 +19,22 @@ export default function ModalScreen() {
   };
 
   return (
-    <AlunoForm onSubmit={handleSubmit} submitLabel="Cadastrar" />
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <Stack.Screen
+        options={{
+          headerTitle: 'Novo Aluno',
+          headerStyle: {
+            backgroundColor: '#000',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+      <AlunoForm onSubmit={handleSubmit} submitLabel="Cadastrar" />
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-});
+

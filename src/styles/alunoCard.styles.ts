@@ -76,40 +76,83 @@ export const alunoCardStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 12,
+    gap: 8,
   },
   
   // Container do botão
   buttonContainer: {
     flex: 1,
-    marginHorizontal: 4,
     borderRadius: 8,
     overflow: 'hidden',
+    elevation: 2, // Sombra para dar profundidade
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   
   // Estilo base para os botões
   button: {
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 40,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   
-  // Estilo para o texto dos botões
+  // Botão primário (amarelo com fundo)
+  primaryButton: {
+    backgroundColor: '#FFB700',
+    borderColor: '#FFB700',
+  },
+  
+  // Botão de perigo (vermelho com fundo)
+  dangerButton: {
+    backgroundColor: '#FF3B30',
+    borderColor: '#FF3B30',
+  },
+  
+  // Botão secundário (borda cinza escuro com fundo transparente)
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderColor: '#333333',
+  },
+  
+  // Estilo base para o texto dos botões
   buttonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: 'Roboto',
+    fontWeight: '700',
     fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  
+  // Texto do botão primário
+  primaryButtonText: {
+    color: '#000000', // Texto preto para contraste com fundo amarelo
+  },
+  
+  // Texto do botão de perigo
+  dangerButtonText: {
+    color: '#FFFFFF', // Texto branco para contraste com fundo vermelho
+  },
+  
+  // Texto do botão secundário
+  secondaryButtonText: {
+    color: '#FFFFFF', // Texto branco para contraste com fundo escuro
   },
 });
 
 // Cores dos botões para reutilização
 export const buttonColors = {
-  primary: '#FFB700',     // Amarelo
-  secondary: '#4CAF50',   // Verde
-  info: '#2196F3',       // Azul
-  warning: '#FF9800',    // Laranja
-  danger: '#F44336',     // Vermelho
-  default: '#607D8B',    // Azul acinzentado
+  primary: '#FFB700',     // Amarelo - Botão primário
+  secondary: '#333333',   // Cinza escuro - Botão secundário com borda
+  info: '#333333',        // Cinza escuro - Para informações
+  warning: '#FFB700',     // Amarelo - Para avisos
+  danger: '#FF3B30',      // Vermelho - Para ações perigosas
+  default: '#333333',     // Cinza escuro - Padrão
 };
 
 export default alunoCardStyles;
