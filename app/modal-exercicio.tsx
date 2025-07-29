@@ -3,7 +3,7 @@ import { Platform, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity }
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/styles/Themed';
 import useExerciciosStore from '../store/useExerciciosStore';
 import useAlunosStore from '../store/useAlunosStore';
 import { exerciciosPorGrupo } from '../utils/exerciciosPorGrupo';

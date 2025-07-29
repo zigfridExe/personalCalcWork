@@ -3,7 +3,7 @@ import { Platform, StyleSheet, TextInput, Button, ScrollView } from 'react-nativ
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/styles/Themed';
 import useTreinosStore from '../store/useTreinosStore';
 
 export default function ModalTreinoScreen() {

@@ -3,7 +3,7 @@ import { Platform, StyleSheet, TextInput, Button, ScrollView, Alert, TouchableOp
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View } from '@/styles/Themed';
 import useFichasStore from '../store/useFichasStore';
 import useAlunosStore from '../store/useAlunosStore';
 
