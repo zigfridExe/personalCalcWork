@@ -89,7 +89,10 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
   };
 
   return (
-    <View style={styles.container}>
+    // @ts-expect-error: dynamic route typing not recognized by Expo Router
+    <Link href={{ pathname: "/aluno/[id]", params: { id: aluno.id.toString() } }} asChild>
+      <TouchableOpacity style={styles.container} activeOpacity={0.8}>
+
       <View style={styles.infoRow}>
         <View style={styles.imageContainer}>
           {aluno.fotoUri ? (
@@ -171,7 +174,8 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
           isDanger: true,
         })}
       </View>
-    </View>
+      </TouchableOpacity>
+    </Link>
   );
 };
 

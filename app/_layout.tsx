@@ -1,13 +1,12 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-
 import { useColorScheme } from '@/styles/useColorScheme';
-import { StatusBar, Platform } from 'react-native';
+import AppLayout from '../components/layout/AppLayout';
+import { navigationStyles } from '@/styles/navigation.styles';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -49,21 +48,32 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
-  // Configura a barra de status com texto claro
-  useEffect(() => {
-    StatusBar.setBarStyle('light-content');
-    if (Platform.OS === 'android') {
-      StatusBar.setBackgroundColor('transparent');
-      StatusBar.setTranslucent(true);
-    }
-  }, []);
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    <AppLayout>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#FFFFFF' },
+        }}
+      >
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="modal" 
+          options={{ 
+            presentation: 'modal',
+            headerShown: true,
+            headerStyle: navigationStyles.header,
+            headerTitleStyle: navigationStyles.headerTitle,
+            headerTintColor: '#FFFFFF',
+            headerTitleAlign: 'center',
+          }} 
+        />
       </Stack>
-    </ThemeProvider>
+    </AppLayout>
   );
 }
