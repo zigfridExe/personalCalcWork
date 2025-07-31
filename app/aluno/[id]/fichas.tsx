@@ -7,6 +7,9 @@ import useExerciciosStore from '../../../store/useExerciciosStore';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../../../src/styles/fichasScreen.styles';
 
+export const options = {
+  title: 'Fichas do Aluno'
+}
 
 export default function FichasScreen() {
   const { id } = useLocalSearchParams();

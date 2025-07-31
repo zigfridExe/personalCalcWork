@@ -90,7 +90,7 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
 
   return (
     // @ts-expect-error: dynamic route typing not recognized by Expo Router
-    <Link href={{ pathname: "/aluno/[id]", params: { id: aluno.id.toString() } }} asChild>
+    <Link href={{ pathname: "/aluno/[id]123", params: { id: aluno.id.toString() } }} asChild>
       <TouchableOpacity style={styles.container} activeOpacity={0.8}>
 
       <View style={styles.infoRow}>
