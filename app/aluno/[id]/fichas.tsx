@@ -7,17 +7,6 @@ import useExerciciosStore from '../../../store/useExerciciosStore';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from '../../../src/styles/fichasScreen.styles';
 
-// Configuração da navegação
-export const screenOptions = {
-  headerStyle: {
-    backgroundColor: '#000000',
-  },
-  headerTintColor: '#FFFFFF',
-  headerTitleStyle: {
-    fontWeight: 'bold',
-  },
-  headerTitleAlign: 'center',
-};
 
 export default function FichasScreen() {
   const { id } = useLocalSearchParams();

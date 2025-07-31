@@ -38,6 +38,8 @@ async function logDiasAulasRecorrentes() {
   Alert.alert('Log gerado no console!');
 }
 
+import ScreenHeader from '@/shared/components/ScreenHeader';
+
 export default function ConfiguracoesScreen() {
   const { resetDatabase, debugAlunos } = useAlunosStore();
   const { carregarAulas } = useAulasStore();
@@ -395,103 +397,106 @@ export default function ConfiguracoesScreen() {
   });
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
+    <>
+      <ScreenHeader title="Configurações" />
+      <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <Text style={{ fontSize: 24, marginBottom: 30 }}>Configurações</Text>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🔧 Testar Banco" onPress={handleTestarBanco} color="green" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🔧 Testar Banco" onPress={handleTestarBanco} color="green" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🔄 Reiniciar Conexão" onPress={handleReiniciarConexao} color="teal" />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🔄 Reiniciar Conexão" onPress={handleReiniciarConexao} color="teal" />
-        </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="👁️ Visualizar Dados do Banco" onPress={handleVisualizarDados} color="blue" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="👁️ Visualizar Dados do Banco" onPress={handleVisualizarDados} color="blue" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🔍 Verificar Aulas no Banco" onPress={handleVerificarAulasNoBanco} color="navy" />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🔍 Verificar Aulas no Banco" onPress={handleVerificarAulasNoBanco} color="navy" />
-        </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🧹 Limpar Aulas Duplicadas" onPress={handleLimparAulasDuplicadas} color="orange" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🧹 Limpar Aulas Duplicadas" onPress={handleLimparAulasDuplicadas} color="orange" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🚨 LIMPEZA DE EMERGÊNCIA" onPress={handleLimpezaEmergencia} color="red" />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🚨 LIMPEZA DE EMERGÊNCIA" onPress={handleLimpezaEmergencia} color="red" />
-        </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🧹 Limpar TODAS as RRULEs" onPress={handleLimparTodasRRules} color="#8e24aa" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🧹 Limpar TODAS as RRULEs" onPress={handleLimparTodasRRules} color="#8e24aa" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🧹 Limpeza Completa de Recorrências" color="#F44336" onPress={handleLimparRecorrentesCompleto} />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🧹 Limpeza Completa de Recorrências" color="#F44336" onPress={handleLimparRecorrentesCompleto} />
-        </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🔄 Regenerar Aulas Recorrentes" onPress={handleRegenerarAulas} color="purple" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🔧 Debug Alunos" onPress={debugAlunos} color="gray" />
+
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="📝 Log Colunas da Tabela Alunos" onPress={handleLogColunasAlunos} color="black" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
+          </View>
+          <View style={styles.buttonWrapper}>
+            <Button title="🗑️ Deletar TODAS as Aulas Avulsas" color="#FF9800" onPress={handleDeletarAulasAvulsas} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🗑️ Resetar Banco (Debug)" onPress={handleResetDatabase} color="red" />
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="🗑️ Deletar TODAS as Aulas Sobrescritas" color="#607D8B" onPress={handleDeletarAulasSobrescritas} />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button title="🗑️ Deletar TODAS as Aulas Avulsas" color="#FF9800" onPress={handleDeletarAulasAvulsas} />
+
+        <View style={styles.buttonsRow}>
+          <View style={styles.buttonWrapper}>
+            <Button title="️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="🗑️ Deletar TODAS as Aulas Sobrescritas" color="#607D8B" onPress={handleDeletarAulasSobrescritas} />
+        <View style={{ marginTop: 32 }}>
+          <Button title="Exportar Backup (.db)" color="#1976D2" onPress={handleExportarBackup} />
+          <View style={{ height: 12 }} />
+          <Button title="Importar Backup (.db)" color="#FF9800" onPress={handleImportarBackup} />
         </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <View style={styles.buttonWrapper}>
-          <Button title="️ Apagar TODAS as Aulas" onPress={handleLimparTodasAulas} color="#b71c1c" />
+        <View style={{ marginVertical: 16 }}>
+          <Button title="Rodar Migração do Calendário" color="#1976D2" onPress={handleMigrarCalendario} />
         </View>
-      </View>
 
-      <View style={{ marginTop: 32 }}>
-        <Button title="Exportar Backup (.db)" color="#1976D2" onPress={handleExportarBackup} />
-        <View style={{ height: 12 }} />
-        <Button title="Importar Backup (.db)" color="#FF9800" onPress={handleImportarBackup} />
-      </View>
-
-      <View style={{ marginVertical: 16 }}>
-        <Button title="Rodar Migração do Calendário" color="#1976D2" onPress={handleMigrarCalendario} />
-      </View>
-
-      <View style={{ marginVertical: 20 }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 6 }}>Período de geração de aulas recorrentes (meses à frente):</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Button title="-" onPress={() => lookAheadMeses > 1 && handleChangeLookAhead(lookAheadMeses - 1)} />
-          <Text style={{ marginHorizontal: 16, fontSize: 18 }}>{lookAheadMeses}</Text>
-          <Button title="+" onPress={() => handleChangeLookAhead(lookAheadMeses + 1)} />
+        <View style={{ marginVertical: 20 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 6 }}>Período de geração de aulas recorrentes (meses à frente):</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Button title="-" onPress={() => lookAheadMeses > 1 && handleChangeLookAhead(lookAheadMeses - 1)} />
+            <Text style={{ marginHorizontal: 16, fontSize: 18 }}>{lookAheadMeses}</Text>
+            <Button title="+" onPress={() => handleChangeLookAhead(lookAheadMeses + 1)} />
+          </View>
         </View>
-      </View>
 
-      <View style={{ marginVertical: 10 }}>
-        <Button title="Log de Dias/Aulas Recorrentes (Console)" color="#1976D2" onPress={logDiasAulasRecorrentes} />
-      </View>
-    </ScrollView>
+        <View style={{ marginVertical: 10 }}>
+          <Button title="Log de Dias/Aulas Recorrentes (Console)" color="#1976D2" onPress={logDiasAulasRecorrentes} />
+        </View>
+      </ScrollView>
+    </>
   );
 }

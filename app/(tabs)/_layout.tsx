@@ -46,10 +46,9 @@ export default function TabLayout() {
 
   // Configurações comuns para as telas
   const screenOptions = {
-    headerStyle: navigationStyles.header,
-    headerTitleStyle: navigationStyles.headerTitle,
-    headerTintColor: '#FFFFFF',
-    headerTitleAlign: 'center' as const,
+    // Removido as configurações de header para evitar duplicação
+    // O header será controlado apenas pelo _layout.tsx raiz
+    headerShown: false,
     tabBarStyle: navigationStyles.tabBar,
     tabBarActiveTintColor: tabBarOptions.activeTintColor,
     tabBarInactiveTintColor: tabBarOptions.inactiveTintColor,

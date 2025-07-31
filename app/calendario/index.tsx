@@ -33,6 +33,8 @@ function formatarDataBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
+import ScreenHeader from '@/shared/components/ScreenHeader';
+
 export default function CalendarioScreen() {
   const { aulas, carregarAulas, marcarPresenca, excluirAula } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
@@ -117,17 +119,21 @@ export default function CalendarioScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
-        <View style={{ width: '95%', backgroundColor: '#fff', borderRadius: 8, padding: 12, alignItems: 'center', elevation: 2, marginBottom: 8 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Nova Aula</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
-            <Link href="/calendario/nova" asChild>
-              <Button title="+ Avulsa" color="#4CAF50" />
-            </Link>
-            <Link href="/calendario/nova-recorrente" asChild>
-              <Button title="+ Recorrente" color="#1976D2" />
-            </Link>
+    <>
+      <ScreenHeader title="Calendário" />
+      <View style={styles.container}>
+        <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
+          <View style={{ width: '95%', backgroundColor: '#fff', borderRadius: 8, padding: 12, alignItems: 'center', elevation: 2, marginBottom: 8 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Nova Aula</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
+              <Link href="/calendario/nova" asChild>
+                <Button title="+ Avulsa" color="#4CAF50" />
+              </Link>
+              <Link href="/calendario/nova-recorrente" asChild>
+                <Button title="+ Recorrente" color="#1976D2" />
+              </Link>
+            </View>
+
           </View>
         </View>
       </View>
@@ -164,7 +170,7 @@ export default function CalendarioScreen() {
           ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhuma aula agendada.</Text>}
         />
       )}
-    </View>
+    </>
   );
 }
 

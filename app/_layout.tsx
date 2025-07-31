@@ -52,14 +52,18 @@ function RootLayoutNav() {
     <AppLayout>
       <Stack
         screenOptions={{
-          headerShown: false,
+          headerShown: true,
+          headerStyle: navigationStyles.header,
+          headerTitleStyle: navigationStyles.headerTitle,
+          headerTintColor: '#FFFFFF',
+          headerTitleAlign: 'center',
           contentStyle: { backgroundColor: '#FFFFFF' },
         }}
       >
         <Stack.Screen 
           name="(tabs)" 
           options={{ 
-            headerShown: false,
+            headerShown: false, // Mantém as tabs sem header se necessário
           }} 
         />
         <Stack.Screen 

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import { View, FlatList, Alert, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -6,8 +7,12 @@ import useAlunosStore from '../../store/useAlunosStore';
 import { resetDatabase as resetDB } from '../../utils/databaseUtils';
 import AlunoCard from '../../components/AlunoCard';
 import alunosStyles from '@/styles/alunos.styles';
+import ScreenHeader from '@/shared/components/ScreenHeader';
 
 export default function AlunosScreen() {
+  // Espaço para o header (caso necessário)
+  // Adiciona um título visual no topo
+
   const { alunos, initializeDatabase, deleteAluno, debugAlunos } = useAlunosStore();
 
   useEffect(() => {
@@ -61,7 +66,10 @@ export default function AlunosScreen() {
   };
 
   return (
-    <View style={alunosStyles.container}>
+    <>
+      <ScreenHeader title="Alunos" />
+
+      <View style={alunosStyles.container}>
       <FlatList
         data={alunos}
         keyExtractor={(item) => item.id.toString()}
@@ -81,20 +89,18 @@ export default function AlunosScreen() {
           }}>
             <MaterialIcons name="person-off" size={64} color="#555" />
             <Text style={alunosStyles.emptyMessage}>
-              Nenhum aluno cadastrado ainda.{'\n'}
+              Nenhum aluno cadastrado ainda.{"\n"}
               Clique no botão abaixo para começar.
             </Text>
           </View>
         }
       />
-      
       <Link href="/modal" asChild>
         <TouchableOpacity style={alunosStyles.cadastrarButton}>
           <MaterialIcons name="person-add" size={24} color="#000" style={{ marginRight: 8 }} />
           <Text style={alunosStyles.cadastrarButtonText}>Cadastrar Novo Aluno</Text>
         </TouchableOpacity>
       </Link>
-      
       {/* Botão de debug - remover em produção */}
       <TouchableOpacity 
         style={styles.debugButton}
@@ -103,6 +109,7 @@ export default function AlunosScreen() {
         <MaterialIcons name="bug-report" size={20} color="#FFF" />
       </TouchableOpacity>
     </View>
+    </>
   );
 }
 

@@ -5,12 +5,7 @@ export default function AlunoIdLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: navigationStyles.header,
-        headerTitleStyle: navigationStyles.headerTitle,
-        headerTintColor: '#FFFFFF',
-        headerTitleAlign: 'center',
-        headerShadowVisible: false,
+        headerShown: false,
       }}
     >
       <Stack.Screen
