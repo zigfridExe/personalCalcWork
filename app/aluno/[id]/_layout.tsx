@@ -5,7 +5,7 @@ export default function AlunoIdLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
       }}
     >
       <Stack.Screen
@@ -22,9 +22,6 @@ export default function AlunoIdLayout() {
       />
       <Stack.Screen
         name="fichas"
-        options={{
-          title: 'Fichas de Treino',
-        }}
       />
       <Stack.Screen
         name="horarios"

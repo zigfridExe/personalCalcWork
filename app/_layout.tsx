@@ -67,6 +67,12 @@ function RootLayoutNav() {
           }} 
         />
         <Stack.Screen 
+          name="aluno/[id]" 
+          options={{ 
+            headerShown: false 
+          }} 
+        />
+        <Stack.Screen 
           name="modal" 
           options={{ 
             presentation: 'modal',
