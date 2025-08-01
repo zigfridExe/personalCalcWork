@@ -22,6 +22,9 @@ export default function AlunoIdLayout() {
       />
       <Stack.Screen
         name="fichas"
+        options={{
+          title: 'Fichas do Aluno', 
+        }}
       />
       <Stack.Screen
         name="horarios"

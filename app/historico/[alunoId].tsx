@@ -7,6 +7,10 @@ import useHistoricoStore from '../../store/useHistoricoStore';
 import useAlunosStore from '../../store/useAlunosStore';
 // Remover useExerciciosStore
 
+export const options = {
+  title: 'Histórico do Aluno'
+}
+
 interface HistoricoDetalhado {
   id: number;
   data_inicio: string;
