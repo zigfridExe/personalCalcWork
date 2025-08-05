@@ -6,6 +6,7 @@ export default function AlunoIdLayout() {
     <Stack
       screenOptions={{
         headerShown: true,
+        ...navigationStyles,
       }}
     >
       <Stack.Screen
