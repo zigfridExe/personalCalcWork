@@ -1,8 +1,9 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { useColorScheme, View, Text, StyleSheet } from 'react-native';
-import { navigationStyles, tabBarOptions } from '@/styles/navigation.styles';
+import { useColorScheme, View, StyleSheet, Text } from 'react-native';
+import { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
+import { navigationStyles, tabNavigationOptions } from '@/styles/navigation.styles';
 
 // Componente para o ícone da barra de navegação
 function TabBarIcon(props: {
@@ -25,35 +26,40 @@ function TabBarIcon(props: {
   );
 }
 
-// Componente para o texto da aba
-const TabBarLabel = ({ focused, color, children }: { focused: boolean; color: string; children: string }) => (
-  <Text 
-    style={[
-      navigationStyles.tabBarLabel, 
-      { 
-        color, 
-        opacity: focused ? 1 : 0.7,
-        transform: [{ scale: focused ? 1 : 0.95 }]
-      }
-    ]}
-  >
-    {children}
-  </Text>
-);
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() || 'light';
 
   // Configurações comuns para as telas
-  const screenOptions = {
-    // Removido as configurações de header para evitar duplicação
-    // O header será controlado apenas pelo _layout.tsx raiz
+  const screenOptions: BottomTabNavigationOptions = {
     headerShown: false,
-    tabBarStyle: navigationStyles.tabBar,
-    tabBarActiveTintColor: tabBarOptions.activeTintColor,
-    tabBarInactiveTintColor: tabBarOptions.inactiveTintColor,
-    tabBarLabel: TabBarLabel,
+    tabBarStyle: tabNavigationOptions.tabBarStyle,
+    tabBarActiveTintColor: tabNavigationOptions.tabBarActiveTintColor,
+    tabBarInactiveTintColor: tabNavigationOptions.tabBarInactiveTintColor,
+    tabBarLabelStyle: {
+      fontSize: 12,
+      fontWeight: '600' as const,
+      marginBottom: 5,
+    },
     tabBarHideOnKeyboard: true,
+    tabBarLabel: ({ focused, color, children }) => {
+      const LabelText = Text as any; // Workaround temporário
+      return (
+        <LabelText 
+          style={{
+            color, 
+            opacity: focused ? 1 : 0.7,
+            transform: [{ scale: focused ? 1 : 0.95 }],
+            fontSize: 12,
+            fontWeight: '600' as const,
+            marginBottom: 5,
+            textAlign: 'center',
+          }}
+        >
+          {children}
+        </LabelText>
+      );
+    },
   };
 
   return (

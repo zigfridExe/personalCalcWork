@@ -1,5 +1,5 @@
 // Arquivo central de estilos de navegação
-// Utilize navigationStyles.stack para Stack, navigationStyles.tabBar para Tabs, etc.
+// Utilize stackNavigationOptions para Stack, tabNavigationOptions para Tabs e navigationStyles para componentes visuais.
 
 import { StyleSheet } from 'react-native';
 
@@ -19,33 +19,40 @@ export const stackNavigationOptions = {
   contentStyle: { backgroundColor: COLORS.content },
   headerStyle: { backgroundColor: COLORS.header, borderBottomWidth: 1, borderBottomColor: COLORS.border, elevation: 0, shadowOpacity: 0 },
   headerTintColor: COLORS.text,
-  headerTitleStyle: { color: COLORS.text, fontSize: 18, fontWeight: 'bold' },
+  headerTitleStyle: {
+    color: '#FFFFFF', // valor literal para máxima compatibilidade
+    fontSize: 18,
+    fontWeight: 'bold' as const, // Using 'bold' which is a valid string literal type
+  },
+  headerTitleAlign: 'center' as const,
 };
 
-// Opções globais para navegação tipo Tabs (menu inferior)
+// Opções globais para navegação tipo TabBar (abas inferiores)
 export const tabNavigationOptions = {
   tabBarStyle: { backgroundColor: COLORS.background, borderTopWidth: 0, elevation: 10, height: 60, paddingBottom: 5, paddingTop: 5 },
   tabBarActiveTintColor: COLORS.active,
   tabBarInactiveTintColor: COLORS.inactive,
   tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginBottom: 5 },
-  // tabBarLabel: TabBarLabel, // Descomente se usar label customizada
   tabBarHideOnKeyboard: true,
 };
 
-// Apenas para uso em componentes visuais (View, Text, etc)
-
-
+// Estilos visuais para uso em componentes (View, Text, etc)
 export const navigationStyles = StyleSheet.create({
-  // Estilo visual para ícones das tabs
   tabBarIcon: {
     marginBottom: -3,
   },
-  // Exemplo de container visual, se precisar em componentes:
   contentContainer: {
     flex: 1,
     backgroundColor: COLORS.content,
   },
 });
 
-// Exporte as opções padronizadas para uso direto nos layouts
-export default navigationStyles;
+/*
+Exemplo de uso:
+
+// Para Stack.Screen
+<Stack.Screen name="modal" options={{ ...stackNavigationOptions }} />
+
+// Para Tabs.Screen
+<Tabs.Screen name="Dashboard" options={tabNavigationOptions} />
+*/

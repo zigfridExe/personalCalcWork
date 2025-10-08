@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/styles/useColorScheme';
 import AppLayout from '../components/layout/AppLayout';
 import { navigationStyles } from '@/styles/navigation.styles';
+import { stackNavigationOptions } from '@/styles/navigation.styles';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export {
@@ -52,12 +53,9 @@ function RootLayoutNav() {
     <AppLayout>
       <Stack
         screenOptions={{
-          headerShown: true,
-          headerStyle: navigationStyles.header,
-          headerTitleStyle: navigationStyles.headerTitle,
-          headerTintColor: '#FFFFFF',
-          headerTitleAlign: 'center',
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          ...stackNavigationOptions, // Estilos globais de navegação
+          headerShown: true,        // Específico deste layout
+          headerTitleAlign: 'center', // Específico deste layout
         }}
       >
         <Stack.Screen 
@@ -77,10 +75,7 @@ function RootLayoutNav() {
           options={{ 
             presentation: 'modal',
             headerShown: true,
-            headerStyle: navigationStyles.header,
-            headerTitleStyle: navigationStyles.headerTitle,
-            headerTintColor: '#FFFFFF',
-            headerTitleAlign: 'center',
+            ...stackNavigationOptions,
           }} 
         />
       </Stack>
