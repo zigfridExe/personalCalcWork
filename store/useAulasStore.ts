@@ -1,106 +1,120 @@
 import { create } from 'zustand';
 import { getDatabase } from '../utils/databaseUtils';
-
-export type TipoAula = 'RECORRENTE_GERADA' | 'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO';
-
-export interface Aula {
-  id?: number;
-  aluno_id: number;
-  aluno_nome?: string;
-  data_aula: string; // 'YYYY-MM-DD'
-  hora_inicio: string; // 'HH:MM'
-  duracao_minutos: number;
-  presenca: number; // 0=Agendada, 1=Presente, 2=Faltou, 3=Cancelada
-  observacoes?: string;
-  tipo_aula: TipoAula;
-  horario_recorrente_id?: number | null;
-}
+import { gerarCalendarioVisual, AulaCalendario, RegraRecorrencia, EventoConcreto } from '../utils/novoCalendarioUtils';
 
 interface AulasState {
-  aulas: Aula[];
-  carregarAulas: (periodoInicio?: string, periodoFim?: string, aluno_id?: number) => Promise<void>;
-  adicionarAula: (aula: Omit<Aula, 'id'>) => Promise<void>;
-  editarAula: (aula: Aula) => Promise<void>;
-  excluirAula: (id: number) => Promise<void>;
-  marcarPresenca: (id: number, presenca: number) => Promise<void>;
+  aulasVisuais: AulaCalendario[]; // Lista final para a UI
+  carregarCalendario: (mes: number, ano: number) => Promise<void>;
+
+  // Ações
+  criarRegraRecorrente: (aluno_id: number, dia_semana: number, hora: string, duracao: number, inicio: string) => Promise<void>;
+  criarAulaAvulsa: (aluno_id: number, data: string, hora: string, duracao: number, obs?: string) => Promise<void>;
+  cancelarAula: (aula: AulaCalendario) => Promise<void>; // Cria exceção
+  confirmarAula: (aula: AulaCalendario) => Promise<void>; // Concretiza a virtual
 }
 
 const useAulasStore = create<AulasState>((set, get) => ({
-  aulas: [],
-  carregarAulas: async (periodoInicio, periodoFim, aluno_id) => {
+  aulasVisuais: [],
+
+  carregarCalendario: async (mes, ano) => {
     const db = await getDatabase();
-    let query = `SELECT aulas.*, alunos.nome as aluno_nome FROM aulas LEFT JOIN alunos ON aulas.aluno_id = alunos.id WHERE 1=1`;
-    const params: any[] = [];
-    if (periodoInicio) {
-      query += ' AND data_aula >= ?';
-      params.push(periodoInicio);
+
+    // 1. Definir intervalo do mês (com margem de segurança)
+    const inicio = new Date(ano, mes - 1, 1);
+    const fim = new Date(ano, mes, 0); // Último dia do mês
+    const inicioStr = inicio.toISOString().slice(0, 10);
+    const fimStr = fim.toISOString().slice(0, 10);
+
+    // 2. Buscar Regras Ativas
+    // (Busca regras que começam antes do fim do mês e não terminaram antes do inicio do mês)
+    const regras = await db.getAllAsync<RegraRecorrencia>(`
+      SELECT id, aluno_id, dia_semana, hora_inicio, duracao_minutos, data_inicio_vigencia, data_fim_vigencia 
+      FROM horarios_recorrentes 
+      WHERE data_inicio_vigencia <= ? 
+      AND (data_fim_vigencia IS NULL OR data_fim_vigencia >= ?)
+    `, fimStr, inicioStr);
+
+    // 3. Buscar Eventos Concretos (Avulsas, Realizadas, Canceladas) no período
+    const eventos = await db.getAllAsync<any>(`
+      SELECT id, aluno_id, data_aula, hora_inicio, tipo_aula, presenca as status_presenca, observacoes, horario_recorrente_id as recorrencia_id
+      FROM aulas 
+      WHERE data_aula BETWEEN ? AND ?
+      AND tipo_aula != 'RECORRENTE_GERADA' -- Ignorar lixo legado se houver
+    `, inicioStr, fimStr);
+
+    // Mapear para tipagem correta
+    const eventosConcretos: EventoConcreto[] = eventos.map((e: any) => ({
+      ...e,
+      tipo_aula: e.tipo_aula as any
+    }));
+
+    // 4. Gerar Visualização Pura
+    const calendario = gerarCalendarioVisual(inicio, fim, regras, eventosConcretos);
+
+    set({ aulasVisuais: calendario });
+  },
+
+  criarRegraRecorrente: async (aluno_id, dia_semana, hora, duracao, inicio) => {
+    const db = await getDatabase();
+    await db.runAsync(`
+      INSERT INTO horarios_recorrentes (aluno_id, dia_semana, hora_inicio, duracao_minutos, data_inicio_vigencia)
+      VALUES (?, ?, ?, ?, ?);
+    `, aluno_id, dia_semana, hora, duracao, inicio);
+
+    // Recarregar visualização atual
+    const hoje = new Date(); // Simplificação: recarrega o mês atual
+    await get().carregarCalendario(hoje.getMonth() + 1, hoje.getFullYear());
+  },
+
+  criarAulaAvulsa: async (aluno_id, data, hora, duracao, obs) => {
+    const db = await getDatabase();
+    await db.runAsync(`
+      INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula)
+      VALUES (?, ?, ?, ?, 0, ?, 'AVULSA');
+    `, aluno_id, data, hora, duracao, obs || null);
+
+    const d = new Date(data);
+    await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  },
+
+  cancelarAula: async (aula) => {
+    const db = await getDatabase();
+
+    // Ensure recorrencia_id is null if undefined
+    const recorrenciaId = aula.recorrencia_id ?? null;
+
+    if (aula.tipo === 'VIRTUAL') {
+      // Requer criar uma exceção na tabela de aulas para "matar" a virtual
+      await db.runAsync(`
+        INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, tipo_aula, horario_recorrente_id)
+        VALUES (?, ?, ?, ?, 0, 'CANCELADA', ?);
+      `, aula.aluno_id, aula.data, aula.hora, aula.duracao, recorrenciaId);
+    } else {
+      // Já é concreta, apenas atualiza status
+      await db.runAsync(`UPDATE aulas SET tipo_aula = 'CANCELADA' WHERE id = ?`, aula.id ?? 0);
     }
-    if (periodoFim) {
-      query += ' AND data_aula <= ?';
-      params.push(periodoFim);
+
+    const d = new Date(aula.data);
+    await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  },
+
+  confirmarAula: async (aula) => {
+    // Transforma virtual em realizada (concreta)
+    const db = await getDatabase();
+    const recorrenciaId = aula.recorrencia_id ?? null;
+
+    if (aula.tipo === 'VIRTUAL') {
+      await db.runAsync(`
+        INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, tipo_aula, horario_recorrente_id)
+        VALUES (?, ?, ?, ?, 1, 'REALIZADA', ?);
+      `, aula.aluno_id, aula.data, aula.hora, aula.duracao, recorrenciaId);
+    } else {
+      await db.runAsync(`UPDATE aulas SET presenca = 1, tipo_aula = 'REALIZADA' WHERE id = ?`, aula.id ?? 0);
     }
-    if (aluno_id) {
-      query += ' AND aulas.aluno_id = ?';
-      params.push(aluno_id);
-    }
-    query += ' ORDER BY data_aula, hora_inicio';
-    const rows = await db.getAllAsync<any>(query, params);
-    set({ aulas: [] });
-    set({ aulas: rows.map((row: any) => ({
-      id: row.id,
-      aluno_id: row.aluno_id,
-      aluno_nome: row.aluno_nome,
-      data_aula: row.data_aula,
-      hora_inicio: row.hora_inicio,
-      duracao_minutos: row.duracao_minutos,
-      presenca: row.presenca,
-      observacoes: row.observacoes,
-      tipo_aula: row.tipo_aula,
-      horario_recorrente_id: row.horario_recorrente_id,
-    })) });
-  },
-  adicionarAula: async (aula) => {
-    const db = await getDatabase();
-    await db.runAsync(
-      `INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-      aula.aluno_id,
-      aula.data_aula,
-      aula.hora_inicio,
-      aula.duracao_minutos,
-      aula.presenca,
-      aula.observacoes ?? null,
-      aula.tipo_aula,
-      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null
-    );
-    await get().carregarAulas();
-  },
-  editarAula: async (aula) => {
-    const db = await getDatabase();
-    await db.runAsync(
-      `UPDATE aulas SET aluno_id = ?, data_aula = ?, hora_inicio = ?, duracao_minutos = ?, presenca = ?, observacoes = ?, tipo_aula = ?, horario_recorrente_id = ? WHERE id = ?;`,
-      aula.aluno_id,
-      aula.data_aula,
-      aula.hora_inicio,
-      aula.duracao_minutos,
-      aula.presenca,
-      aula.observacoes ?? null,
-      aula.tipo_aula,
-      aula.horario_recorrente_id !== undefined ? aula.horario_recorrente_id : null,
-      aula.id !== undefined ? aula.id : 0
-    );
-    await get().carregarAulas();
-  },
-  excluirAula: async (id) => {
-    const db = await getDatabase();
-    await db.runAsync('DELETE FROM aulas WHERE id = ?;', id);
-    await get().carregarAulas();
-  },
-  marcarPresenca: async (id, presenca) => {
-    const db = await getDatabase();
-    await db.runAsync('UPDATE aulas SET presenca = ? WHERE id = ?;', presenca, id);
-    await get().carregarAulas();
-  },
+    const d = new Date(aula.data);
+    await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  }
+
 }));
 
 export default useAulasStore; 

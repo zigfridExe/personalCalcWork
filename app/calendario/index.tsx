@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link, useFocusEffect } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
-import { gerarAulasRecorrentesParaPeriodo } from '../../utils/recorrenciaUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { migrarParaNovoModeloCalendario, initializeDatabase } from '../../utils/databaseUtils';
 import AulaCard from '../../components/AulaCard';
-import { migrarHorariosRecorrentes } from '../../utils/databaseUtils';
+import ScreenHeader from '@/shared/components/ScreenHeader';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -33,143 +32,171 @@ function formatarDataBR(dataISO: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
-import ScreenHeader from '@/shared/components/ScreenHeader';
-
 export default function CalendarioScreen() {
-  const { aulas, carregarAulas, marcarPresenca, excluirAula } = useAulasStore();
+  const { aulasVisuais, carregarCalendario, confirmarAula, cancelarAula } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
   const [loading, setLoading] = useState<boolean>(true);
+  const [migrated, setMigrated] = useState(false);
 
-  // Marcação dos dias com aulas
-  const markedDates = useMemo(() => {
-    const acc: Record<string, any> = {};
-    aulas.forEach(aula => {
-      acc[aula.data_aula] = {
-        marked: true,
-        dotColor:
-          aula.tipo_aula === 'RECORRENTE_GERADA' ? '#1976D2' :
-          aula.tipo_aula === 'AVULSA' ? '#4CAF50' :
-          aula.tipo_aula === 'EXCECAO_HORARIO' ? '#FF9800' :
-          aula.tipo_aula === 'EXCECAO_CANCELAMENTO' ? '#F44336' : '#888',
-        selected: aula.data_aula === dataSelecionada,
-        selectedColor: aula.data_aula === dataSelecionada ? '#1976D2' : undefined,
-      };
-    });
-    return acc;
-  }, [aulas, dataSelecionada]);
-
-  // Exibe apenas uma aula por aluno/hora, priorizando exceções/cancelamentos
-  const aulasDoDia = useMemo(() => {
-    const aulasDia = aulas.filter(a => a.data_aula === dataSelecionada);
-    const key = (a: any) => `${a.aluno_id}_${a.hora_inicio}`;
-    const map = new Map<string, any>();
-    for (const aula of aulasDia) {
-      const k = key(aula);
-      if (map.has(k)) continue;
-      if (aula.tipo_aula === 'EXCECAO_HORARIO' || aula.tipo_aula === 'EXCECAO_CANCELAMENTO') {
-        map.set(k, aula);
-      } else if (aula.tipo_aula === 'RECORRENTE_GERADA') {
-        if (!map.has(k)) map.set(k, aula);
-      } else {
-        map.set(k, aula);
+  // Inicialização e Migração
+  useEffect(() => {
+    async function init() {
+      try {
+        await initializeDatabase();
+        if (!migrated) {
+          await migrarParaNovoModeloCalendario();
+          setMigrated(true);
+        }
+      } catch (e) {
+        console.error('Erro ao inicializar calendario:', e);
       }
     }
-    return Array.from(map.values());
-  }, [aulas, dataSelecionada]);
+    init();
+  }, [migrated]);
 
-  // Marcar presença/falta/cancelamento
-  async function marcarPresencaAula(aula: any, presenca: number) {
-    if (!aula.id) return;
-    await marcarPresenca(aula.id, presenca);
-  }
-
-  // Apagar aula
-  async function apagarAula(aula: any) {
-    if (!aula.id) return;
-    await excluirAula(aula.id);
-  }
-
-  // Geração automática de recorrentes conforme look-ahead
+  // Carregar aulas ao focar na tela ou mudar o mês
+  // Por enquanto, carrega o mês da data selecionada
   useFocusEffect(
     React.useCallback(() => {
-      migrarHorariosRecorrentes();
-      setLoading(true);
-      const gerarComLookAhead = async () => {
+      const carregar = async () => {
+        setLoading(true);
         try {
-          const hoje = new Date();
-          let lookAheadMeses = 1;
-          try {
-            const val = await AsyncStorage.getItem('lookAheadMeses');
-            if (val) lookAheadMeses = Number(val);
-          } catch {}
-          const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-          const fim = new Date(hoje.getFullYear(), hoje.getMonth() + lookAheadMeses, 0);
-          await gerarAulasRecorrentesParaPeriodo(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
-          await carregarAulas(inicio.toISOString().slice(0, 10), fim.toISOString().slice(0, 10));
+          const [ano, mes] = dataSelecionada.split('-').map(Number);
+          await carregarCalendario(mes, ano);
         } catch (e) {
-          console.error('Erro ao carregar aulas:', e);
+          console.error("Erro ao carregar calendário:", e);
         } finally {
           setLoading(false);
         }
       };
-      gerarComLookAhead();
-    }, [carregarAulas])
+      carregar();
+    }, [carregarCalendario, dataSelecionada]) // Recarrega se mudar a data (pode ser outro mês)
   );
+
+  // Derivar marcadores do calendário
+  const markedDates = useMemo(() => {
+    const acc: Record<string, any> = {};
+    aulasVisuais.forEach(aula => {
+      // Prioridade de cor:
+      // Cancelada/Falta = Vermelho/Cinza
+      // Realizada = Verde
+      // Virtual = Azul
+      // Concreta (Agendada) = Verde Claro
+      let cor = '#1976D2'; // Virtual padrão
+      if (aula.status === 'CANCELADA') cor = '#F44336';
+      else if (aula.status === 'FALTA') cor = '#9E9E9E';
+      else if (aula.status === 'REALIZADA') cor = '#4CAF50';
+      else if (aula.tipo === 'CONCRETA') cor = '#81C784';
+
+      acc[aula.data] = {
+        marked: true,
+        dotColor: cor,
+        selected: aula.data === dataSelecionada,
+        selectedColor: aula.data === dataSelecionada ? '#1976D2' : undefined,
+      };
+    });
+
+    // Garante que o dia selecionado sempre tenha o círculo de seleção, mesmo sem aula
+    if (!acc[dataSelecionada]) {
+      acc[dataSelecionada] = {
+        selected: true,
+        selectedColor: '#1976D2'
+      };
+    }
+
+    return acc;
+  }, [aulasVisuais, dataSelecionada]);
+
+  // Filtrar aulas apenas do dia selecionado
+  const aulasDoDia = useMemo(() => {
+    return aulasVisuais.filter(a => a.data === dataSelecionada);
+  }, [aulasVisuais, dataSelecionada]);
+
+  const handleConfirmar = async (aula: any) => {
+    Alert.alert("Confirmar Aula", "Marcar como realizada?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Confirmar", onPress: () => confirmarAula(aula) }
+    ]);
+  };
+
+  const handleCancelar = async (aula: any) => {
+    Alert.alert("Cancelar Aula", "Deseja cancelar esta aula?", [
+      { text: "Não", style: "cancel" },
+      { text: "Sim, Cancelar", style: "destructive", onPress: () => cancelarAula(aula) }
+    ]);
+  };
 
   return (
     <>
       <ScreenHeader title="Calendário" />
-      <View style={styles.container}>
-        <View style={{ width: '100%', alignItems: 'center', marginBottom: 8 }}>
-          <View style={{ width: '95%', backgroundColor: '#fff', borderRadius: 8, padding: 12, alignItems: 'center', elevation: 2, marginBottom: 8 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Nova Aula</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
-              <Link href="/calendario/nova" asChild>
-                <Button title="+ Avulsa" color="#4CAF50" />
-              </Link>
-              <Link href="/calendario/nova-recorrente" asChild>
-                <Button title="+ Recorrente" color="#1976D2" />
-              </Link>
-            </View>
 
-          </View>
+      <View style={styles.container}>
+        {/* Botões de Ação Rápida */}
+        <View style={styles.actionContainer}>
+          <Link href="/calendario/nova-recorrente" asChild>
+            <Button title="+ Regra Recorrente" color="#1976D2" />
+          </Link>
+          <View style={{ width: 10 }} />
+          <Link href="/calendario/nova" asChild>
+            <Button title="+ Aula Avulsa" color="#4CAF50" />
+          </Link>
         </View>
-      </View>
-      <Text style={styles.title}>Calendário de Aulas</Text>
-      <Calendar
-        markedDates={markedDates}
-        onDayPress={day => setDataSelecionada(day.dateString)}
-        enableSwipeMonths
-        theme={{
-          todayTextColor: '#1976D2',
-          selectedDayBackgroundColor: '#1976D2',
-          dotColor: '#1976D2',
-        }}
-      />
-      <Text style={styles.subtitle}>
-        {aulasDoDia.length > 0
-          ? `Aulas em ${formatarDataBR(dataSelecionada)}`
-          : `Nenhuma aula em ${formatarDataBR(dataSelecionada)}`}
-      </Text>
-      {loading ? (
-        <ActivityIndicator size="large" color="#1976D2" style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          data={aulasDoDia}
-          keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => (
-            <AulaCard
-              aula={item}
-              onMarcarPresenca={marcarPresencaAula}
-              onApagar={apagarAula}
+
+        <Calendar
+          current={dataSelecionada}
+          markedDates={markedDates}
+          onDayPress={day => setDataSelecionada(day.dateString)}
+          onMonthChange={month => {
+            // Ao mudar o mês no calendário, atualiza a seleção para o dia 1 daquele mês para disparar o carregamento
+            setDataSelecionada(month.dateString);
+          }}
+          enableSwipeMonths
+          theme={{
+            todayTextColor: '#1976D2',
+            selectedDayBackgroundColor: '#1976D2',
+            dotColor: '#1976D2',
+            arrowColor: '#1976D2'
+          }}
+        />
+
+        <View style={styles.listContainer}>
+          <Text style={styles.subtitle}>
+            {aulasDoDia.length > 0
+              ? `Aulas em ${formatarDataBR(dataSelecionada)}`
+              : `Nenhuma aula em ${formatarDataBR(dataSelecionada)}`}
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#1976D2" style={{ marginTop: 20 }} />
+          ) : (
+            <FlatList
+              data={aulasDoDia}
+              keyExtractor={item => item.key}
+              renderItem={({ item }) => (
+                <AulaCard
+                  aula={{
+                    ...item,
+                    // Adaptação para o componente antigo se necessário, ou atualizar o componente
+                    id: item.id || 0, // Fallback p/ evitar crash
+                    aluno_id: item.aluno_id,
+                    data_aula: item.data,
+                    hora_inicio: item.hora,
+                    duracao_minutos: item.duracao,
+                    tipo_aula: item.tipo === 'VIRTUAL' ? 'RECORRENTE_GERADA' : 'AVULSA', // Mock para compatibilidade visual
+                    presenca: item.status === 'REALIZADA' ? 1 : item.status === 'CANCELADA' ? 3 : 0
+                  }}
+                  onMarcarPresenca={() => handleConfirmar(item)}
+                  onApagar={() => handleCancelar(item)}
+                />
+              )}
+              ListEmptyComponent={<Text style={styles.emptyText}>Dia livre.</Text>}
+              contentContainerStyle={{ paddingBottom: 80 }}
             />
           )}
-          style={{ width: '100%' }}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20 }}>Nenhuma aula agendada.</Text>}
-        />
-      )}
+        </View>
+      </View>
     </>
   );
 }
@@ -178,58 +205,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    paddingTop: 30,
   },
-  title: {
-    fontSize: 24,
+  actionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+    elevation: 2
+  },
+  listContainer: {
+    flex: 1,
+    padding: 10,
+  },
+  subtitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10,
+    textAlign: 'center'
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#1976D2',
-    marginVertical: 10,
-  },
-  aulaCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginVertical: 6,
-    marginHorizontal: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  aulaHora: {
-    fontWeight: 'bold',
-    color: '#1976D2',
-    fontSize: 16,
-  },
-  aulaAluno: {
-    fontSize: 15,
-    color: '#333',
-  },
-  aulaTipo: {
-    fontSize: 13,
-    marginTop: 2,
-    marginBottom: 2,
-  },
-  aulaStatus: {
-    fontSize: 13,
-    color: '#4CAF50',
-  },
-  aulaObs: {
-    fontSize: 12,
-    color: '#555',
-    marginTop: 4,
-  },
-  aulaButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
-  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#777',
+    fontSize: 16
+  }
 });

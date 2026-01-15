@@ -60,13 +60,13 @@ export const testarBanco = async () => {
 
 export const checkAndFixDatabase = async () => {
   const db = await getDatabase();
-  
+
   try {
     console.log('Verificando estrutura do banco de dados...');
-    
+
     // Verificar se a tabela exercicios existe
     const tableExists = await db.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='exercicios';");
-    
+
     if (tableExists.length === 0) {
       console.log('Tabela exercicios não existe. Criando...');
       await createExerciciosTable(db);
@@ -74,7 +74,7 @@ export const checkAndFixDatabase = async () => {
       // Verificar se a coluna ficha_id existe
       const columns = await db.getAllAsync("PRAGMA table_info(exercicios);");
       const hasFichaId = columns.some((col: any) => col.name === 'ficha_id');
-      
+
       if (!hasFichaId) {
         console.log('Coluna ficha_id não encontrada. Recriando tabela exercicios...');
         await db.execAsync('DROP TABLE IF EXISTS exercicios;');
@@ -112,7 +112,7 @@ export const checkAndFixDatabase = async () => {
         console.log('Coluna imc adicionada com sucesso.');
       }
     }
-    
+
     // Verificar se a tabela medidas existe
     const medidasTableExists = await db.getAllAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='medidas';");
     if (medidasTableExists.length === 0) {
@@ -218,10 +218,10 @@ export const migrarTabelaAulas = async () => {
 
 export const resetDatabase = async () => {
   const db = await getDatabase();
-  
+
   try {
     console.log('Resetando banco de dados...');
-    
+
     // Dropar todas as tabelas
     await db.execAsync('DROP TABLE IF EXISTS historico_series;');
     await db.execAsync('DROP TABLE IF EXISTS historico_treinos;');
@@ -233,7 +233,7 @@ export const resetDatabase = async () => {
     await db.execAsync('DROP TABLE IF EXISTS alunos;');
     await db.execAsync('DROP TABLE IF EXISTS aulas;');
     await db.execAsync('DROP TABLE IF EXISTS medidas;');
-    
+
     // Recriar todas as tabelas
     await db.execAsync(`
       CREATE TABLE alunos (
@@ -353,7 +353,7 @@ export const resetDatabase = async () => {
         FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
       );
     `);
-    
+
     console.log('Banco de dados resetado com sucesso.');
   } catch (error) {
     console.error('Erro ao resetar banco de dados:', error);
@@ -363,7 +363,7 @@ export const resetDatabase = async () => {
 
 export const initializeDatabase = async () => {
   const db = await getDatabase();
-  
+
   try {
     await db.withTransactionAsync(async () => {
       await db.execAsync(`
@@ -455,6 +455,17 @@ export const initializeDatabase = async () => {
           FOREIGN KEY (historico_treino_id) REFERENCES historico_treinos (id) ON DELETE CASCADE,
           FOREIGN KEY (exercicio_id) REFERENCES exercicios (id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS horarios_recorrentes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          aluno_id INTEGER,
+          dia_semana INTEGER, -- 0=Dom, 1=Seg...
+          hora_inicio TEXT, -- HH:MM
+          duracao_minutos INTEGER DEFAULT 60,
+          data_inicio_vigencia TEXT, -- YYYY-MM-DD
+          data_fim_vigencia TEXT, -- Nullable
+          FOREIGN KEY (aluno_id) REFERENCES alunos (id) ON DELETE CASCADE
+        );
       `);
 
       // Migração: adicionar coluna descanso se não existir
@@ -511,7 +522,7 @@ export const initializeDatabase = async () => {
         ALTER TABLE alunos ADD COLUMN data_nascimento TEXT;
         COMMIT;
         PRAGMA foreign_keys=on;
-      `).catch(() => {}); // Ignora erro se a coluna já existir
+      `).catch(() => { }); // Ignora erro se a coluna já existir
 
       // Migração: adicionar coluna tempo_cadencia se não existir
       try {
@@ -522,13 +533,13 @@ export const initializeDatabase = async () => {
         console.log('Coluna tempo_cadencia já existe na tabela historico_series.');
       }
     });
-    
+
     console.log('Banco de dados inicializado com sucesso.');
   } catch (error) {
     console.error('Erro ao inicializar banco de dados:', error);
     throw error;
   }
-}; 
+};
 
 /**
  * Remove todas as aulas (recorrentes e avulsas) do banco
@@ -575,35 +586,36 @@ export const limparAulasDuplicadas = async () => {
 };
 
 /**
- * Limpa TODAS as aulas recorrentes do banco (função de emergência)
+ * MIGRATION V2: Limpa todas as aulas futuras que foram geradas estaticamente.
+ * O novo sistema usa cálculo em tempo real.
  */
-export const limparTodasAulasRecorrentes = async () => {
+export const migrarParaNovoModeloCalendario = async () => {
+  const db = await getDatabase();
   try {
-    console.log('🚨 LIMPEZA DE EMERGÊNCIA: Iniciando...');
-    
-    // 1. Reiniciar conexão primeiro
-    console.log('🔄 Reiniciando conexão com banco...');
-    await reiniciarConexaoBanco();
-    
-    // 2. Testar banco
-    console.log('🔧 Testando banco...');
-    const bancoOK = await testarBanco();
-    if (!bancoOK) {
-      throw new Error('Banco de dados não está funcionando');
-    }
-    
-    // 3. Obter nova instância
-    console.log('📡 Obtendo nova instância do banco...');
-    const db = await getDatabase();
-    
-    // 4. Executar limpeza
-    console.log('🧹 Executando limpeza...');
-    const result = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
-    
-    console.log(`✅ Removidas ${result.changes} aulas recorrentes!`);
-    return result.changes;
+    console.log('🔄 Migrando para Calendário V2 (On-Read)...');
+
+    // 1. Remove futuras aulas geradas automaticamente
+    // Mantém: Aulas passadas, aulas avulsas manuais, e qualquer coisa com presença marcada
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const result = await db.runAsync(`
+      DELETE FROM aulas 
+      WHERE tipo_aula = 'RECORRENTE_GERADA' 
+      AND data_aula >= ?
+      AND presenca = 0; -- Garante que não apaga se alguém já marcou presença
+    `, hoje);
+
+    console.log(`✅ Limpeza concluída: ${result.changes} aulas futuras estáticas removidas.`);
+
+    // 2. Garante que índice de recorrência existe (para performance)
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_aulas_data ON aulas(data_aula);
+      CREATE INDEX IF NOT EXISTS idx_recorrencia_vigencia ON horarios_recorrentes(data_inicio_vigencia, data_fim_vigencia);
+    `);
+
+    console.log('✅ Índices de performance criados.');
   } catch (error) {
-    console.error('❌ Erro na limpeza:', error);
+    console.error('❌ Erro na migração V2:', error);
     throw error;
   }
 };
@@ -615,7 +627,7 @@ export const listarDadosBanco = async () => {
   const db = await getDatabase();
   try {
     console.log('=== DADOS DO BANCO DE DADOS ===');
-    
+
     // Listar todas as aulas
     console.log('\n--- TODAS AS AULAS ---');
     const aulas = await db.getAllAsync<any>(`
@@ -625,7 +637,7 @@ export const listarDadosBanco = async () => {
       ORDER BY a.data_aula, a.hora_inicio
     `);
     console.log(`Total de aulas: ${aulas.length}`);
-    
+
     // Agrupar por data para facilitar visualização
     const aulasPorData: { [key: string]: any[] } = {};
     aulas.forEach((aula: any) => {
@@ -634,19 +646,19 @@ export const listarDadosBanco = async () => {
       }
       aulasPorData[aula.data_aula].push(aula);
     });
-    
+
     Object.keys(aulasPorData).sort().forEach(data => {
       const aulasDoDia = aulasPorData[data];
       const dataObj = new Date(data);
       const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
       const diaSemana = diasSemana[dataObj.getDay()];
-      
+
       console.log(`\n📅 ${data} (${diaSemana}) - ${aulasDoDia.length} aula(s):`);
       aulasDoDia.forEach((aula: any) => {
         console.log(`  • ID: ${aula.id} | Aluno: ${aula.aluno_nome || aula.aluno_id} | Hora: ${aula.hora_inicio} | Descrição: ${aula.observacoes} | Presença: ${aula.presenca}`);
       });
     });
-    
+
     // Verificar duplicações
     console.log('\n--- VERIFICAÇÃO DE DUPLICAÇÕES ---');
     const duplicadas = await db.getAllAsync<any>(`
@@ -656,7 +668,7 @@ export const listarDadosBanco = async () => {
       GROUP BY aluno_id, data_aula, hora_inicio, observacoes
       HAVING COUNT(*) > 1
     `);
-    
+
     if (duplicadas.length > 0) {
       console.log(`⚠️  ENCONTRADAS ${duplicadas.length} COMBINAÇÕES DUPLICADAS:`);
       duplicadas.forEach((dup: any) => {
@@ -665,7 +677,7 @@ export const listarDadosBanco = async () => {
     } else {
       console.log('✅ Nenhuma duplicação encontrada!');
     }
-    
+
     console.log('\n=== FIM DOS DADOS ===');
   } catch (error) {
     console.error('Erro ao listar dados do banco:', error);
@@ -680,59 +692,59 @@ export const regenerarAulasRecorrentes = async () => {
   const db = await getDatabase();
   try {
     console.log('🔄 Regenerando aulas recorrentes...');
-    
+
     // 1. Remover todas as aulas recorrentes existentes
     console.log('Removendo aulas recorrentes antigas...');
     const aulasRemovidas = await db.runAsync("DELETE FROM aulas WHERE tipo_aula = 'RECORRENTE';");
     console.log(`Removidas ${aulasRemovidas.changes} aulas recorrentes antigas`);
-    
+
     // 3. Definir período para gerar aulas (próximos 6 meses)
     const hoje = new Date();
     const inicio = hoje.toISOString().slice(0, 10);
     const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 6, 0).toISOString().slice(0, 10);
-    
+
     console.log(`Gerando aulas de ${inicio} até ${fim}`);
-    
+
     // 4. Gerar novas aulas recorrentes
     const { gerarAulasRecorrentesParaPeriodo } = await import('./recorrenciaUtils');
     await gerarAulasRecorrentesParaPeriodo(inicio, fim);
-    
+
     console.log('✅ Aulas recorrentes regeneradas com sucesso!');
   } catch (error) {
     console.error('Erro ao regenerar aulas recorrentes:', error);
     throw error;
   }
-}; 
+};
 
 export async function verificarAulasNoBanco(aluno_id?: number) {
   const db = await getDatabase();
-  
+
   console.log('\n=== VERIFICAÇÃO DAS AULAS NO BANCO ===');
-  
+
   // Verificar aulas
   let query = 'SELECT aulas.*, alunos.nome as aluno_nome FROM aulas LEFT JOIN alunos ON aulas.aluno_id = alunos.id';
   const params: any[] = [];
-  
+
   if (aluno_id) {
     query += ' WHERE aulas.aluno_id = ?';
     params.push(aluno_id);
   }
-  
+
   query += ' ORDER BY data_aula, hora_inicio LIMIT 20';
-  
+
   const aulas = await db.getAllAsync<any>(query, params);
   console.log(`📚 Aulas encontradas: ${aulas.length}`);
-  
+
   aulas.forEach((aula, i) => {
     const data = new Date(aula.data_aula);
-    const diaSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'][data.getDay()];
+    const diaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][data.getDay()];
     console.log(`  ${i + 1}. ${aula.data_aula} (${diaSemana}) ${aula.hora_inicio} - ${aula.aluno_nome} (${aula.observacoes})`);
   });
-  
+
   console.log('=== FIM DA VERIFICAÇÃO ===\n');
-  
+
   return { aulas };
-} 
+}
 
 /**
  * Limpa todas as RRULEs das aulas recorrentes (seta rrule = NULL)
@@ -776,7 +788,7 @@ export const limparRecorrentesCompleto = async () => {
   const deletadas = await deletarTodasAulasRecorrentes();
   console.log(`🧹 Limpeza completa: ${deletadas} recorrentes deletadas.`);
   return { deletadas };
-}; 
+};
 
 /**
  * Deleta todas as aulas avulsas (tipo_aula = 'AVULSA') do banco.
@@ -793,7 +805,7 @@ export const deletarTodasAulasAvulsas = async () => {
     console.error('❌ Erro ao deletar aulas avulsas:', error);
     throw error;
   }
-}; 
+};
 
 /**
  * Deleta todas as aulas sobrescritas (tipo_aula = 'SOBREESCRITA') do banco.
@@ -810,7 +822,7 @@ export const deletarTodasAulasSobrescritas = async () => {
     console.error('❌ Erro ao deletar aulas sobrescritas:', error);
     throw error;
   }
-}; 
+};
 
 // MIGRAÇÃO: Refatoração do calendário (remover legados e criar novas estruturas)
 export const migrarBancoCalendario = async () => {
@@ -819,10 +831,10 @@ export const migrarBancoCalendario = async () => {
   await db.execAsync('DROP TABLE IF EXISTS presencas_recorrentes;');
 
   // Remover colunas legadas da tabela aulas (se existirem)
-  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN rrule;'); } catch (e) {}
-  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN data_avulsa;'); } catch (e) {}
-  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN sobrescrita_id;'); } catch (e) {}
-  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN cancelada_por_id;'); } catch (e) {}
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN rrule;'); } catch (e) { }
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN data_avulsa;'); } catch (e) { }
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN sobrescrita_id;'); } catch (e) { }
+  try { await db.execAsync('ALTER TABLE aulas DROP COLUMN cancelada_por_id;'); } catch (e) { }
 
   // Criar/ajustar tabela horarios_recorrentes
   await db.execAsync(`
@@ -854,7 +866,7 @@ export const migrarBancoCalendario = async () => {
       FOREIGN KEY (horario_recorrente_id) REFERENCES horarios_recorrentes(id) ON DELETE SET NULL
     );
   `);
-}; 
+};
 
 // MIGRAÇÃO: Criação da tabela horarios_recorrentes se não existir
 export const migrarHorariosRecorrentes = async () => {
@@ -871,7 +883,7 @@ export const migrarHorariosRecorrentes = async () => {
       FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
     );
   `);
-}; 
+};
 
 /**
  * Remove todos os padrões recorrentes (horarios_recorrentes) do banco
