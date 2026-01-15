@@ -13,14 +13,14 @@ function TabBarIcon(props: {
 }) {
   return (
     <View style={navigationStyles.tabBarIcon}>
-      <FontAwesome 
-        size={24} 
-        name={props.name} 
-        color={props.color} 
+      <FontAwesome
+        size={24}
+        name={props.name}
+        color={props.color}
         style={{
           opacity: props.focused ? 1 : 0.7,
           transform: [{ scale: props.focused ? 1.1 : 1 }]
-        }} 
+        }}
       />
     </View>
   );
@@ -45,9 +45,9 @@ export default function TabLayout() {
     tabBarLabel: ({ focused, color, children }) => {
       const LabelText = Text as any; // Workaround temporário
       return (
-        <LabelText 
+        <LabelText
           style={{
-            color, 
+            color,
             opacity: focused ? 1 : 0.7,
             transform: [{ scale: focused ? 1 : 0.95 }],
             fontSize: 12,
@@ -89,6 +89,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="cog" color={color} focused={focused} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
