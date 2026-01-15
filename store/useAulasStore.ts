@@ -12,6 +12,8 @@ interface AulasState {
   cancelarAula: (aula: AulaCalendario) => Promise<void>; // Cria exceção
   confirmarAula: (aula: AulaCalendario) => Promise<void>; // Concretiza a virtual
   obterAulasDoAluno: (aluno_id: number, inicio: Date, fim: Date) => Promise<AulaCalendario[]>;
+  listarRegrasAtivas: (aluno_id: number) => Promise<RegraRecorrencia[]>;
+  encerrarRegraRecorrente: (regra_id: number) => Promise<void>;
 }
 
 const useAulasStore = create<AulasState>((set, get) => ({
@@ -145,6 +147,38 @@ const useAulasStore = create<AulasState>((set, get) => ({
     }));
 
     return gerarCalendarioVisual(inicio, fim, regras, eventosConcretos);
+  },
+
+  listarRegrasAtivas: async (aluno_id: number) => {
+    const db = await getDatabase();
+    // Regras que ainda estão valendo (data_fim NULL ou futura)
+    const hojeStr = new Date().toISOString().slice(0, 10);
+    const regras = await db.getAllAsync<RegraRecorrencia>(`
+      SELECT id, aluno_id, dia_semana, hora_inicio, duracao_minutos, data_inicio_vigencia, data_fim_vigencia 
+      FROM horarios_recorrentes 
+      WHERE aluno_id = ?
+      AND (data_fim_vigencia IS NULL OR data_fim_vigencia >= ?)
+      ORDER BY dia_semana, hora_inicio
+    `, aluno_id, hojeStr);
+    return regras;
+  },
+
+  encerrarRegraRecorrente: async (regra_id: number) => {
+    const db = await getDatabase();
+    // Define o fim da vigência para ontem, encerrando a regra para o futuro
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    const ontemStr = ontem.toISOString().slice(0, 10);
+
+    await db.runAsync(`
+      UPDATE horarios_recorrentes 
+      SET data_fim_vigencia = ? 
+      WHERE id = ?
+    `, ontemStr, regra_id);
+
+    // Recarregar calendário
+    const hoje = new Date();
+    await get().carregarCalendario(hoje.getMonth() + 1, hoje.getFullYear());
   }
 
 }));
