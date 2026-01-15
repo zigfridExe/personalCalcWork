@@ -92,6 +92,31 @@ export const checkAndFixDatabase = async () => {
         await db.execAsync('ALTER TABLE alunos ADD COLUMN lembrete_hidratacao_minutos INTEGER;');
         console.log('Coluna lembrete_hidratacao_minutos adicionada com sucesso.');
       }
+
+      // NOVA MIGRAÇÃO: contato
+      const hasContato = alunosColumns.some((col: any) => col.name === 'contato');
+      if (!hasContato) {
+        console.log('Coluna contato não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN contato TEXT;');
+        console.log('Coluna contato adicionada com sucesso.');
+      }
+
+      // NOVA MIGRAÇÃO: data_nascimento
+      const hasDataNascimento = alunosColumns.some((col: any) => col.name === 'data_nascimento');
+      if (!hasDataNascimento) {
+        console.log('Coluna data_nascimento não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN data_nascimento TEXT;');
+        console.log('Coluna data_nascimento adicionada com sucesso.');
+      }
+
+      // NOVA MIGRAÇÃO: foto_uri
+      const hasFotoUri = alunosColumns.some((col: any) => col.name === 'foto_uri');
+      if (!hasFotoUri) {
+        console.log('Coluna foto_uri não encontrada. Adicionando...');
+        await db.execAsync('ALTER TABLE alunos ADD COLUMN foto_uri TEXT;');
+        console.log('Coluna foto_uri adicionada com sucesso.');
+      }
+
       // Migração para peso, altura e imc
       const hasPeso = alunosColumns.some((col: any) => col.name === 'peso');
       if (!hasPeso) {

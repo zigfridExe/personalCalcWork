@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import useAlunosStore from '../../store/useAlunosStore';
 import useAulasStore from '../../store/useAulasStore';
@@ -13,13 +12,12 @@ export default function NovaRecorrenciaScreen() {
   const { criarRegraRecorrente } = useAulasStore();
 
   const [alunoId, setAlunoId] = useState<number | null>(null);
-  const [diaSemana, setDiaSemana] = useState<number>(1); // 0=Dom, 1=Seg...
-  const [horaInicio, setHoraInicio] = useState(new Date());
-  const [duracao, setDuracao] = useState('60');
-  const [dataInicio, setDataInicio] = useState(new Date());
+  const [diasSelecionados, setDiasSelecionados] = useState<number[]>([]); // Array de dias
 
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Usando strings para entrada simples (Workaround para Expo Go)
+  const [horaTexto, setHoraTexto] = useState('08:00');
+  const [duracao, setDuracao] = useState('60');
+  const [dataInicioTexto, setDataInicioTexto] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
 
   const diasSemana = [
     { id: 0, label: 'Domingo' },
@@ -31,40 +29,59 @@ export default function NovaRecorrenciaScreen() {
     { id: 6, label: 'Sábado' },
   ];
 
+  const toggleDia = (diaId: number) => {
+    setDiasSelecionados(prev => {
+      if (prev.includes(diaId)) {
+        return prev.filter(d => d !== diaId);
+      } else {
+        return [...prev, diaId].sort();
+      }
+    });
+  };
+
   const handleSalvar = async () => {
     if (!alunoId) {
       Alert.alert('Erro', 'Selecione um aluno.');
       return;
     }
 
-    const horaFormatada = horaInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const dataInicioFormatada = dataInicio.toISOString().slice(0, 10);
+    if (diasSelecionados.length === 0) {
+      Alert.alert('Erro', 'Selecione pelo menos um dia da semana.');
+      return;
+    }
+
+    // Validação básica de horário
+    if (!/^\d{2}:\d{2}$/.test(horaTexto)) {
+      Alert.alert('Erro', 'Formato de hora inválido. Use HH:MM (ex: 14:30)');
+      return;
+    }
+
+    // Validação básica de data
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicioTexto)) {
+      Alert.alert('Erro', 'Formato de data inválido. Use YYYY-MM-DD (ex: 2026-01-15)');
+      return;
+    }
 
     try {
-      await criarRegraRecorrente(
-        alunoId,
-        diaSemana,
-        horaFormatada,
-        parseInt(duracao) || 60,
-        dataInicioFormatada
+      // Criar uma regra para cada dia selecionado
+      const promises = diasSelecionados.map(dia =>
+        criarRegraRecorrente(
+          alunoId,
+          dia,
+          horaTexto,
+          parseInt(duracao) || 60,
+          dataInicioTexto
+        )
       );
 
-      Alert.alert('Sucesso', 'Regra recorrente criada!');
+      await Promise.all(promises);
+
+      Alert.alert('Sucesso', 'Regras recorrentes criadas!');
       router.back();
     } catch (error) {
       console.error(error);
-      Alert.alert('Erro', 'Falha ao criar regra.');
+      Alert.alert('Erro', 'Falha ao criar regras.');
     }
-  };
-
-  const onTimeChange = (event: any, selectedDate?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedDate) setHoraInicio(selectedDate);
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) setDataInicio(selectedDate);
   };
 
   return (
@@ -85,20 +102,20 @@ export default function NovaRecorrenciaScreen() {
           </Picker>
         </View>
 
-        <Text style={styles.label}>Dia da Semana</Text>
+        <Text style={styles.label}>Dias da Semana</Text>
         <View style={styles.diasContainer}>
           {diasSemana.map(dia => (
             <TouchableOpacity
               key={dia.id}
               style={[
                 styles.diaButton,
-                diaSemana === dia.id && styles.diaButtonSelected
+                diasSelecionados.includes(dia.id) && styles.diaButtonSelected
               ]}
-              onPress={() => setDiaSemana(dia.id)}
+              onPress={() => toggleDia(dia.id)}
             >
               <Text style={[
                 styles.diaText,
-                diaSemana === dia.id && styles.diaTextSelected
+                diasSelecionados.includes(dia.id) && styles.diaTextSelected
               ]}>
                 {dia.label.slice(0, 3)}
               </Text>
@@ -106,20 +123,14 @@ export default function NovaRecorrenciaScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>Horário de Início</Text>
-        <TouchableOpacity style={styles.inputButton} onPress={() => setShowTimePicker(true)}>
-          <Text>{horaInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</Text>
-        </TouchableOpacity>
-        {showTimePicker && (
-          <DateTimePicker
-            testID="timePicker"
-            value={horaInicio}
-            mode="time"
-            is24Hour={true}
-            display="default"
-            onChange={onTimeChange}
-          />
-        )}
+        <Text style={styles.label}>Horário de Início (HH:MM)</Text>
+        <TextInput
+          style={styles.input}
+          value={horaTexto}
+          onChangeText={setHoraTexto}
+          placeholder="Ex: 14:30"
+          keyboardType="numbers-and-punctuation"
+        />
 
         <Text style={styles.label}>Duração (minutos)</Text>
         <TextInput
@@ -129,18 +140,14 @@ export default function NovaRecorrenciaScreen() {
           keyboardType="numeric"
         />
 
-        <Text style={styles.label}>Início da Vigência</Text>
-        <TouchableOpacity style={styles.inputButton} onPress={() => setShowDatePicker(true)}>
-          <Text>{dataInicio.toLocaleDateString()}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={dataInicio}
-            mode="date"
-            display="default"
-            onChange={onDateChange}
-          />
-        )}
+        <Text style={styles.label}>Início da Vigência (YYYY-MM-DD)</Text>
+        <TextInput
+          style={styles.input}
+          value={dataInicioTexto}
+          onChangeText={setDataInicioTexto}
+          placeholder="Ex: 2026-01-15"
+          keyboardType="default"
+        />
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
           <Text style={styles.saveButtonText}>Criar Regra</Text>

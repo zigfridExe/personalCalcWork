@@ -11,6 +11,7 @@ interface AulasState {
   criarAulaAvulsa: (aluno_id: number, data: string, hora: string, duracao: number, obs?: string) => Promise<void>;
   cancelarAula: (aula: AulaCalendario) => Promise<void>; // Cria exceção
   confirmarAula: (aula: AulaCalendario) => Promise<void>; // Concretiza a virtual
+  obterAulasDoAluno: (aluno_id: number, inicio: Date, fim: Date) => Promise<AulaCalendario[]>;
 }
 
 const useAulasStore = create<AulasState>((set, get) => ({
@@ -113,6 +114,37 @@ const useAulasStore = create<AulasState>((set, get) => ({
     }
     const d = new Date(aula.data);
     await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  },
+
+  obterAulasDoAluno: async (aluno_id: number, inicio: Date, fim: Date) => {
+    const db = await getDatabase();
+    const inicioStr = inicio.toISOString().slice(0, 10);
+    const fimStr = fim.toISOString().slice(0, 10);
+
+    // Buscar Regras
+    const regras = await db.getAllAsync<RegraRecorrencia>(`
+      SELECT id, aluno_id, dia_semana, hora_inicio, duracao_minutos, data_inicio_vigencia, data_fim_vigencia 
+      FROM horarios_recorrentes 
+      WHERE aluno_id = ?
+      AND data_inicio_vigencia <= ? 
+      AND (data_fim_vigencia IS NULL OR data_fim_vigencia >= ?)
+    `, aluno_id, fimStr, inicioStr);
+
+    // Buscar Concretas
+    const eventos = await db.getAllAsync<any>(`
+      SELECT id, aluno_id, data_aula, hora_inicio, tipo_aula, presenca as status_presenca, observacoes, horario_recorrente_id as recorrencia_id
+      FROM aulas 
+      WHERE aluno_id = ?
+      AND data_aula BETWEEN ? AND ?
+      AND tipo_aula != 'RECORRENTE_GERADA'
+    `, aluno_id, inicioStr, fimStr);
+
+    const eventosConcretos: EventoConcreto[] = eventos.map((e: any) => ({
+      ...e,
+      tipo_aula: e.tipo_aula as any
+    }));
+
+    return gerarCalendarioVisual(inicio, fim, regras, eventosConcretos);
   }
 
 }));
