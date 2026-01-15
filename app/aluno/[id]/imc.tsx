@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import useAlunosStore from '../../../store/useAlunosStore';
+import ScreenHeader from '@/shared/components/ScreenHeader';
+import { theme } from '@/styles/theme';
 
 export default function ImcScreen() {
   const { id } = useLocalSearchParams();
@@ -46,98 +48,115 @@ export default function ImcScreen() {
     calcularIMC(peso, altura);
   };
 
-  const handleSalvar = async () => {
-    if (!peso || !altura || !imc) {
-      Alert.alert('Preencha peso e altura corretamente!');
-      return;
-    }
-    try {
-      const aluno = alunos.find((a) => a.id.toString() === id);
-      if (!aluno) throw new Error('Aluno não encontrado');
-      await registrarMedida({
-        aluno_id: aluno.id,
-        data: new Date(),
-        peso: parseFloat(peso.replace(',', '.')),
-        altura: parseFloat(altura.replace(',', '.')),
-      });
-      Alert.alert('Avaliação física salva com sucesso!');
-      router.back();
-    } catch (e) {
-      Alert.alert('Erro ao salvar avaliação: ' + (e instanceof Error ? e.message : String(e)));
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Cálculo de IMC</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Peso (kg)"
-        keyboardType="numeric"
-        value={peso}
-        onChangeText={setPeso}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Altura (cm)"
-        keyboardType="numeric"
-        value={altura}
-        onChangeText={setAltura}
-      />
-      <Text style={styles.dica}>Digite a altura em centímetros. Exemplo: 175 para 1,75m</Text>
-      <Button title="Calcular IMC" onPress={handleCalcular} />
-      {imc && (
-        <View style={styles.resultado}>
-          <Text style={styles.imcValor}>IMC: {imc.toFixed(2)}</Text>
-          <Text style={styles.classificacao}>{classificacao}</Text>
-        </View>
-      )}
-      {/* Removido o botão de salvar, pois o registro deve ser feito na avaliação física completa */}
-    </View>
+    <>
+      <ScreenHeader title="Cálculo de IMC" />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.label}>Peso (kg)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 70"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={peso}
+          onChangeText={setPeso}
+        />
+
+        <Text style={styles.label}>Altura (cm)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 175"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={altura}
+          onChangeText={setAltura}
+        />
+        <Text style={styles.dica}>Digite a altura em centímetros. Exemplo: 175 para 1,75m</Text>
+
+        <TouchableOpacity style={styles.button} onPress={handleCalcular}>
+          <Text style={styles.buttonText}>CALCULAR IMC</Text>
+        </TouchableOpacity>
+
+        {imc && (
+          <View style={styles.resultado}>
+            <Text style={styles.imcValor}>IMC: {imc.toFixed(2)}</Text>
+            <Text style={[styles.classificacao, {
+              color: classificacao === 'Peso normal' ? theme.colors.success : theme.colors.warning
+            }]}>
+              {classificacao}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  label: {
+    alignSelf: 'flex-start',
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.title,
+    marginBottom: 5,
+    marginTop: 10
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
+    width: '100%',
+    height: 50,
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    marginBottom: 5,
+    paddingHorizontal: 15,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
+    fontSize: 16
   },
   resultado: {
-    marginVertical: 20,
+    marginVertical: 30,
     alignItems: 'center',
+    padding: 20,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   imcValor: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2196F3',
+    fontSize: 32,
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
   },
   classificacao: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 20,
     marginTop: 5,
+    fontFamily: theme.fonts.regular
   },
   dica: {
     fontSize: 12,
-    color: '#888',
-    marginBottom: 10,
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+    fontStyle: 'italic'
   },
-}); 
+  button: {
+    width: '100%',
+    backgroundColor: theme.colors.info,
+    paddingVertical: 15,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    marginTop: 10
+  },
+  buttonText: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
+    fontSize: 16
+  }
+});

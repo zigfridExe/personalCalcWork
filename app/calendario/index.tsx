@@ -1,11 +1,13 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Link, useFocusEffect } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import { migrarParaNovoModeloCalendario, initializeDatabase } from '../../utils/databaseUtils';
 import AulaCard from '../../components/AulaCard';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { theme } from '@/styles/theme';
 
 // Configuração do calendário para português
 LocaleConfig.locales['pt-br'] = {
@@ -84,17 +86,19 @@ export default function CalendarioScreen() {
       // Realizada = Verde
       // Virtual = Azul
       // Concreta (Agendada) = Verde Claro
-      let cor = '#1976D2'; // Virtual padrão
-      if (aula.status === 'CANCELADA') cor = '#F44336';
-      else if (aula.status === 'FALTA') cor = '#9E9E9E';
-      else if (aula.status === 'REALIZADA') cor = '#4CAF50';
-      else if (aula.tipo === 'CONCRETA') cor = '#81C784';
+
+      let cor = theme.colors.info; // Virtual padrão
+      if (aula.status === 'CANCELADA') cor = theme.colors.danger;
+      else if (aula.status === 'FALTA') cor = theme.colors.textSecondary;
+      else if (aula.status === 'REALIZADA') cor = theme.colors.success;
+      else if (aula.tipo === 'CONCRETA') cor = theme.colors.primary;
 
       acc[aula.data] = {
         marked: true,
         dotColor: cor,
         selected: aula.data === dataSelecionada,
-        selectedColor: aula.data === dataSelecionada ? '#1976D2' : undefined,
+        selectedColor: aula.data === dataSelecionada ? theme.colors.primary : undefined,
+        selectedTextColor: aula.data === dataSelecionada ? theme.colors.background : undefined,
       };
     });
 
@@ -102,7 +106,8 @@ export default function CalendarioScreen() {
     if (!acc[dataSelecionada]) {
       acc[dataSelecionada] = {
         selected: true,
-        selectedColor: '#1976D2'
+        selectedColor: theme.colors.primary,
+        selectedTextColor: theme.colors.background,
       };
     }
 
@@ -134,13 +139,18 @@ export default function CalendarioScreen() {
 
       <View style={styles.container}>
         {/* Botões de Ação Rápida */}
+
         <View style={styles.actionContainer}>
           <Link href="/calendario/nova-recorrente" asChild>
-            <Button title="+ Regra Recorrente" color="#1976D2" />
+            <TouchableOpacity style={styles.actionButton}>
+              <Text style={styles.actionButtonText}>+ Regra Recorrente</Text>
+            </TouchableOpacity>
           </Link>
           <View style={{ width: 10 }} />
           <Link href="/calendario/nova" asChild>
-            <Button title="+ Aula Avulsa" color="#4CAF50" />
+            <TouchableOpacity style={styles.actionButton}>
+              <Text style={styles.actionButtonText}>+ Aula Avulsa</Text>
+            </TouchableOpacity>
           </Link>
         </View>
 
@@ -154,10 +164,19 @@ export default function CalendarioScreen() {
           }}
           enableSwipeMonths
           theme={{
-            todayTextColor: '#1976D2',
-            selectedDayBackgroundColor: '#1976D2',
-            dotColor: '#1976D2',
-            arrowColor: '#1976D2'
+            calendarBackground: theme.colors.card, // Fundo do calendario
+            textSectionTitleColor: theme.colors.primary, // Cor dos dias da semana
+            todayTextColor: theme.colors.primary,
+            selectedDayBackgroundColor: theme.colors.primary,
+            selectedDayTextColor: theme.colors.background,
+            dotColor: theme.colors.primary,
+            arrowColor: theme.colors.primary,
+            monthTextColor: theme.colors.text,
+            dayTextColor: theme.colors.text,
+            textDisabledColor: theme.colors.textSecondary,
+            textMonthFontFamily: theme.fonts.title,
+            textDayHeaderFontFamily: theme.fonts.secondary,
+            textDayFontFamily: theme.fonts.regular,
           }}
         />
 
@@ -169,7 +188,7 @@ export default function CalendarioScreen() {
           </Text>
 
           {loading ? (
-            <ActivityIndicator size="large" color="#1976D2" style={{ marginTop: 20 }} />
+            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 20 }} />
           ) : (
             <FlatList
               data={aulasDoDia}
@@ -204,14 +223,16 @@ export default function CalendarioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   actionContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     padding: 10,
-    backgroundColor: '#fff',
-    elevation: 2
+    backgroundColor: theme.colors.card,
+    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   listContainer: {
     flex: 1,
@@ -219,15 +240,28 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.text,
     marginBottom: 10,
     textAlign: 'center'
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
-    color: '#777',
-    fontSize: 16
+    color: theme.colors.textSecondary,
+    fontSize: 16,
+    fontFamily: theme.fonts.regular,
+  },
+  actionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.md,
+  },
+  actionButtonText: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
+    fontSize: 14,
+    textTransform: 'uppercase',
   }
 });

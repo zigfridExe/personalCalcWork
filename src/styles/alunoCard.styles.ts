@@ -1,76 +1,79 @@
+
 import { StyleSheet } from 'react-native';
+import { theme } from './theme';
 
 export const alunoCardStyles = StyleSheet.create({
   // Container principal do card
   container: {
-    backgroundColor: '#1E1E1E', // Fundo escuro para combinar com o tema
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 16,
+    backgroundColor: theme.colors.card, // Fundo do cartão
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginVertical: theme.spacing.sm,
+    marginHorizontal: theme.spacing.md,
     elevation: 3,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.colors.border,
   },
-  
+
   // Linha de informações (imagem + detalhes)
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
-  
+
   // Container das informações do aluno
   infoContainer: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: theme.spacing.md,
   },
-  
+
   // Nome do aluno
   nome: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF', // Texto branco para melhor contraste
+    fontFamily: theme.fonts.title,
+    color: theme.colors.text,
     marginBottom: 6,
   },
-  
+
   // Detalhes do aluno (nascimento, telefone)
   detalhe: {
     fontSize: 14,
-    color: '#A0A0A0', // Cinza claro para detalhes
+    fontFamily: theme.fonts.secondary,
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
-  
+
   // Container da imagem do aluno
   imageContainer: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#2A2A2A', // Fundo mais escuro para o placeholder
+    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#FFB700', // Borda amarela para combinar com o tema
+    borderColor: theme.colors.primary,
   },
-  
+
   // Imagem do aluno
   image: {
     width: '100%',
     height: '100%',
   },
-  
+
   // Texto do placeholder da imagem
   placeholderText: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFB700', // Amarelo para combinar com o tema
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
   },
-  
+
   // Linha de botões
   buttonsRow: {
     flexDirection: 'row',
@@ -78,70 +81,71 @@ export const alunoCardStyles = StyleSheet.create({
     marginTop: 12,
     gap: 8,
   },
-  
+
   // Container do botão
   buttonContainer: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
-    elevation: 2, // Sombra para dar profundidade
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  
+
   // Estilo base para os botões
   button: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 40,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  
+
   // Botão primário (amarelo com fundo)
   primaryButton: {
-    backgroundColor: '#FFB700',
-    borderColor: '#FFB700',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
-  
+
   // Botão de perigo (vermelho com fundo)
   dangerButton: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
+    backgroundColor: theme.colors.danger,
+    borderColor: theme.colors.danger,
   },
-  
-  // Botão secundário (borda cinza escuro com fundo transparente)
+
+  // Botão secundário (borda amarela com fundo transparente) - Mudança conforme padrão
   secondaryButton: {
-    backgroundColor: 'transparent',
-    borderColor: '#333333',
+    backgroundColor: theme.colors.transparent,
+    borderColor: theme.colors.primary,
+    borderWidth: 1,
   },
-  
+
   // Estilo base para o texto dos botões
   buttonText: {
-    fontFamily: 'Roboto',
+    fontFamily: theme.fonts.regular,
     fontWeight: '700',
     fontSize: 14,
     textTransform: 'uppercase',
   },
-  
+
   // Texto do botão primário
   primaryButtonText: {
-    color: '#000000', // Texto preto para contraste com fundo amarelo
+    color: theme.colors.background, // Texto preto
   },
-  
+
   // Texto do botão de perigo
   dangerButtonText: {
-    color: '#FFFFFF', // Texto branco para contraste com fundo vermelho
+    color: theme.colors.text, // Texto branco
   },
-  
+
   // Texto do botão secundário
   secondaryButtonText: {
-    color: '#FFFFFF', // Texto branco para contraste com fundo escuro
+    color: theme.colors.primary, // Texto amarelo
   },
 });
 

@@ -1,30 +1,32 @@
+
 import { StyleSheet } from 'react-native';
+import { theme } from './theme';
 
 export const alunosStyles = StyleSheet.create({
   // Container principal
   container: {
     flex: 1,
-    backgroundColor: '#121212', // Fundo escuro
+    backgroundColor: theme.colors.background, // Fundo escuro do tema
     paddingTop: 16,
   },
-  
+
   // Container do conteúdo que pode rolar
   contentContainer: {
     flexGrow: 1,
     paddingBottom: 20,
   },
-  
+
   // Lista de alunos
   list: {
     width: '100%',
     paddingHorizontal: 16,
   },
-  
+
   // Botão de cadastrar novo aluno
   cadastrarButton: {
-    backgroundColor: '#FFB700', // Amarelo conforme o padrão
+    backgroundColor: theme.colors.primary, // Amarelo conforme o padrão
     padding: 16,
-    borderRadius: 12,
+    borderRadius: theme.borderRadius.md,
     width: '90%',
     alignSelf: 'center',
     marginTop: 16,
@@ -34,25 +36,30 @@ export const alunosStyles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  
+
   // Texto do botão de cadastrar
   cadastrarButtonText: {
-    color: '#000', // Preto para contraste com o fundo amarelo
+    color: theme.colors.background, // Preto para contraste com o fundo amarelo
     fontSize: 16,
     fontWeight: 'bold',
-    fontFamily: 'Roboto-Medium',
+    fontFamily: theme.fonts.title,
+    textTransform: 'uppercase',
   },
-  
+
   // Mensagem quando não há alunos cadastrados
   emptyMessage: {
-    color: '#A0A0A0',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 40,
     fontSize: 16,
     paddingHorizontal: 32,
+    fontFamily: theme.fonts.regular,
   },
-  
+
   // Container do botão flutuante (se necessário no futuro)
   fabContainer: {
     position: 'absolute',
@@ -61,15 +68,5 @@ export const alunosStyles = StyleSheet.create({
     elevation: 8,
   },
 });
-
-// Cores para referência
-const colors = {
-  background: '#121212',
-  surface: '#1E1E1E',
-  primary: '#FFB700',
-  onPrimary: '#000000',
-  text: '#FFFFFF',
-  textSecondary: '#A0A0A0',
-};
 
 export default alunosStyles;

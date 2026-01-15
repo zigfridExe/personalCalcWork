@@ -1,12 +1,12 @@
 import { Stack } from 'expo-router';
-import { navigationStyles } from '@/styles/navigation.styles';
+import { stackNavigationOptions } from '@/styles/navigation.styles';
 
 export default function AlunoIdLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: true,
-        ...navigationStyles,
+        ...stackNavigationOptions,
       }}
     >
       <Stack.Screen
@@ -24,7 +24,7 @@ export default function AlunoIdLayout() {
       <Stack.Screen
         name="fichas"
         options={{
-          title: 'Fichas do Aluno', 
+          title: 'Fichas do Aluno',
         }}
       />
       <Stack.Screen

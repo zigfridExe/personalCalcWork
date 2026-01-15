@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import useAlunosStore from '../../../store/useAlunosStore';
+import ScreenHeader from '@/shared/components/ScreenHeader';
+import { theme } from '@/styles/theme';
 
 export default function NovaMedidaScreen() {
   const { id } = useLocalSearchParams();
@@ -23,16 +25,14 @@ export default function NovaMedidaScreen() {
       const alturaNum = parseFloat(altura.replace(',', '.'));
       const cinturaNum = cintura ? parseFloat(cintura.replace(',', '.')) : null;
       const quadrilNum = quadril ? parseFloat(quadril.replace(',', '.')) : null;
-      // Calcular IMC (opcional, pode ser usado depois)
-      const imc = pesoNum / Math.pow(alturaNum / 100, 2);
+
       await registrarMedida({
         aluno_id: Number(id),
-        data,
+        data: new Date(data),
         peso: pesoNum,
         altura: alturaNum,
         cintura: cinturaNum,
         quadril: quadrilNum,
-        // imc não vai para a tabela, mas pode ser usado na tela
       });
       Alert.alert('Medida registrada com sucesso!');
       router.back();
@@ -42,68 +42,107 @@ export default function NovaMedidaScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Registrar Nova Medida</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Peso (kg)"
-        keyboardType="numeric"
-        value={peso}
-        onChangeText={setPeso}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Altura (cm)"
-        keyboardType="numeric"
-        value={altura}
-        onChangeText={setAltura}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Cintura (cm)"
-        keyboardType="numeric"
-        value={cintura}
-        onChangeText={setCintura}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Quadril (cm)"
-        keyboardType="numeric"
-        value={quadril}
-        onChangeText={setQuadril}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Data da Medição (AAAA-MM-DD)"
-        value={data}
-        onChangeText={setData}
-      />
-      <Button title="Salvar" onPress={handleSalvar} color="#4CAF50" />
-    </View>
+    <>
+      <ScreenHeader title="Nova Medida" />
+      <ScrollView contentContainerStyle={styles.container}>
+
+        <Text style={styles.label}>Peso (kg)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 70"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={peso}
+          onChangeText={setPeso}
+        />
+
+        <Text style={styles.label}>Altura (cm)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: 175"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={altura}
+          onChangeText={setAltura}
+        />
+
+        <Text style={styles.label}>Cintura (cm)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Opcional"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={cintura}
+          onChangeText={setCintura}
+        />
+
+        <Text style={styles.label}>Quadril (cm)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Opcional"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+          value={quadril}
+          onChangeText={setQuadril}
+        />
+
+        <Text style={styles.label}>Data (AAAA-MM-DD)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="AAAA-MM-DD"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={data}
+          onChangeText={setData}
+        />
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
+          <Text style={styles.saveButtonText}>SALVAR MEDIDAS</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexGrow: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
+    alignItems: 'center'
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  label: {
+    alignSelf: 'flex-start',
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.title,
+    marginBottom: 5,
+    marginTop: 10
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
+    width: '100%',
+    height: 50,
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
+    fontSize: 16
   },
-}); 
+  saveButton: {
+    backgroundColor: theme.colors.success,
+    width: '100%',
+    height: 50,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  saveButtonText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.title,
+    fontSize: 18,
+    textTransform: 'uppercase',
+  }
+});

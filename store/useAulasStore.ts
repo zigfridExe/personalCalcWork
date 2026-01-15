@@ -9,6 +9,7 @@ interface AulasState {
   // Ações
   criarRegraRecorrente: (aluno_id: number, dia_semana: number, hora: string, duracao: number, inicio: string) => Promise<void>;
   criarAulaAvulsa: (aluno_id: number, data: string, hora: string, duracao: number, obs?: string) => Promise<void>;
+  adicionarAula: (dados: { aluno_id: number; data_aula: string; hora_inicio: string; duracao_minutos: number; presenca: number; observacoes?: string; tipo_aula: string; horario_recorrente_id?: number | null }) => Promise<void>;
   cancelarAula: (aula: AulaCalendario) => Promise<void>; // Cria exceção
   confirmarAula: (aula: AulaCalendario) => Promise<void>; // Concretiza a virtual
   obterAulasDoAluno: (aluno_id: number, inicio: Date, fim: Date) => Promise<AulaCalendario[]>;
@@ -77,6 +78,17 @@ const useAulasStore = create<AulasState>((set, get) => ({
     `, aluno_id, data, hora, duracao, obs || null);
 
     const d = new Date(data);
+    await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  },
+
+  adicionarAula: async (dados) => {
+    const db = await getDatabase();
+    await db.runAsync(`
+      INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, observacoes, tipo_aula, horario_recorrente_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    `, dados.aluno_id, dados.data_aula, dados.hora_inicio, dados.duracao_minutos, dados.presenca, dados.observacoes || null, dados.tipo_aula, dados.horario_recorrente_id || null);
+
+    const d = new Date(dados.data_aula);
     await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
   },
 

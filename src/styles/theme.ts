@@ -15,8 +15,9 @@ export const theme = {
         info: '#2196F3',
         transparent: 'transparent',
     },
+
     fonts: {
-        title: 'Roboto_700Bold_Condensed', // Roboto Condensed Bold
+        title: 'RobotoCondensed_700Bold', // Roboto Condensed Bold
         regular: 'Roboto_400Regular', // Roboto Regular
         italic: 'Roboto_400Regular_Italic', // Roboto Italic
         secondary: 'SourceSansPro_400Regular', // Source Sans Pro Regular

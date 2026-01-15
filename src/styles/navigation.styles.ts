@@ -1,38 +1,29 @@
 // Arquivo central de estilos de navegação
 // Utilize stackNavigationOptions para Stack, tabNavigationOptions para Tabs e navigationStyles para componentes visuais.
 
-import { StyleSheet } from 'react-native';
 
-// Paleta de cores centralizada (altere aqui para refletir em todo app)
-const COLORS = {
-  background: '#000000', // Fundo preto
-  content: '#1A1A1A',   // Fundo cinza escuro
-  header: '#111111',    // Header preto
-  text: '#FFFFFF',      // Texto branco
-  active: '#FFB700',    // Amarelo destaque
-  inactive: '#888888',  // Cinza inativo
-  border: '#333333',    // Borda sutil
-};
+import { StyleSheet } from 'react-native';
+import { theme } from './theme';
 
 // Opções globais para navegação tipo Stack (telas internas)
 export const stackNavigationOptions = {
-  contentStyle: { backgroundColor: COLORS.content },
-  headerStyle: { backgroundColor: COLORS.header, borderBottomWidth: 1, borderBottomColor: COLORS.border, elevation: 0, shadowOpacity: 0 },
-  headerTintColor: COLORS.text,
+  contentStyle: { backgroundColor: theme.colors.background },
+  headerStyle: { backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.border, elevation: 0, shadowOpacity: 0 },
+  headerTintColor: theme.colors.text,
   headerTitleStyle: {
-    color: '#FFFFFF', // valor literal para máxima compatibilidade
+    color: theme.colors.text,
     fontSize: 18,
-    fontWeight: 'bold' as const, // Using 'bold' which is a valid string literal type
+    fontFamily: theme.fonts.title, // Usando a nova fonte
   },
   headerTitleAlign: 'center' as const,
 };
 
 // Opções globais para navegação tipo TabBar (abas inferiores)
 export const tabNavigationOptions = {
-  tabBarStyle: { backgroundColor: COLORS.background, borderTopWidth: 0, elevation: 10, height: 60, paddingBottom: 5, paddingTop: 5 },
-  tabBarActiveTintColor: COLORS.active,
-  tabBarInactiveTintColor: COLORS.inactive,
-  tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginBottom: 5 },
+  tabBarStyle: { backgroundColor: theme.colors.background, borderTopWidth: 0, elevation: 10, height: 60, paddingBottom: 5, paddingTop: 5 },
+  tabBarActiveTintColor: theme.colors.primary,
+  tabBarInactiveTintColor: theme.colors.textSecondary,
+  tabBarLabelStyle: { fontSize: 12, fontFamily: theme.fonts.secondary, marginBottom: 5 },
   tabBarHideOnKeyboard: true,
 };
 
@@ -43,7 +34,7 @@ export const navigationStyles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: COLORS.content,
+    backgroundColor: theme.colors.background,
   },
 });
 

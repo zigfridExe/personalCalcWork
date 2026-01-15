@@ -1,14 +1,12 @@
+
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Switch, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import useAulasStore from '../../store/useAulasStore';
 import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
-// Remover importação e uso de RRule
-// Ajustar estados e selects para não usar mais 'RECORRENTE'
-// Usar apenas os tipos: 'RECORRENTE_GERADA', 'AVULSA', 'EXCECAO_HORARIO', 'EXCECAO_CANCELAMENTO'
-// Remover toda lógica de manipulação de rrule
-// Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
+import { theme } from '@/styles/theme';
+import ScreenHeader from '@/shared/components/ScreenHeader';
 
 // Funções utilitárias para data/hora
 function formatHora(hora: string) {
@@ -56,7 +54,7 @@ export default function NovaAulaScreen() {
   const { adicionarAula } = useAulasStore();
   const { alunos } = useAlunosStore();
   const [alunoId, setAlunoId] = useState<number | null>(alunos[0]?.id || null);
-  // Corrigido: inicializa a data com o horário local, evitando problemas de fuso horário/UTC
+
   const hoje = new Date();
   const [data, setData] = useState(
     maskDataBR(
@@ -69,19 +67,14 @@ export default function NovaAulaScreen() {
   const [duracao, setDuracao] = useState('60');
   const [descricao, setDescricao] = useState('');
   const [presenca, setPresenca] = useState(false);
-  // Adicionar estado para tipo de aula
   const [tipoAula, setTipoAula] = useState<'AVULSA' | 'EXCECAO_HORARIO' | 'EXCECAO_CANCELAMENTO'>('AVULSA');
-  // Remover estado 'diasSemana'
-  // const [diasSemana, setDiasSemana] = useState<number[]>([]);
-  // Remover estado 'dataInicioRecorrente'
-  // const [dataInicioRecorrente, setDataInicioRecorrente] = useState(maskDataBR(String(hoje.getDate()).padStart(2, '0') + String(hoje.getMonth() + 1).padStart(2, '0') + String(hoje.getFullYear())));
 
   const handleSalvar = async () => {
     if (!alunoId || !data || !hora || !duracao) {
       Alert.alert('Preencha todos os campos!');
       return;
     }
-    if (!isDataValidaBR(data)) { // Ajustado para usar apenas 'data'
+    if (!isDataValidaBR(data)) {
       Alert.alert('Data inválida! Use o formato DD/MM/AAAA.');
       return;
     }
@@ -89,8 +82,7 @@ export default function NovaAulaScreen() {
       Alert.alert('Horário inválido! Use o formato HH:MM.');
       return;
     }
-    // Remover toda lógica de rrule e tipo_aula = 'RECORRENTE'
-    // Simplificar o handleSalvar para criar padrão em horarios_recorrentes ao invés de gerar rrule
+
     await adicionarAula({
       aluno_id: alunoId,
       data_aula: formatDataISO(data),
@@ -105,214 +97,175 @@ export default function NovaAulaScreen() {
     router.back();
   };
 
-  // Remover handleToggleDia
-  // const handleToggleDia = (dia: number) => {
-  //   setDiasSemana(prev => prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]);
-  // };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adicionar Nova Aula</Text>
-      <Text style={styles.label}>Aluno</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={alunoId}
-          onValueChange={itemValue => setAlunoId(itemValue)}
-          style={styles.picker}
-          itemStyle={styles.pickerItem}
-        >
-          {alunos.map(aluno => (
-            <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} />
-          ))}
-        </Picker>
-      </View>
-      <Text style={styles.label}>Tipo de Aula</Text>
-      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-        <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'AVULSA' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('AVULSA')}
-        >
-          <Text style={tipoAula === 'AVULSA' ? { color: '#fff' } : {}}>Avulsa</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('EXCECAO_HORARIO')}
-        >
-          <Text style={tipoAula === 'EXCECAO_HORARIO' ? { color: '#fff' } : {}}>Exceção de Horário</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tipoBtn, tipoAula === 'EXCECAO_CANCELAMENTO' && styles.tipoBtnAtivo]}
-          onPress={() => setTipoAula('EXCECAO_CANCELAMENTO')}
-        >
-          <Text style={tipoAula === 'EXCECAO_CANCELAMENTO' ? { color: '#fff' } : {}}>Exceção de Cancelamento</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.label}>Data</Text>
-      <TextInput
-        style={[
-          styles.input,
-          // Remover estilo inputDisabled
-          // tipoAula === 'RECORRENTE' && styles.inputDisabled
-        ]}
-        placeholder="DD/MM/AAAA"
-        value={data}
-        onChangeText={t => setData(maskDataBR(t))}
-        maxLength={10}
-        // Remover prop editable
-        // editable={tipoAula !== 'RECORRENTE'}
-      />
-      {/* Remover seção de data inicio recorrente */}
-      {/* {tipoAula === 'RECORRENTE' && (
-        <>
-          <Text style={styles.label}>A partir de qual data?</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="DD/MM/AAAA"
-            value={dataInicioRecorrente}
-            onChangeText={t => setDataInicioRecorrente(maskDataBR(t))}
-            maxLength={10}
-          />
-        </>
-      )} */}
-      <Text style={styles.label}>Hora</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="HH:MM"
-        value={hora}
-        onChangeText={t => setHora(formatHora(t))}
-        keyboardType="default"
-        maxLength={5}
-      />
-      <Text style={styles.label}>Duração (minutos)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="60"
-        value={duracao}
-        onChangeText={t => setDuracao(t.replace(/\D/g, ''))}
-        keyboardType="numeric"
-        maxLength={3}
-      />
-      <Text style={styles.label}>Observações</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Observações da Aula"
-        value={descricao}
-        onChangeText={setDescricao}
-      />
-      {/* Remover seção de tipo de aula */}
-      {/* {tipoAula === 'RECORRENTE' && (
-        <View style={styles.diasSemanaContainer}>
-          <Text style={styles.label}>Dias da Semana</Text>
-          <View style={styles.diasSemanaRow}>
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dia, idx) => (
-              <TouchableOpacity
-                key={dia}
-                style={[styles.diaBtn, diasSemana.includes(idx) && styles.diaBtnAtivo]}
-                onPress={() => handleToggleDia(idx)}
-              >
-                <Text style={diasSemana.includes(idx) ? { color: '#fff' } : {}}>{dia}</Text>
-              </TouchableOpacity>
+    <>
+      <ScreenHeader title="Nova Aula Avulsa" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+        <Text style={styles.label}>Aluno</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={alunoId}
+            onValueChange={itemValue => setAlunoId(itemValue)}
+            style={styles.picker}
+            dropdownIconColor={theme.colors.text}
+            itemStyle={styles.pickerItem}
+          >
+            {alunos.map(aluno => (
+              <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} color={theme.colors.background} />
             ))}
-          </View>
+          </Picker>
         </View>
-      )} */}
-      <Button title="Salvar" onPress={handleSalvar} color="#4CAF50" />
-    </View>
+
+        <Text style={styles.label}>Tipo de Aula</Text>
+        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+          <TouchableOpacity
+            style={[styles.tipoBtn, tipoAula === 'AVULSA' && styles.tipoBtnAtivo]}
+            onPress={() => setTipoAula('AVULSA')}
+          >
+            <Text style={[styles.tipoBtnText, tipoAula === 'AVULSA' && styles.tipoBtnTextAtivo]}>Avulsa</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tipoBtn, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnAtivo]}
+            onPress={() => setTipoAula('EXCECAO_HORARIO')}
+          >
+            <Text style={[styles.tipoBtnText, tipoAula === 'EXCECAO_HORARIO' && styles.tipoBtnTextAtivo]}>Extra</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Data</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="DD/MM/AAAA"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={data}
+          onChangeText={t => setData(maskDataBR(t))}
+          maxLength={10}
+          keyboardType="numeric"
+        />
+
+        <Text style={styles.label}>Hora</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="HH:MM"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={hora}
+          onChangeText={t => setHora(formatHora(t))}
+          keyboardType="numeric"
+          maxLength={5}
+        />
+
+        <Text style={styles.label}>Duração (minutos)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="60"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={duracao}
+          onChangeText={t => setDuracao(t.replace(/\D/g, ''))}
+          keyboardType="numeric"
+          maxLength={3}
+        />
+
+        <Text style={styles.label}>Observações</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Observações da Aula"
+          placeholderTextColor={theme.colors.textSecondary}
+          value={descricao}
+          onChangeText={setDescricao}
+        />
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
+          <Text style={styles.saveButtonText}>SALVAR AULA</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  content: {
+    padding: 20,
+    alignItems: 'center',
   },
   label: {
     alignSelf: 'flex-start',
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
+    fontSize: 16,
+    marginBottom: 8,
     marginTop: 10,
-    marginBottom: 2,
-  },
-  selectAluno: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
   },
   input: {
-    width: '95%',
-    height: 48,
-    borderColor: 'gray',
+    width: '100%',
+    height: 50,
     borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
     marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 6,
+    paddingHorizontal: 15,
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
     fontSize: 16,
   },
-  // Remover estilo inputDisabled
-  // inputDisabled: {
-  //   backgroundColor: '#eee',
-  //   color: '#888',
-  // },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 10,
-  },
-  tipoBtn: {
-    backgroundColor: '#eee',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  tipoBtnAtivo: {
-    backgroundColor: '#1976D2',
-  },
   pickerWrapper: {
-    width: '95%',
-    backgroundColor: '#fff',
-    borderRadius: 6,
-    borderColor: 'gray',
+    width: '100%',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
+    borderColor: theme.colors.border,
     marginBottom: 15,
+    overflow: 'hidden',
   },
   picker: {
     width: '100%',
-    height: 48,
-    justifyContent: 'center',
+    color: theme.colors.text,
+    height: 55,
   },
   pickerItem: {
+    fontSize: 16,
+    color: theme.colors.text,
+  },
+  tipoBtn: {
+    backgroundColor: theme.colors.card,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.md,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  tipoBtnAtivo: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  tipoBtnText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.regular,
+  },
+  tipoBtnTextAtivo: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.primary,
+    width: '100%',
+    height: 50,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  saveButtonText: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
     fontSize: 18,
-    height: 48,
-    textAlign: 'left',
-  },
-  diasSemanaContainer: {
-    marginBottom: 15,
-    width: '80%',
-  },
-  diasSemanaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  diaBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    backgroundColor: '#eee',
-    marginHorizontal: 2,
-  },
-  diaBtnAtivo: {
-    backgroundColor: '#1976D2',
-  },
+    textTransform: 'uppercase',
+  }
 });

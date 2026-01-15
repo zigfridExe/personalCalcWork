@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TextInput, Button, ScrollView } from 'react-native';
+import { Platform, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/styles/Themed';
+import { Text, View } from 'react-native';
 import useFichasStore from '../store/useFichasStore';
+import { theme } from '@/styles/theme';
 
 export default function ModalFichaScreen() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function ModalFichaScreen() {
 
   const handleSave = async () => {
     if (nome.trim().length === 0) {
-      alert('Por favor, insira o nome da ficha.');
+      Alert.alert('Erro', 'Por favor, insira o nome da ficha.');
       return;
     }
 
@@ -64,55 +65,78 @@ export default function ModalFichaScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>{isEditing ? 'Editar Ficha de Treino' : 'Nova Ficha de Treino'}</Text>
+        <Text style={styles.title}>{isEditing ? 'Editar Ficha' : 'Nova Ficha'}</Text>
+
+        <Text style={styles.label}>Nome da Ficha</Text>
         <TextInput
           style={styles.input}
-          placeholder="Nome da Ficha (Ex: Treino A)"
+          placeholder="Ex: Treino A - Hipertrofia"
+          placeholderTextColor={theme.colors.textSecondary}
           value={nome}
           onChangeText={setNome}
         />
+
+        <Text style={styles.label}>Data Início (AAAA-MM-DD)</Text>
         <TextInput
           style={styles.input}
-          placeholder="Data Início (AAAA-MM-DD)"
+          placeholder="AAAA-MM-DD"
+          placeholderTextColor={theme.colors.textSecondary}
           value={dataInicio}
           onChangeText={setDataInicio}
         />
+
+        <Text style={styles.label}>Data Fim (AAAA-MM-DD)</Text>
         <TextInput
           style={styles.input}
-          placeholder="Data Fim (AAAA-MM-DD)"
+          placeholder="AAAA-MM-DD"
+          placeholderTextColor={theme.colors.textSecondary}
           value={dataFim}
           onChangeText={setDataFim}
         />
+
+        <Text style={styles.label}>Objetivos</Text>
         <TextInput
-          style={styles.input}
-          placeholder="Objetivos"
+          style={[styles.input, styles.textArea]}
+          placeholder="Ex: Ganho de massa, perda de peso..."
+          placeholderTextColor={theme.colors.textSecondary}
           value={objetivos}
           onChangeText={setObjetivos}
           multiline
         />
+
+        <Text style={styles.label}>Observações</Text>
         <TextInput
-          style={styles.input}
-          placeholder="Observações"
+          style={[styles.input, styles.textArea]}
+          placeholder="Ex: Cuidado com o joelho..."
+          placeholderTextColor={theme.colors.textSecondary}
           value={observacoes}
           onChangeText={setObservacoes}
           multiline
         />
+
+        <Text style={styles.label}>Professor</Text>
         <TextInput
           style={styles.input}
-          placeholder="Professor"
+          placeholder="Nome do professor"
+          placeholderTextColor={theme.colors.textSecondary}
           value={professor}
           onChangeText={setProfessor}
         />
+
+        <Text style={styles.label}>Descanso Padrão</Text>
         <TextInput
           style={styles.input}
-          placeholder="Descanso Padrão (Ex: 40s)"
+          placeholder="Ex: 40s"
+          placeholderTextColor={theme.colors.textSecondary}
           value={descansoPadrao}
           onChangeText={setDescansoPadrao}
         />
-        <Button title="Salvar Ficha" onPress={handleSave} />
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>SALVAR FICHA</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>
   );
@@ -121,26 +145,56 @@ export default function ModalFichaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
     marginBottom: 20,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.regular,
+    marginBottom: 6,
+    fontWeight: 'bold',
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
+    width: '100%',
+    height: 48,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.text,
+    paddingHorizontal: 15,
+    marginBottom: 15,
     borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    borderColor: theme.colors.border,
+    fontFamily: theme.fonts.regular,
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: 10,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.success,
+    height: 50,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    width: '100%',
+  },
+  saveButtonText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.title,
+    fontSize: 18,
+    textTransform: 'uppercase',
   },
 });

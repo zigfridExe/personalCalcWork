@@ -1,4 +1,11 @@
-import { useFonts } from 'expo-font';
+
+import {
+  useFonts,
+  Roboto_400Regular,
+  Roboto_400Regular_Italic
+} from '@expo-google-fonts/roboto';
+import { RobotoCondensed_700Bold } from '@expo-google-fonts/roboto-condensed';
+import { SourceSansPro_400Regular } from '@expo-google-fonts/source-sans-pro';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -25,6 +32,10 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Roboto_400Regular,
+    RobotoCondensed_700Bold,
+    Roboto_400Regular_Italic,
+    SourceSansPro_400Regular,
     ...FontAwesome.font,
   });
 
@@ -58,25 +69,39 @@ function RootLayoutNav() {
           headerTitleAlign: 'center', // Específico deste layout
         }}
       >
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
+        <Stack.Screen
+          name="(tabs)"
+          options={{
             headerShown: false, // Mantém as tabs sem header se necessário
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="aluno/[id]" 
-          options={{ 
-            headerShown: false 
-          }} 
+        <Stack.Screen
+          name="aluno/[id]"
+          options={{
+            headerShown: false
+          }}
         />
-        <Stack.Screen 
-          name="modal" 
-          options={{ 
+        <Stack.Screen
+          name="modal"
+          options={{
             presentation: 'modal',
             headerShown: true,
             ...stackNavigationOptions,
-          }} 
+          }}
+        />
+        <Stack.Screen
+          name="historico/[alunoId]"
+          options={{
+            title: 'Histórico Completo',
+            headerShown: true,
+          }}
+        />
+        <Stack.Screen
+          name="edit-aluno/[id]"
+          options={{
+            title: 'Editar Aluno',
+            headerShown: true,
+          }}
         />
       </Stack>
     </AppLayout>

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAulasStore from '../../../store/useAulasStore';
 import { AulaCalendario, RegraRecorrencia } from '../../../utils/novoCalendarioUtils';
+import ScreenHeader from '@/shared/components/ScreenHeader';
+import { theme } from '@/styles/theme';
 
 export default function HorariosAlunoScreen() {
   const { id } = useLocalSearchParams();
@@ -21,7 +23,7 @@ export default function HorariosAlunoScreen() {
   // Função para formatar data para DD-MM-AAAA
   function formatarDataBR(dataISO: string) {
     const [ano, mes, dia] = dataISO.split('-');
-    return `${dia}-${mes}-${ano}`;
+    return `${dia}/${mes}/${ano}`;
   }
 
   function getNomeDia(dia: number) {
@@ -102,71 +104,170 @@ export default function HorariosAlunoScreen() {
   }, [listaAulas, hoje]);
 
   if (loading) {
-    return <View style={styles.container}><Text>Carregando dados...</Text></View>;
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ color: theme.colors.text, marginTop: 10 }}>Carregando dados...</Text>
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {regrasAtivas.length > 0 && (
-        <>
-          <Text style={styles.title}>Regras de Recorrência (Ativas)</Text>
-          {regrasAtivas.map(regra => (
-            <View key={regra.id} style={styles.cardRegra}>
-              <View>
-                <Text style={styles.regraDia}>{getNomeDia(regra.dia_semana)} às {regra.hora_inicio}</Text>
-                <Text style={styles.regraDetalhe}>{regra.duracao_minutos} min • Início: {formatarDataBR(regra.data_inicio_vigencia)}</Text>
+    <>
+      <ScreenHeader title="Horários do Aluno" />
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        {regrasAtivas.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Regras de Recorrência (Ativas)</Text>
+            {regrasAtivas.map(regra => (
+              <View key={regra.id} style={styles.cardRegra}>
+                <View>
+                  <Text style={styles.regraDia}>{getNomeDia(regra.dia_semana)} às {regra.hora_inicio}</Text>
+                  <Text style={styles.regraDetalhe}>{regra.duracao_minutos} min • Início: {formatarDataBR(regra.data_inicio_vigencia)}</Text>
+                </View>
+                <TouchableOpacity onPress={() => handleExcluirRegra(regra.id)} style={styles.btnTrash}>
+                  <Ionicons name="trash-outline" size={24} color={theme.colors.danger} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => handleExcluirRegra(regra.id)} style={styles.btnTrash}>
-                <Ionicons name="trash-outline" size={20} color="red" />
-              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        <Text style={styles.sectionTitle}>Próximas Aulas</Text>
+        {aulasAtivas.length === 0 ? <Text style={styles.empty}>Nenhuma aula futura agendada.</Text> : aulasAtivas.map(a => (
+          <View key={a.key} style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={styles.cardText}>{formatarDataBR(a.data)} às {a.hora}</Text>
             </View>
-          ))}
-        </>
-      )}
+            <Text style={[styles.statusText, { color: theme.colors.primary }]}>{a.status}</Text>
+            {a.observacoes && <Text style={styles.obsText}>{a.observacoes}</Text>}
+          </View>
+        ))}
 
-      <Text style={styles.title}>Próximas Aulas</Text>
-      {aulasAtivas.length === 0 ? <Text style={styles.empty}>Nenhuma aula futura agendada.</Text> : aulasAtivas.map(a => (
-        <View key={a.key} style={styles.card}>
-          <Text>{formatarDataBR(a.data)} {a.hora} - {a.status} {a.observacoes ? `(${a.observacoes})` : ''}</Text>
+        <Text style={styles.sectionTitle}>Histórico Completo</Text>
+        {aulasHistorico.length === 0 ? <Text style={styles.empty}>Nenhuma aula no histórico.</Text> : aulasHistorico.map(a => (
+          <View key={a.key} style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={18} color={theme.colors.textSecondary} style={{ marginRight: 8 }} />
+              <Text style={styles.cardText}>{formatarDataBR(a.data)} às {a.hora}</Text>
+            </View>
+            <Text style={[styles.statusText, {
+              color: a.status === 'REALIZADA' ? theme.colors.success :
+                a.status === 'FALTA' ? theme.colors.danger : theme.colors.textSecondary
+            }]}>
+              {a.status}
+            </Text>
+            {a.observacoes && <Text style={styles.obsText}>{a.observacoes}</Text>}
+          </View>
+        ))}
+
+        <Text style={styles.sectionTitle}>Resumo Anual ({hoje.getFullYear()})</Text>
+        <View style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }]}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Presenças</Text>
+            <Text style={[styles.statValue, { color: theme.colors.success }]}>{resumo.presencas}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Faltas</Text>
+            <Text style={[styles.statValue, { color: theme.colors.danger }]}>{resumo.faltas}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Total</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>{resumo.total}</Text>
+          </View>
         </View>
-      ))}
-
-      <Text style={styles.title}>Histórico Completo</Text>
-      {aulasHistorico.length === 0 ? <Text style={styles.empty}>Nenhuma aula no histórico.</Text> : aulasHistorico.map(a => (
-        <View key={a.key} style={styles.card}>
-          <Text>{formatarDataBR(a.data)} {a.hora} - {a.status} {a.observacoes ? `(${a.observacoes})` : ''}</Text>
-        </View>
-      ))}
-
-      <Text style={styles.title}>Resumo Anual ({hoje.getFullYear()})</Text>
-      <View style={styles.card}>
-        <Text>Presenças: {resumo.presencas}</Text>
-        <Text>Faltas: {resumo.faltas}</Text>
-        <Text>Canceladas: {resumo.canceladas}</Text>
-        <Text>Total de aulas: {resumo.total}</Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', padding: 16 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 8, elevation: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    padding: 16
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
+    marginTop: 20,
+    marginBottom: 10,
+    textTransform: 'uppercase'
+  },
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
   cardRegra: {
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    elevation: 1,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    padding: 15,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderLeftWidth: 4,
-    borderLeftColor: '#2196F3'
+    borderLeftColor: theme.colors.primary,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
-  regraDia: { fontWeight: 'bold', fontSize: 16, color: '#0d47a1' },
-  regraDetalhe: { color: '#546e7a', fontSize: 12 },
-  btnTrash: { padding: 8 },
-  empty: { color: '#888', marginBottom: 8 },
-}); 
+  regraDia: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 16,
+    color: theme.colors.text
+  },
+  regraDetalhe: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    fontFamily: theme.fonts.regular,
+    marginTop: 4
+  },
+  btnTrash: {
+    padding: 8
+  },
+  empty: {
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+    fontStyle: 'italic',
+    fontFamily: theme.fonts.regular
+  },
+  cardText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
+    fontSize: 16
+  },
+  statusText: {
+    fontFamily: theme.fonts.bold,
+    fontSize: 14,
+    marginTop: 4,
+    textTransform: 'uppercase'
+  },
+  obsText: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  statItem: {
+    alignItems: 'center',
+    padding: 10,
+    minWidth: 80
+  },
+  statLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontFamily: theme.fonts.regular,
+    textTransform: 'uppercase'
+  },
+  statValue: {
+    fontSize: 24,
+    fontFamily: theme.fonts.title,
+    fontWeight: 'bold'
+  }
+});
