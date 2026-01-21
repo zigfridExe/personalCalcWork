@@ -1,13 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/styles/Themed';
+import { Text, View } from 'react-native';
 import useExerciciosStore from '../store/useExerciciosStore';
 import useAlunosStore from '../store/useAlunosStore';
 import { exerciciosPorGrupo } from '../utils/exerciciosPorGrupo';
-import { Picker } from '@react-native-picker/picker';
+import { theme } from '@/styles/theme';
+import SelectModal from '../components/SelectModal';
 
 export default function ModalExercicioScreen() {
   const router = useRouter();
@@ -25,7 +26,20 @@ export default function ModalExercicioScreen() {
   const [observacoes, setObservacoes] = useState('');
   const [descanso, setDescanso] = useState('');
 
+  // Estados para o SelectModal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalOptions, setModalOptions] = useState<string[]>([]);
+  const [currentSelectionKey, setCurrentSelectionKey] = useState<string | null>(null);
+
   const isEditing = !!exercicioId;
+
+  // Dados para os selects
+  const seriesOptions = ['1', '3', '4', '5'];
+  const repeticoesOptions = ['6', '8', '10', '12', '15', 'Falha'];
+  const cargaOptions = Array.from({ length: 40 }, (_, i) => `${(i + 1) * 1}`); // 1 a 40 (personalizável)
+  const ajusteOptions = Array.from({ length: 15 }, (_, i) => `${i + 1}`);
+  const descansoOptions = ['30', '45', '60', '90', '120'];
 
   useEffect(() => {
     const initDB = async () => {
@@ -53,7 +67,7 @@ export default function ModalExercicioScreen() {
 
   const handleSave = async () => {
     if (nome.trim().length === 0) {
-      alert('Por favor, insira o nome do exercício.');
+      Alert.alert('Erro', 'Por favor, insira o nome do exercício.');
       return;
     }
 
@@ -78,6 +92,25 @@ export default function ModalExercicioScreen() {
     router.back();
   };
 
+  const openSelect = (key: string, title: string, options: string[]) => {
+    setCurrentSelectionKey(key);
+    setModalTitle(title);
+    setModalOptions(options);
+    setModalVisible(true);
+  };
+
+  const handleSelectConfirm = (value: string) => {
+    switch (currentSelectionKey) {
+      case 'nome': setNome(value); break;
+      case 'series': setSeries(value); break;
+      case 'repeticoes': setRepeticoes(value); break;
+      case 'carga': setCarga(value); break;
+      case 'ajuste': setAjuste(value); break;
+      case 'descanso': setDescanso(value); break;
+    }
+    setModalVisible(false);
+  };
+
   const gruposMusculares = [
     'Costas',
     'Peitoral',
@@ -92,7 +125,8 @@ export default function ModalExercicioScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>{isEditing ? 'Editar Exercício' : 'Novo Exercício'}</Text>
-        <Text style={styles.label}>Tipo:</Text>
+
+        <Text style={styles.label}>TIPO:</Text>
         <View style={styles.gruposContainer}>
           {gruposMusculares.map((grupo) => (
             <TouchableOpacity
@@ -101,138 +135,164 @@ export default function ModalExercicioScreen() {
                 styles.grupoButton,
                 grupoMuscular === grupo && styles.grupoButtonSelected,
               ]}
-              onPress={() => setGrupoMuscular(grupo)}
+              onPress={() => {
+                setGrupoMuscular(grupo);
+                setNome(''); // Limpa o exercício ao mudar o grupo
+              }}
             >
-              <Text style={styles.grupoButtonText}>{grupo}</Text>
+              <Text
+                style={[
+                  styles.grupoButtonText,
+                  grupoMuscular === grupo && styles.grupoButtonTextSelected
+                ]}
+              >
+                {grupo.toUpperCase()}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={styles.label}>Exercício</Text>
-        <Picker
-          enabled={!!grupoMuscular}
-          selectedValue={nome}
-          onValueChange={setNome}
-          style={{ width: '80%', marginBottom: 10 }}
+
+        <Text style={styles.label}>EXERCÍCIO</Text>
+        <TouchableOpacity
+          style={styles.selectButton}
+          onPress={() => {
+            if (!grupoMuscular) {
+              Alert.alert('Atenção', 'Selecione o grupo muscular primeiro.');
+              return;
+            }
+            openSelect('nome', 'Selecione o Exercício', exerciciosPorGrupo[grupoMuscular] || []);
+          }}
         >
-          <Picker.Item label={grupoMuscular ? 'Selecione o exercício' : 'Selecione o grupo muscular primeiro'} value="" />
-          {grupoMuscular && exerciciosPorGrupo[grupoMuscular]?.map((ex, idx) => (
-            <Picker.Item key={idx} label={ex} value={ex} />
-          ))}
-        </Picker>
+          <Text style={[styles.selectButtonText, !nome && styles.placeholderText]}>
+            {nome ? nome.toUpperCase() : 'SELECIONE O EXERCÍCIO'}
+          </Text>
+          <Text style={styles.chevron}>▼</Text>
+        </TouchableOpacity>
+
         <TextInput
           style={styles.input}
-          placeholder="Ou digite o nome do exercício"
+          placeholder="OU DIGITE O NOME DO EXERCÍCIO"
+          placeholderTextColor={theme.colors.textSecondary}
           value={nome}
           onChangeText={setNome}
         />
-        <Text style={styles.label}>Execução</Text>
+
+        <Text style={styles.label}>EXECUÇÃO</Text>
+
+        {/* Série */}
         <View style={styles.execucaoRow}>
-          <Text style={styles.execucaoLabel}>Série</Text>
-          <Picker
-            selectedValue={series}
-            onValueChange={setSeries}
-            style={{ flex: 1, height: 36 }}
+          <Text style={styles.execucaoLabel}>SÉRIE</Text>
+          <TouchableOpacity
+            style={styles.smallSelectButton}
+            onPress={() => openSelect('series', 'Séries', seriesOptions)}
           >
-            <Picker.Item label="Selecione" value="" />
-            <Picker.Item label="1" value="1" />
-            <Picker.Item label="3" value="3" />
-            <Picker.Item label="4" value="4" />
-            <Picker.Item label="5" value="5" />
-          </Picker>
+            <Text style={styles.smallSelectText}>{series || '-'}</Text>
+          </TouchableOpacity>
           <TextInput
             style={[styles.execucaoInput, { marginLeft: 8 }]}
-            placeholder="Ou digite"
+            placeholder="DIGITE"
+            placeholderTextColor={theme.colors.textSecondary}
             value={series}
             onChangeText={setSeries}
           />
         </View>
+
+        {/* Repetição */}
         <View style={styles.execucaoRow}>
-          <Text style={styles.execucaoLabel}>Repetição</Text>
-          <Picker
-            selectedValue={repeticoes}
-            onValueChange={setRepeticoes}
-            style={{ flex: 1, height: 36 }}
+          <Text style={styles.execucaoLabel}>REP.</Text>
+          <TouchableOpacity
+            style={styles.smallSelectButton}
+            onPress={() => openSelect('repeticoes', 'Repetições', repeticoesOptions)}
           >
-            <Picker.Item label="Selecione" value="" />
-            <Picker.Item label="12" value="12" />
-            <Picker.Item label="15" value="15" />
-            <Picker.Item label="Falha" value="Falha" />
-          </Picker>
+            <Text style={styles.smallSelectText}>{repeticoes || '-'}</Text>
+          </TouchableOpacity>
           <TextInput
             style={[styles.execucaoInput, { marginLeft: 8 }]}
-            placeholder="Ou digite"
+            placeholder="DIGITE"
+            placeholderTextColor={theme.colors.textSecondary}
             value={repeticoes}
             onChangeText={setRepeticoes}
           />
         </View>
+
+        {/* Carga */}
         <View style={styles.execucaoRow}>
-          <Text style={styles.execucaoLabel}>Carga</Text>
-          <Picker
-            selectedValue={carga}
-            onValueChange={setCarga}
-            style={{ flex: 1, height: 36 }}
+          <Text style={styles.execucaoLabel}>CARGA</Text>
+          <TouchableOpacity
+            style={styles.smallSelectButton}
+            onPress={() => openSelect('carga', 'Carga (kg)', cargaOptions)}
           >
-            <Picker.Item label="Selecione" value="" />
-            <Picker.Item label="1" value="1" />
-            <Picker.Item label="5" value="5" />
-            <Picker.Item label="10" value="10" />
-            <Picker.Item label="15" value="15" />
-            <Picker.Item label="20" value="20" />
-            <Picker.Item label="25" value="25" />
-            <Picker.Item label="30" value="30" />
-            <Picker.Item label="35" value="35" />
-            <Picker.Item label="40" value="40" />
-          </Picker>
+            <Text style={styles.smallSelectText}>{carga || '-'}</Text>
+          </TouchableOpacity>
           <TextInput
             style={[styles.execucaoInput, { marginLeft: 8 }]}
-            placeholder="Ou digite"
+            placeholder="DIGITE"
+            placeholderTextColor={theme.colors.textSecondary}
             value={carga}
             onChangeText={setCarga}
+            keyboardType="numeric"
           />
         </View>
+
+        {/* Ajuste */}
         <View style={styles.execucaoRow}>
-          <Text style={styles.execucaoLabel}>Ajuste</Text>
-          <Picker
-            selectedValue={ajuste}
-            onValueChange={setAjuste}
-            style={{ flex: 1, height: 36 }}
+          <Text style={styles.execucaoLabel}>AJUSTE</Text>
+          <TouchableOpacity
+            style={styles.smallSelectButton}
+            onPress={() => openSelect('ajuste', 'Ajuste', ajusteOptions)}
           >
-            <Picker.Item label="Selecione" value="" />
-            {Array.from({ length: 10 }, (_, i) => (
-              <Picker.Item key={i+1} label={`${i+1}`} value={`${i+1}`} />
-            ))}
-          </Picker>
+            <Text style={styles.smallSelectText}>{ajuste || '-'}</Text>
+          </TouchableOpacity>
           <TextInput
             style={[styles.execucaoInput, { marginLeft: 8 }]}
-            placeholder="Ou digite"
+            placeholder="DIGITE"
+            placeholderTextColor={theme.colors.textSecondary}
             value={ajuste}
             onChangeText={setAjuste}
+            keyboardType="numeric"
           />
         </View>
+
+        {/* Descanso */}
         <View style={styles.execucaoRow}>
-          <Text style={styles.execucaoLabel}>Descanso</Text>
-          <Picker
-            selectedValue={descanso}
-            onValueChange={setDescanso}
-            style={{ flex: 1, height: 36 }}
+          <Text style={styles.execucaoLabel}>DESC.</Text>
+          <TouchableOpacity
+            style={styles.smallSelectButton}
+            onPress={() => openSelect('descanso', 'Descanso (s)', descansoOptions)}
           >
-            <Picker.Item label="Selecione" value="" />
-            <Picker.Item label="5" value="5" />
-            <Picker.Item label="8" value="8" />
-            <Picker.Item label="10" value="10" />
-            <Picker.Item label="15" value="15" />
-            <Picker.Item label="30" value="30" />
-            <Picker.Item label="60" value="60" />
-          </Picker>
+            <Text style={styles.smallSelectText}>{descanso || '-'}</Text>
+          </TouchableOpacity>
           <TextInput
             style={[styles.execucaoInput, { marginLeft: 8 }]}
-            placeholder="Ou digite"
+            placeholder="DIGITE"
+            placeholderTextColor={theme.colors.textSecondary}
             value={descanso}
             onChangeText={setDescanso}
+            keyboardType="numeric"
           />
         </View>
-        <Button title="Salvar Exercício" onPress={handleSave} />
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>SALVAR EXERCÍCIO</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      <SelectModal
+        visible={modalVisible}
+        title={modalTitle}
+        options={modalOptions}
+        onSelect={handleSelectConfirm}
+        onClose={() => setModalVisible(false)}
+        currentValue={
+          currentSelectionKey === 'nome' ? nome :
+            currentSelectionKey === 'series' ? series :
+              currentSelectionKey === 'repeticoes' ? repeticoes :
+                currentSelectionKey === 'carga' ? carga :
+                  currentSelectionKey === 'ajuste' ? ajuste :
+                    currentSelectionKey === 'descanso' ? descanso : ''
+        }
+      />
+
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>
   );
@@ -241,72 +301,154 @@ export default function ModalExercicioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
     marginBottom: 20,
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
+  // Inputs
   input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
+    width: '100%',
+    height: 48,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.text,
+    paddingHorizontal: 15,
+    marginBottom: 15,
     borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    borderColor: theme.colors.border,
+    fontFamily: theme.fonts.regular,
   },
+  // Select Buttons (Substitutos do Picker)
+  selectButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 10, // Adicionado margem
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  selectButtonText: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontFamily: theme.fonts.regular,
+    flex: 1,
+  },
+  placeholderText: {
+    color: theme.colors.textSecondary,
+  },
+  chevron: {
+    color: theme.colors.primary,
+    fontSize: 12,
+  },
+  // Small Select Button (para linhas de execução)
+  smallSelectButton: {
+    flex: 1,
+    height: 40,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallSelectText: {
+    color: theme.colors.text,
+    fontSize: 14,
+    fontFamily: theme.fonts.bold,
+  },
+
+  // Grupo Muscular Select
   gruposContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     marginBottom: 16,
+    gap: 8,
   },
   grupoButton: {
     borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    margin: 4,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
   },
   grupoButtonSelected: {
-    backgroundColor: '#cce5ff',
-    borderColor: '#007bff',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   grupoButtonText: {
-    fontSize: 16,
+    fontSize: 14,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
+  },
+  grupoButtonTextSelected: {
+    color: theme.colors.background,
+    fontWeight: 'bold',
   },
   label: {
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 4,
     fontSize: 16,
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.title,
+    marginTop: 10,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
+  // Linhas de Execução
   execucaoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   execucaoLabel: {
-    width: 80,
-    fontSize: 15,
+    width: 60,
+    fontSize: 14,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.title,
+    textTransform: 'uppercase',
   },
   execucaoInput: {
     flex: 1,
-    height: 36,
-    borderColor: 'gray',
+    height: 40,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    color: theme.colors.text,
+    paddingHorizontal: 10,
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    marginLeft: 8,
+    borderColor: theme.colors.border,
+    fontFamily: theme.fonts.regular,
+  },
+
+  // Botão Salvar
+  saveButton: {
+    backgroundColor: theme.colors.success,
+    height: 50,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    width: '100%',
+  },
+  saveButtonText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.title,
+    fontSize: 18,
+    textTransform: 'uppercase',
   },
 });

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  Image, 
-  useColorScheme 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  useColorScheme
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from '@/styles/alunoForm.styles';
+import { maskDate, isValidDate, formatDate } from '@/utils/dateUtils';
 
 interface AlunoFormProps {
   initialValues?: {
@@ -24,14 +25,15 @@ interface AlunoFormProps {
 export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salvar' }: AlunoFormProps) {
   const [nome, setNome] = useState(initialValues?.nome || '');
   const [telefone, setTelefone] = useState(initialValues?.telefone || '');
-  const [dataNascimento, setDataNascimento] = useState(initialValues?.dataNascimento || '');
+  const [dataNascimento, setDataNascimento] = useState('');
   const [fotoUri, setFotoUri] = useState<string | null>(initialValues?.fotoUri || null);
 
   useEffect(() => {
     if (initialValues) {
       setNome(initialValues.nome || '');
       setTelefone(initialValues.telefone || '');
-      setDataNascimento(initialValues.dataNascimento || '');
+      // Se vier do banco como YYYY-MM-DD, formata para DD-MM-AAAA
+      setDataNascimento(formatDate(initialValues.dataNascimento) || initialValues.dataNascimento || '');
       setFotoUri(initialValues.fotoUri || null);
     }
   }, [initialValues]);
@@ -51,29 +53,6 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
   const handleRemovePhoto = () => {
     setFotoUri(null);
   };
-
-  // Função para aplicar máscara de data DD/MM/AAAA
-  function maskDate(value: string) {
-    // Remove tudo que não for número
-    let v = value.replace(/\D/g, '');
-    // Limita a 8 dígitos
-    v = v.slice(0, 8);
-    // Adiciona as barras
-    if (v.length > 4) {
-      v = v.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
-    } else if (v.length > 2) {
-      v = v.replace(/(\d{2})(\d{1,2})/, '$1/$2');
-    }
-    return v;
-  }
-
-  // Função para validar data no formato DD/MM/AAAA
-  function isDataValidaBR(data: string) {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return false;
-    const [d, m, y] = data.split('/');
-    const date = new Date(`${y}-${m}-${d}`);
-    return !isNaN(date.getTime()) && Number(d) > 0 && Number(m) > 0 && Number(m) <= 12 && Number(y) > 1900;
-  }
 
   // Função para aplicar máscara de telefone
   function maskPhone(value: string) {
@@ -97,14 +76,17 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
   }
 
   const handleSubmit = () => {
-    if (!nome.trim() || !telefone.trim() || !dataNascimento.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+    if (!nome.trim() || !telefone.trim()) {
+      alert('Por favor, preencha nome e telefone.');
       return;
     }
-    if (!isDataValidaBR(dataNascimento)) {
-      alert('Data de nascimento inválida! Use o formato DD/MM/AAAA.');
+
+    // Data é opcional? Se tiver algo escrito, valida.
+    if (dataNascimento && !isValidDate(dataNascimento)) {
+      alert('Data de nascimento inválida! Use o formato DD-MM-AAAA.');
       return;
     }
+
     if (!isTelefoneValido(telefone)) {
       alert('Telefone inválido! Use o formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX.');
       return;
@@ -119,11 +101,11 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dados do Aluno</Text>
-      
+
       <View style={styles.imageContainer}>
         {fotoUri ? (
-          <Image 
-            source={{ uri: fotoUri }} 
+          <Image
+            source={{ uri: fotoUri }}
             style={styles.imagePreview}
           />
         ) : (
@@ -136,15 +118,15 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
       </View>
 
       <View style={styles.photoButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.secondaryButton}
           onPress={pickImage}
         >
           <Text style={[styles.buttonText, styles.secondaryButtonText]}>📷 Selecionar Foto</Text>
         </TouchableOpacity>
-        
+
         {fotoUri && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: '#f44336' }]}
             onPress={handleRemovePhoto}
           >
@@ -172,14 +154,15 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
 
       <TextInput
         style={[styles.input, styles.textInput, styles.lastInput]}
-        placeholder="Data de Nascimento (DD/MM/AAAA)"
+        placeholder="Data de Nascimento (DD-MM-AAAA)"
         placeholderTextColor="rgba(255, 255, 255, 0.6)"
         value={dataNascimento}
         onChangeText={text => setDataNascimento(maskDate(text))}
         keyboardType="number-pad"
+        maxLength={10}
       />
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.primaryButton}
         onPress={handleSubmit}
       >

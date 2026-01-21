@@ -2,6 +2,8 @@ import { Stack, useRouter } from 'expo-router';
 import { View } from 'react-native';
 import useAlunosStore from '../store/useAlunosStore';
 import AlunoForm from '../components/AlunoForm';
+import { theme } from '@/styles/theme';
+import { parseToISO } from '@/utils/dateUtils';
 
 export default function ModalScreen() {
   const { addAluno } = useAlunosStore();
@@ -9,7 +11,8 @@ export default function ModalScreen() {
 
   const handleSubmit = async (data: { nome: string; telefone: string; dataNascimento: string; fotoUri: string | null }) => {
     try {
-      await addAluno(data.nome, data.telefone, data.dataNascimento, data.fotoUri || '');
+      const dataNascimentoISO = parseToISO(data.dataNascimento);
+      await addAluno(data.nome, data.telefone, dataNascimentoISO, data.fotoUri || '');
       alert('Aluno salvo com sucesso!');
       router.back();
     } catch (e) {
@@ -19,16 +22,16 @@ export default function ModalScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Stack.Screen
         options={{
           headerTitle: 'Novo Aluno',
           headerStyle: {
-            backgroundColor: '#000',
+            backgroundColor: theme.colors.background,
           },
-          headerTintColor: '#fff',
+          headerTintColor: theme.colors.primary,
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontFamily: theme.fonts.title,
           },
         }}
       />

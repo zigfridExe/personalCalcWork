@@ -1,11 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TextInput, Button, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, TextInput, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import { Text, View } from '@/styles/Themed';
+import { Text, View } from 'react-native';
 import useFichasStore from '../store/useFichasStore';
 import useAlunosStore from '../store/useAlunosStore';
+import { theme } from '@/styles/theme';
 
 export default function ModalCopiarFichaScreen() {
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function ModalCopiarFichaScreen() {
     try {
       await copyFicha(Number(fichaId), alunoDestino, novoNome);
       Alert.alert(
-        'Sucesso', 
+        'Sucesso',
         'Ficha copiada com sucesso!',
         [{ text: 'OK', onPress: () => router.back() }]
       );
@@ -66,7 +67,7 @@ export default function ModalCopiarFichaScreen() {
     try {
       await copyFicha(Number(fichaId), undefined, novoNome);
       Alert.alert(
-        'Sucesso', 
+        'Sucesso',
         'Ficha copiada com sucesso!',
         [{ text: 'OK', onPress: () => router.back() }]
       );
@@ -87,7 +88,7 @@ export default function ModalCopiarFichaScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Copiar Ficha</Text>
-        
+
         <View style={styles.infoSection}>
           <Text style={styles.sectionTitle}>Ficha Original</Text>
           <Text style={styles.fichaNome}>{fichaOriginal.nome}</Text>
@@ -101,12 +102,13 @@ export default function ModalCopiarFichaScreen() {
           <TextInput
             style={styles.input}
             placeholder="Nome da nova ficha"
+            placeholderTextColor={theme.colors.textSecondary}
             value={novoNome}
             onChangeText={setNovoNome}
           />
 
-                    <Text style={styles.label}>Aluno de Destino</Text>
-          <TouchableOpacity 
+          <Text style={styles.label}>Aluno de Destino</Text>
+          <TouchableOpacity
             style={styles.pickerContainer}
             onPress={() => {
               const alunoSelecionado = alunos.find(a => a.id === alunoDestino);
@@ -114,7 +116,7 @@ export default function ModalCopiarFichaScreen() {
                 text: aluno.nome,
                 onPress: () => setAlunoDestino(aluno.id)
               }));
-              
+
               Alert.alert(
                 'Selecionar Aluno',
                 'Escolha o aluno de destino:',
@@ -125,28 +127,36 @@ export default function ModalCopiarFichaScreen() {
               );
             }}
           >
-            <Text style={styles.pickerText}>
+            <Text style={[
+              styles.pickerText,
+              !alunoDestino && { color: theme.colors.textSecondary }
+            ]}>
               {alunoDestino ? alunos.find(a => a.id === alunoDestino)?.nome : 'Selecione um aluno...'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actionsContainer}>
-          <Button 
-            title="📋 Copiar para Outro Aluno" 
-            onPress={handleCopiar} 
-            color="#2196F3"
-          />
-          <Button 
-            title="📄 Copiar para Mesmo Aluno" 
-            onPress={handleCopiarMesmoAluno} 
-            color="#4CAF50"
-          />
-          <Button 
-            title="❌ Cancelar" 
-            onPress={() => router.back()} 
-            color="#f44336"
-          />
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleCopiar}
+          >
+            <Text style={styles.buttonTextPrimary}>📋 Copiar para Outro Aluno</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleCopiarMesmoAluno}
+          >
+            <Text style={styles.buttonTextSecondary}>📄 Copiar para Mesmo Aluno</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.buttonTextCancel}>❌ Cancelar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
@@ -157,48 +167,55 @@ export default function ModalCopiarFichaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+    padding: 20,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
     marginBottom: 30,
     textAlign: 'center',
   },
   loadingText: {
     fontSize: 18,
+    color: theme.colors.text,
     textAlign: 'center',
+    fontFamily: theme.fonts.regular,
   },
   infoSection: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.card,
     padding: 15,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     marginBottom: 20,
     width: '100%',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.textSecondary,
     marginBottom: 10,
-    color: '#333',
   },
   fichaNome: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2196F3',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.text,
     marginBottom: 5,
   },
   fichaDetail: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.secondary,
   },
   formSection: {
     width: '100%',
@@ -206,40 +223,75 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: theme.fonts.title,
     marginBottom: 8,
-    color: '#333',
+    color: theme.colors.primary,
   },
   input: {
     width: '100%',
-    height: 45,
-    borderColor: '#ddd',
+    height: 48,
+    backgroundColor: theme.colors.card,
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     paddingHorizontal: 12,
     marginBottom: 20,
     fontSize: 16,
-    backgroundColor: '#fff',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
   },
   pickerContainer: {
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.card,
     marginBottom: 20,
-  },
-  picker: {
-    height: 45,
-    width: '100%',
+    height: 48,
+    justifyContent: 'center',
   },
   pickerText: {
     fontSize: 16,
-    paddingVertical: 12,
     paddingHorizontal: 12,
-    color: '#333',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
   },
   actionsContainer: {
     width: '100%',
     gap: 15,
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 14,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  buttonTextPrimary: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
+    fontSize: 16,
+    textTransform: 'uppercase',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    paddingVertical: 12,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  buttonTextSecondary: {
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.title,
+    fontSize: 16,
+    textTransform: 'uppercase',
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonTextCancel: {
+    color: theme.colors.danger,
+    fontFamily: theme.fonts.regular,
+    fontSize: 16,
   },
 }); 

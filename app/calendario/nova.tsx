@@ -7,8 +7,9 @@ import useAlunosStore from '../../store/useAlunosStore';
 import { Picker } from '@react-native-picker/picker';
 import { theme } from '@/styles/theme';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { maskDate, parseToISO, isValidDate, formatDate } from '@/utils/dateUtils';
 
-// Funções utilitárias para data/hora
+// Funções utilitárias para hora (mantidas locais pois não estão no utils ainda)
 function formatHora(hora: string) {
   let digits = hora.replace(/\D/g, '');
   if (digits.length > 4) digits = digits.slice(0, 4);
@@ -26,28 +27,6 @@ function isHoraValida(hora: string) {
   const m = Number(match[2]);
   return h >= 0 && h < 24 && m >= 0 && m < 60;
 }
-function maskDataBR(data: string) {
-  let digits = data.replace(/\D/g, '');
-  if (digits.length > 8) digits = digits.slice(0, 8);
-  if (digits.length > 4) {
-    return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
-  } else if (digits.length > 2) {
-    return digits.slice(0, 2) + '/' + digits.slice(2);
-  } else {
-    return digits;
-  }
-}
-function formatDataISO(data: string) {
-  if (!data) return '';
-  if (data.includes('/')) {
-    const [d, m, y] = data.split('/');
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-  }
-  return data;
-}
-function isDataValidaBR(data: string) {
-  return /^\d{2}\/\d{2}\/\d{4}$/.test(data);
-}
 
 export default function NovaAulaScreen() {
   const router = useRouter();
@@ -56,13 +35,7 @@ export default function NovaAulaScreen() {
   const [alunoId, setAlunoId] = useState<number | null>(alunos[0]?.id || null);
 
   const hoje = new Date();
-  const [data, setData] = useState(
-    maskDataBR(
-      String(hoje.getDate()).padStart(2, '0') +
-      String(hoje.getMonth() + 1).padStart(2, '0') +
-      String(hoje.getFullYear())
-    )
-  );
+  const [data, setData] = useState(formatDate(hoje));
   const [hora, setHora] = useState('');
   const [duracao, setDuracao] = useState('60');
   const [descricao, setDescricao] = useState('');
@@ -74,8 +47,8 @@ export default function NovaAulaScreen() {
       Alert.alert('Preencha todos os campos!');
       return;
     }
-    if (!isDataValidaBR(data)) {
-      Alert.alert('Data inválida! Use o formato DD/MM/AAAA.');
+    if (!isValidDate(data)) {
+      Alert.alert('Data inválida! Use o formato DD-MM-AAAA.');
       return;
     }
     if (!isHoraValida(hora)) {
@@ -85,7 +58,7 @@ export default function NovaAulaScreen() {
 
     await adicionarAula({
       aluno_id: alunoId,
-      data_aula: formatDataISO(data),
+      data_aula: parseToISO(data),
       hora_inicio: hora,
       duracao_minutos: Number(duracao),
       presenca: presenca ? 1 : 0,
@@ -133,13 +106,13 @@ export default function NovaAulaScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Data</Text>
+        <Text style={styles.label}>Data (DD-MM-AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="DD/MM/AAAA"
+          placeholder="DD-MM-AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={data}
-          onChangeText={t => setData(maskDataBR(t))}
+          onChangeText={t => setData(maskDate(t))}
           maxLength={10}
           keyboardType="numeric"
         />

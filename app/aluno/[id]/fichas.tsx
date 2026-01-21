@@ -74,7 +74,7 @@ export default function FichasScreen() {
         <Text style={styles.title}>Fichas de Treino</Text>
         <Text style={styles.subtitle}>{aluno?.nome || 'Aluno'}</Text>
       </View>
-      
+
       <ScrollView style={styles.content}>
         <Link href={{ pathname: "/modal-ficha", params: { alunoId: alunoId } }} asChild>
           <TouchableOpacity style={styles.primaryButton}>
@@ -82,7 +82,7 @@ export default function FichasScreen() {
             <Text style={styles.primaryButtonText}>Adicionar Nova Ficha</Text>
           </TouchableOpacity>
         </Link>
-        
+
         {fichas.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={48} color="#666" />
@@ -94,6 +94,20 @@ export default function FichasScreen() {
               <View style={styles.fichaHeader}>
                 <Text style={styles.fichaTitle}>{item.nome}</Text>
                 <View style={styles.fichaActions}>
+                  <Link href={{ pathname: "/ficha/[id]/visualizar", params: { id: item.id } }} asChild>
+                    <TouchableOpacity style={{
+                      backgroundColor: '#4CAF50',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginRight: 8
+                    }}>
+                      <Ionicons name="eye" size={16} color="#FFF" style={{ marginRight: 4 }} />
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Visualizar Ficha</Text>
+                    </TouchableOpacity>
+                  </Link>
                   <Link href={{ pathname: "/modal-copiar-ficha", params: { fichaId: item.id } }} asChild>
                     <TouchableOpacity style={styles.iconButton}>
                       <Ionicons name="copy-outline" size={20} color="#FFB700" />
@@ -104,7 +118,7 @@ export default function FichasScreen() {
                       <Ionicons name="pencil" size={20} color="#666" />
                     </TouchableOpacity>
                   </Link>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.iconButton}
                     onPress={() => handleDeleteFicha(item.id)}
                   >
@@ -112,7 +126,7 @@ export default function FichasScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              
+
               <View style={styles.fichaDetails}>
                 <View style={styles.detailRow}>
                   <Ionicons name="flag" size={16} color="#666" />
@@ -123,96 +137,11 @@ export default function FichasScreen() {
                   <Text style={styles.fichaDetail}>{item.professor || 'Sem professor'}</Text>
                 </View>
               </View>
-              <View style={styles.exerciciosSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Exercícios</Text>
-                  <Link href={{ pathname: "/modal-exercicio", params: { fichaId: item.id } }} asChild>
-                    <TouchableOpacity style={styles.addButton}>
-                      <Ionicons name="add" size={16} color="#FFB700" />
-                      <Text style={styles.addButtonText}>Adicionar</Text>
-                    </TouchableOpacity>
-                  </Link>
-                </View>
-                
-                {exercicios.filter(e => e.ficha_id === item.id).length === 0 ? (
-                  <View style={styles.emptyExercises}>
-                    <Ionicons name="barbell-outline" size={24} color="#999" />
-                    <Text style={styles.emptyExercisesText}>Nenhum exercício cadastrado</Text>
-                  </View>
-                ) : (
-                  exercicios
-                    .filter(e => e.ficha_id === item.id)
-                    .map((ex) => (
-                      <View key={ex.id} style={styles.exercicioContainer}>
-                        <View style={styles.exercicioHeader}>
-                          <Text style={styles.exercicioTitle}>{ex.nome}</Text>
-                          <View style={styles.exercicioActions}>
-                            <Link 
-                              href={{ 
-                                pathname: "/modal-exercicio", 
-                                params: { 
-                                  exercicioId: ex.id, 
-                                  fichaId: ex.ficha_id 
-                                } 
-                              }} 
-                              asChild
-                            >
-                              <TouchableOpacity style={styles.smallIconButton}>
-                                <Ionicons name="create" size={16} color="#666" />
-                              </TouchableOpacity>
-                            </Link>
-                            <TouchableOpacity 
-                              style={styles.smallIconButton}
-                              onPress={() => handleDeleteExercicio(ex.id)}
-                            >
-                              <Ionicons name="trash" size={16} color="#ff4444" />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.exercicioDetails}>
-                          {ex.grupo_muscular && (
-                            <View style={styles.detailBadge}>
-                              <Text style={styles.detailBadgeText}>{ex.grupo_muscular}</Text>
-                            </View>
-                          )}
-                          
-                          <View style={styles.detailRow}>
-                            {ex.series && (
-                              <Text style={styles.exercicioDetail}>
-                                <Text style={styles.detailLabel}>Séries: </Text>
-                                {ex.series}
-                              </Text>
-                            )}
-                            {ex.repeticoes && (
-                              <Text style={styles.exercicioDetail}>
-                                <Text style={styles.detailLabel}>Reps: </Text>
-                                {ex.repeticoes}
-                              </Text>
-                            )}
-                            {ex.carga && (
-                              <Text style={styles.exercicioDetail}>
-                                <Text style={styles.detailLabel}>Carga: </Text>
-                                {ex.carga}kg
-                              </Text>
-                            )}
-                          </View>
-                          
-                          {ex.ajuste && (
-                            <View style={styles.ajusteContainer}>
-                              <Text style={styles.ajusteLabel}>Ajuste:</Text>
-                              <Text style={styles.ajusteText}>{ex.ajuste}</Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    ))
-                )}
-              </View>
             </View>
           ))
-        )}
-      </ScrollView>
-    </View>
+        )
+        }
+      </ScrollView >
+    </View >
   );
 }

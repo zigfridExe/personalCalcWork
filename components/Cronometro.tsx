@@ -13,17 +13,23 @@ export interface CronometroHandle {
   getSeconds: () => number;
 }
 
-const Cronometro = forwardRef<CronometroHandle>((props, ref) => {
+const Cronometro = forwardRef<CronometroHandle, { textStyle?: any }>((props, ref) => {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
   const intervalRef = useRef<any>(null);
 
   const start = () => {
     if (!isRunning) {
       setIsRunning(true);
+      startTimeRef.current = Date.now() - (seconds * 1000);
+
       intervalRef.current = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
+        if (startTimeRef.current) {
+          const now = Date.now();
+          setSeconds(Math.floor((now - startTimeRef.current) / 1000));
+        }
+      }, 200); // Update more frequently to avoid lag perception
     }
   };
 
@@ -33,6 +39,7 @@ const Cronometro = forwardRef<CronometroHandle>((props, ref) => {
       clearInterval(intervalRef.current);
     }
     setSeconds(0);
+    startTimeRef.current = null;
   };
 
   const getSeconds = () => seconds;
@@ -53,7 +60,7 @@ const Cronometro = forwardRef<CronometroHandle>((props, ref) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.time}>{formatTime(seconds)}</Text>
+      <Text style={[styles.time, props.textStyle]}>{formatTime(seconds)}</Text>
     </View>
   );
 });
@@ -65,7 +72,10 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Default, can be overridden
+    // color will be handled by parent or default to black if not specified, 
+    // but we should probably set a default color compatible with dark theme if used elsewhere
+    color: '#FFFFFF',
     marginBottom: 8,
   },
 });

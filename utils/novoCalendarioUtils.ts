@@ -33,6 +33,10 @@ export interface AulaCalendario {
     status: 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'FALTA';
     observacoes?: string;
     recorrencia_id?: number;
+    raw_tipo?: string; // Tipo original no banco (AVULSA, etc)
+    raw_presenca?: number; // Presença original no banco
+    sobrescrita_id?: number;
+    cancelada_por_id?: number;
 }
 
 /**
@@ -66,7 +70,13 @@ export function gerarCalendarioVisual(
             tipo: 'CONCRETA',
             status: mapStatus(evt.tipo_aula, evt.status_presenca),
             observacoes: evt.observacoes,
-            recorrencia_id: evt.recorrencia_id || undefined
+            recorrencia_id: evt.recorrencia_id || undefined,
+            raw_tipo: evt.tipo_aula,
+            raw_presenca: evt.status_presenca,
+            // @ts-ignore - Propriedades podem existir no objeto raw do banco mesmo que nao na interface EventoConcreto estrita
+            sobrescrita_id: evt.sobrescrita_id,
+            // @ts-ignore
+            cancelada_por_id: evt.cancelada_por_id
         });
     });
 

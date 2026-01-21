@@ -1,43 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import useHistoricoStore from '../../store/useHistoricoStore';
 import useAlunosStore from '../../store/useAlunosStore';
-// Remover useExerciciosStore
-
-export const options = {
-  title: 'Histórico do Aluno'
-}
-
-interface HistoricoDetalhado {
-  id: number;
-  data_inicio: string;
-  data_fim: string;
-  duracao_minutos: number;
-  ficha_nome: string;
-  exercicios: Array<{
-    nome: string;
-    series: Array<{
-      serie_numero: number;
-      repeticoes: string;
-      carga: string;
-      observacoes?: string;
-    }>;
-  }>;
-}
+import CustomModal from '../../components/CustomModal';
+import { theme } from '@/styles/theme';
+import { formatDate, formatDateTime } from '@/utils/dateUtils';
 
 export default function HistoricoScreen() {
   const { alunoId } = useLocalSearchParams();
   const router = useRouter();
-  
+
   const { loadHistoricoByAluno, historicos } = useHistoricoStore();
   const { alunos, initializeDatabase, buscarMedidas } = useAlunosStore();
 
   const [aluno, setAluno] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [historicoMedidas, setHistoricoMedidas] = useState<any[]>([]);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [detalhesTreino, setDetalhesTreino] = useState<any>(null);
 
   useEffect(() => {
     const initData = async () => {
@@ -58,21 +42,10 @@ export default function HistoricoScreen() {
     setAluno(alunoAtual);
   }, [alunos, alunoId]);
 
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const formatarDuracao = (minutos: number) => {
     const horas = Math.floor(minutos / 60);
     const mins = minutos % 60;
-    
+
     if (horas > 0) {
       return `${horas}h ${mins}min`;
     }
@@ -91,21 +64,8 @@ export default function HistoricoScreen() {
 
   const handleVerDetalhes = (historico: any) => {
     const exercicios = agruparExercicios(historico.series);
-    let detalhes = `Data: ${formatarData(historico.treino.data_inicio)}\n` +
-      `Duração: ${formatarDuracao(historico.treino.duracao_minutos)}\n` +
-      `Ficha: ${historico.treino.ficha_id}\n\n` +
-      `Exercícios realizados:\n`;
-    detalhes += exercicios.map((ex: { nome: string; series: any[] }) => {
-      return `• ${ex.nome}:\n` +
-        ex.series.map((serie: any, idx: number) =>
-          `   Série ${serie.serie_numero || idx + 1}: ${serie.repeticoes} reps | ${serie.carga}kg${serie.tempo_cadencia ? ' | Cadência: ' + serie.tempo_cadencia + 's' : ''}`
-        ).join('\n');
-    }).join('\n');
-    Alert.alert(
-      'Detalhes do Treino',
-      detalhes,
-      [{ text: 'OK' }]
-    );
+    setDetalhesTreino({ ...historico, exerciciosAgrupados: exercicios });
+    setModalVisible(true);
   };
 
   const calcularIMC = (peso: number, altura: number) => {
@@ -134,7 +94,6 @@ export default function HistoricoScreen() {
       <StatusBar style="light" />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Histórico Completo</Text>
         <Text style={styles.subtitle}>{aluno.nome}</Text>
       </View>
       <ScrollView style={styles.content}>
@@ -168,7 +127,7 @@ export default function HistoricoScreen() {
                 <View style={styles.resumoItem}>
                   <Text style={styles.resumoLabel}>Último Treino</Text>
                   <Text style={styles.resumoValue}>
-                    {formatarData(historicos[0].treino.data_inicio)}
+                    {formatDateTime(historicos[0].treino.data_inicio)}
                   </Text>
                 </View>
               </View>
@@ -186,7 +145,7 @@ export default function HistoricoScreen() {
                   >
                     <View style={styles.treinoHeader}>
                       <Text style={styles.treinoData}>
-                        {formatarData(historico.treino.data_inicio)}
+                        {formatDateTime(historico.treino.data_inicio)}
                       </Text>
                       <Text style={styles.treinoDuracao}>
                         {formatarDuracao(historico.treino.duracao_minutos)}
@@ -215,7 +174,7 @@ export default function HistoricoScreen() {
                     </View>
                     <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
                       <TouchableOpacity onPress={() => handleVerDetalhes(historico)} style={styles.detalhesButton}>
-                        <Text style={styles.detalhesButtonText}>Detalhes</Text>
+                        <Text style={styles.detalhesButtonText}>DETALHES</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
@@ -232,7 +191,7 @@ export default function HistoricoScreen() {
           ) : (
             historicoMedidas.map((medida, idx) => (
               <View key={idx} style={styles.medidaCard}>
-                <Text style={styles.medidaData}>{medida.data}</Text>
+                <Text style={styles.medidaData}>{formatDate(medida.data)}</Text>
                 <Text style={styles.medidaInfo}>Peso: {medida.peso} kg | Altura: {medida.altura} cm | IMC: {calcularIMC(medida.peso, medida.altura)?.toFixed(2)}</Text>
                 {medida.cintura && <Text style={styles.medidaInfo}>Cintura: {medida.cintura} cm</Text>}
                 {medida.quadril && <Text style={styles.medidaInfo}>Quadril: {medida.quadril} cm</Text>}
@@ -241,6 +200,33 @@ export default function HistoricoScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CustomModal
+        visible={modalVisible}
+        title="Detalhes do Treino"
+        onClose={() => setModalVisible(false)}
+        confirmText="FECHAR"
+        type="info"
+      >
+        {detalhesTreino && (
+          <ScrollView style={styles.modalScroll}>
+            <Text style={styles.modalInfo}>📅 {formatDateTime(detalhesTreino.treino.data_inicio)}</Text>
+            <Text style={styles.modalInfo}>⏱️ {formatarDuracao(detalhesTreino.treino.duracao_minutos)}</Text>
+            <View style={styles.modalDivider} />
+            {detalhesTreino.exerciciosAgrupados.map((ex: any, idx: number) => (
+              <View key={idx} style={styles.modalExercicio}>
+                <Text style={styles.modalExercicioNome}>{ex.nome}</Text>
+                {ex.series.map((serie: any, sIdx: number) => (
+                  <Text key={sIdx} style={styles.modalSerie}>
+                    Série {serie.serie_numero || sIdx + 1}: {serie.repeticoes} reps | {serie.carga}kg
+                    {serie.tempo_cadencia > 0 ? ` | ⏱️ ${serie.tempo_cadencia}s` : ''}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </CustomModal>
     </View>
   );
 }
@@ -248,36 +234,35 @@ export default function HistoricoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#2196F3',
+    backgroundColor: theme.colors.background,
     padding: 20,
-    paddingTop: 50,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
+    paddingTop: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#fff',
+    fontSize: 20,
+    color: theme.colors.primary,
     textAlign: 'center',
+    fontFamily: theme.fonts.title,
     marginTop: 5,
-    opacity: 0.9,
   },
   loadingText: {
     fontSize: 18,
     textAlign: 'center',
     marginTop: 50,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
   },
   errorText: {
     fontSize: 18,
     textAlign: 'center',
     marginTop: 50,
-    color: '#f44336',
+    color: theme.colors.danger,
+    fontFamily: theme.fonts.regular,
   },
   content: {
     flex: 1,
@@ -295,32 +280,35 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 10,
+    fontFamily: theme.fonts.title,
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+    fontFamily: theme.fonts.regular,
   },
   resumoSection: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     padding: 15,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     marginBottom: 15,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
     marginBottom: 15,
-    color: '#333',
+    color: theme.colors.primary,
   },
   resumoCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background, // Nested darker background for card
     padding: 15,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.sm,
   },
   resumoItem: {
     flexDirection: 'row',
@@ -330,28 +318,24 @@ const styles = StyleSheet.create({
   },
   resumoLabel: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.regular,
   },
   resumoValue: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.text,
   },
   listaSection: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
     marginBottom: 15,
-    elevation: 2,
   },
   treinoCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.card,
     padding: 15,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     marginBottom: 10,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: theme.colors.primary,
   },
   treinoHeader: {
     flexDirection: 'row',
@@ -361,18 +345,18 @@ const styles = StyleSheet.create({
   },
   treinoData: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.text,
   },
   treinoDuracao: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.regular,
   },
   treinoFicha: {
     fontSize: 14,
-    color: '#2196F3',
-    fontWeight: '500',
+    color: theme.colors.primary,
+    fontFamily: theme.fonts.bold,
     marginBottom: 8,
   },
   treinoStats: {
@@ -382,21 +366,24 @@ const styles = StyleSheet.create({
   },
   treinoStatsText: {
     fontSize: 12,
-    color: '#666',
-    backgroundColor: '#e0e0e0',
+    color: theme.colors.background,
+    backgroundColor: theme.colors.text, // High contrast for badge
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
+    fontFamily: theme.fonts.regular,
+    overflow: 'hidden',
   },
   treinoExercicios: {
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: theme.colors.border,
     paddingTop: 10,
   },
   exercicioItem: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 2,
+    fontFamily: theme.fonts.regular,
   },
   medidasSection: {
     marginTop: 30,
@@ -404,35 +391,70 @@ const styles = StyleSheet.create({
   },
   medidaCard: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
     padding: 12,
     marginBottom: 10,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   medidaData: {
-    fontWeight: 'bold',
-    color: '#2196F3',
+    fontFamily: theme.fonts.bold,
+    color: theme.colors.primary,
     marginBottom: 2,
   },
   medidaInfo: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
   },
   emptyText: {
     fontSize: 15,
-    color: '#888',
+    color: theme.colors.textSecondary,
     marginBottom: 20,
+    fontFamily: theme.fonts.regular,
   },
   detalhesButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 6,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: theme.borderRadius.sm,
   },
   detalhesButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: theme.colors.background,
+    fontFamily: theme.fonts.bold,
+    fontSize: 12,
+  },
+  // Modal Styles
+  modalScroll: {
+    maxHeight: 400,
+    width: '100%',
+  },
+  modalInfo: {
+    fontSize: 16,
+    color: theme.colors.text,
+    marginBottom: 5,
+    fontFamily: theme.fonts.bold,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: 15,
+  },
+  modalExercicio: {
+    marginBottom: 15,
+  },
+  modalExercicioNome: {
+    color: theme.colors.primary,
+    fontSize: 16,
+    fontFamily: theme.fonts.bold,
+    marginBottom: 4,
+  },
+  modalSerie: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    fontFamily: theme.fonts.regular,
+    marginLeft: 10,
+    marginBottom: 2,
   },
 }); 

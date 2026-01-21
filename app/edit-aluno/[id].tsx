@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Platform, Image } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as ImagePicker from 'expo-image-picker';
 import useAlunosStore from '../../store/useAlunosStore';
 // Corrigido o caminho do AlunoForm para refletir a estrutura correta do projeto
 import AlunoForm from '../../components/AlunoForm';
+import { theme } from '@/styles/theme';
+import { parseToISO } from '@/utils/dateUtils';
 
 interface Aluno {
   id: number;
@@ -30,18 +30,6 @@ export default function EditAlunoScreen() {
     fotoUri: aluno?.fotoUri || null,
   };
 
-  // Função para aplicar máscara de telefone
-  function maskPhone(value: string) {
-    let v = value.replace(/\D/g, '');
-    if (v.length > 11) v = v.slice(0, 11);
-    if (v.length > 6) {
-      return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
-    } else if (v.length > 2) {
-      return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
-    } else {
-      return v;
-    }
-  }
   function isTelefoneValido(telefone: string) {
     const v = telefone.replace(/\D/g, '');
     return v.length === 10 || v.length === 11;
@@ -54,7 +42,8 @@ export default function EditAlunoScreen() {
     }
     const telefoneNumeros = data.telefone.replace(/\D/g, '');
     try {
-      await updateAluno(Number(id), data.nome, telefoneNumeros, data.dataNascimento, data.fotoUri || '');
+      const dataNascimentoISO = parseToISO(data.dataNascimento);
+      await updateAluno(Number(id), data.nome, telefoneNumeros, dataNascimentoISO, data.fotoUri || '');
       alert('Aluno atualizado com sucesso!');
       router.back();
     } catch (e) {
@@ -64,62 +53,16 @@ export default function EditAlunoScreen() {
   };
 
   if (!aluno) {
-    return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text>Aluno não encontrado.</Text></View>;
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}>
+        <Text style={{ color: theme.colors.text }}>Aluno não encontrado.</Text>
+      </View>
+    );
   }
 
   return (
-    <AlunoForm initialValues={initialValues} onSubmit={handleSubmit} submitLabel="Salvar Alterações" />
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <AlunoForm initialValues={initialValues} onSubmit={handleSubmit} submitLabel="Salvar Alterações" />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    width: '80%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  imageContainer: {
-    marginBottom: 20,
-  },
-  imagePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  imagePlaceholderText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-});

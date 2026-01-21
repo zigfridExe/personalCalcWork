@@ -6,7 +6,7 @@ export const theme = {
         primary: '#FFB700', // Amarelo
         background: '#000000', // Preto
         text: '#FFFFFF', // Branco
-        textSecondary: '#333333', // Cinza Escuro
+        textSecondary: '#B0B0B0', // Cinza Claro (para melhor contraste no fundo escuro)
         card: '#1A1A1A', // Cinza um pouco mais claro para cartões
         border: '#333333',
         success: '#4CAF50',
@@ -21,6 +21,7 @@ export const theme = {
         regular: 'Roboto_400Regular', // Roboto Regular
         italic: 'Roboto_400Regular_Italic', // Roboto Italic
         secondary: 'SourceSansPro_400Regular', // Source Sans Pro Regular
+        bold: 'RobotoCondensed_700Bold', // Roboto Condensed Bold
     },
     spacing: {
         xs: 4,

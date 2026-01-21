@@ -6,6 +6,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import useFichasStore from '../store/useFichasStore';
 import { theme } from '@/styles/theme';
+import { formatDate, maskDate, parseToISO, isValidDate } from '@/utils/dateUtils';
 
 export default function ModalFichaScreen() {
   const router = useRouter();
@@ -27,8 +28,9 @@ export default function ModalFichaScreen() {
       const fichaToEdit = fichas.find((f) => f.id.toString() === fichaId);
       if (fichaToEdit) {
         setNome(fichaToEdit.nome || '');
-        setDataInicio(fichaToEdit.data_inicio || '');
-        setDataFim(fichaToEdit.data_fim || '');
+        // Formata para DD-MM-AAAA se vier do banco (ISO) ou mantém se já estiver formatado (pouco provável no banco, mas por segurança)
+        setDataInicio(formatDate(fichaToEdit.data_inicio) || fichaToEdit.data_inicio || '');
+        setDataFim(formatDate(fichaToEdit.data_fim) || fichaToEdit.data_fim || '');
         setObjetivos(fichaToEdit.objetivos || '');
         setObservacoes(fichaToEdit.observacoes || '');
         setProfessor(fichaToEdit.professor || '');
@@ -43,11 +45,25 @@ export default function ModalFichaScreen() {
       return;
     }
 
+    if (dataInicio && !isValidDate(dataInicio)) {
+      Alert.alert('Erro', 'Data de Início inválida! Use o formato DD-MM-AAAA.');
+      return;
+    }
+
+    if (dataFim && !isValidDate(dataFim)) {
+      Alert.alert('Erro', 'Data Fim inválida! Use o formato DD-MM-AAAA.');
+      return;
+    }
+
+    // Converte para ISO antes de salvar
+    const dataInicioISO = parseToISO(dataInicio);
+    const dataFimISO = parseToISO(dataFim);
+
     const fichaData = {
       aluno_id: Number(alunoId),
       nome,
-      data_inicio: dataInicio,
-      data_fim: dataFim,
+      data_inicio: dataInicioISO,
+      data_fim: dataFimISO,
       objetivos,
       observacoes,
       professor,
@@ -76,22 +92,26 @@ export default function ModalFichaScreen() {
           onChangeText={setNome}
         />
 
-        <Text style={styles.label}>Data Início (AAAA-MM-DD)</Text>
+        <Text style={styles.label}>Data Início (DD-MM-AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="AAAA-MM-DD"
+          placeholder="DD-MM-AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={dataInicio}
-          onChangeText={setDataInicio}
+          onChangeText={(text) => setDataInicio(maskDate(text))}
+          keyboardType="number-pad"
+          maxLength={10}
         />
 
-        <Text style={styles.label}>Data Fim (AAAA-MM-DD)</Text>
+        <Text style={styles.label}>Data Fim (DD-MM-AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="AAAA-MM-DD"
+          placeholder="DD-MM-AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={dataFim}
-          onChangeText={setDataFim}
+          onChangeText={(text) => setDataFim(maskDate(text))}
+          keyboardType="number-pad"
+          maxLength={10}
         />
 
         <Text style={styles.label}>Objetivos</Text>

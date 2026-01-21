@@ -1,21 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Button, Alert } from 'react-native';
-import { useLocalSearchParams, Link, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, Button, Alert, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, Link, useRouter, Stack } from 'expo-router';
 import useFichasStore from '../../../store/useFichasStore';
 import useAlunosStore from '../../../store/useAlunosStore';
 import useExerciciosStore from '../../../store/useExerciciosStore';
+import useAulasStore from '../../../store/useAulasStore';
+import CustomModal from '../../../components/CustomModal';
+import { theme } from '../../../src/styles/theme';
 
 export default function VisualizarFichaScreen() {
   const { id } = useLocalSearchParams();
   const fichaId = Number(id);
   const router = useRouter();
-  
+
   const { fichas, loadFichasByAlunoId } = useFichasStore();
   const { alunos, initializeDatabase } = useAlunosStore();
   const { exercicios, loadExerciciosByFichaId } = useExerciciosStore();
+  const { obterAulasDoAluno, criarAulaAvulsa, carregarCalendario } = useAulasStore();
 
   const [ficha, setFicha] = useState<any>(null);
   const [aluno, setAluno] = useState<any>(null);
+  const [modalAulaVisible, setModalAulaVisible] = useState(false);
+  const [loadingAula, setLoadingAula] = useState(false);
 
   useEffect(() => {
     const initDB = async () => {
@@ -51,17 +58,64 @@ export default function VisualizarFichaScreen() {
       return groups;
     }, {});
 
-  const handleIniciarTreino = () => {
-    Alert.alert(
-      "Iniciar Treino",
-      "Deseja iniciar o treino com esta ficha?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Iniciar", onPress: () => {
-          router.push(`/treino-ativo/${fichaId}` as any);
-        }},
-      ]
-    );
+  const iniciarTreinoDireto = () => {
+    router.push(`/treino-ativo/${fichaId}` as any);
+  };
+
+  const handleIniciarTreino = async () => {
+    if (!ficha || !ficha.aluno_id) return;
+
+    setLoadingAula(true);
+    try {
+      const hoje = new Date();
+      // Garantir intervalo do dia inteiro
+      const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0);
+      const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
+
+      const aulasHoje = await obterAulasDoAluno(ficha.aluno_id, inicioDia, fimDia);
+
+      // Filtra apenas aulas válidas (não canceladas)
+      const aulasValidas = aulasHoje.filter(a => a.status !== 'CANCELADA');
+
+      if (aulasValidas.length > 0) {
+        // Já tem aula, só pergunta se quer iniciar
+        Alert.alert(
+          "Iniciar Treino",
+          "Deseja iniciar o treino com esta ficha?",
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Iniciar", onPress: iniciarTreinoDireto },
+          ]
+        );
+      } else {
+        // Não tem aula, oferece criar avulsa
+        setModalAulaVisible(true);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar aulas:', error);
+      Alert.alert('Erro', 'Não foi possível verificar a agenda. Iniciando treino mesmo assim.');
+      iniciarTreinoDireto();
+    } finally {
+      setLoadingAula(false);
+    }
+  };
+
+  const handleConfirmarAulaAvulsa = async () => {
+    if (!ficha || !ficha.aluno_id) return;
+
+    try {
+      const agora = new Date();
+      const dataStr = agora.toISOString().slice(0, 10);
+      const horaStr = agora.toTimeString().slice(0, 5); // HH:mm
+
+      await criarAulaAvulsa(ficha.aluno_id, dataStr, horaStr, 60, `Aula Avulsa - Ficha: ${ficha.nome}`);
+
+      setModalAulaVisible(false);
+      iniciarTreinoDireto();
+    } catch (error) {
+      console.error('Erro ao criar aula avulsa:', error);
+      Alert.alert('Erro', 'Erro ao criar aula avulsa.');
+    }
   };
 
   if (!ficha) {
@@ -74,6 +128,7 @@ export default function VisualizarFichaScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <Stack.Screen options={{ title: 'Ficha de Treino', headerTitleAlign: 'center' }} />
       <View style={styles.header}>
         <Text style={styles.title}>Ficha de Treino</Text>
         <Text style={styles.subtitle}>{ficha.nome}</Text>
@@ -82,7 +137,14 @@ export default function VisualizarFichaScreen() {
 
       {/* Informações da Ficha */}
       <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Informações da Ficha</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Informações da Ficha</Text>
+          <Link href={{ pathname: "/modal-ficha", params: { fichaId: fichaId, alunoId: ficha.aluno_id } }} asChild>
+            <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </Link>
+        </View>
         {ficha.objetivos && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Objetivos:</Text>
@@ -111,8 +173,16 @@ export default function VisualizarFichaScreen() {
 
       {/* Exercícios Agrupados */}
       <View style={styles.exerciciosSection}>
-        <Text style={styles.sectionTitle}>Exercícios</Text>
-        
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Exercícios</Text>
+          <Link href={{ pathname: "/modal-exercicio", params: { fichaId: fichaId } }} asChild>
+            <TouchableOpacity style={styles.addButton}>
+              <Ionicons name="add-circle" size={20} color={theme.colors.primary} />
+              <Text style={styles.addButtonText}>Adicionar</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+
         {Object.keys(exerciciosAgrupados).length === 0 ? (
           <Text style={styles.emptyText}>Nenhum exercício cadastrado para esta ficha.</Text>
         ) : (
@@ -122,7 +192,7 @@ export default function VisualizarFichaScreen() {
               {exerciciosGrupo.map((exercicio: any, index: number) => (
                 <View key={exercicio.id} style={styles.exercicioContainer}>
                   <Text style={styles.exercicioNome}>{index + 1}. {exercicio.nome}</Text>
-                  
+
                   <View style={styles.exercicioDetails}>
                     {exercicio.series && (
                       <View style={styles.detailRow}>
@@ -170,73 +240,97 @@ export default function VisualizarFichaScreen() {
 
       {/* Botões de Ação */}
       <View style={styles.actionsContainer}>
-        <Button title="🚀 Iniciar Treino" onPress={handleIniciarTreino} color="#4CAF50" />
-        <Link href={{ pathname: "/modal-exercicio", params: { fichaId: fichaId } }} asChild>
-          <Button title="➕ Adicionar Exercício" />
-        </Link>
-        <Link href={{ pathname: "/modal-copiar-ficha", params: { fichaId: fichaId } }} asChild>
-          <Button title="📋 Copiar Ficha" color="#FF9800" />
-        </Link>
-        <Link href={{ pathname: "/modal-ficha", params: { fichaId: fichaId, alunoId: ficha.aluno_id } }} asChild>
-          <Button title="✏️ Editar Ficha" />
-        </Link>
-        <Button title="📊 Ver Histórico" onPress={() => router.push(`/historico/${ficha.aluno_id}` as any)} color="#9C27B0" />
-        <Button title="⬅️ Voltar" onPress={() => router.back()} />
+        <TouchableOpacity
+          style={[styles.primaryButton, loadingAula && { opacity: 0.7 }]}
+          onPress={handleIniciarTreino}
+          disabled={loadingAula}
+        >
+          <Text style={styles.primaryButtonText}>
+            {loadingAula ? 'Verificando...' : '🚀 INICIAR TREINO'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.secondaryActionsRow}>
+          <Link href={{ pathname: "/modal-copiar-ficha", params: { fichaId: fichaId } }} asChild>
+            <TouchableOpacity style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>📋 Copiar</Text>
+            </TouchableOpacity>
+          </Link>
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push(`/historico/${ficha.aluno_id}` as any)}>
+            <Text style={styles.secondaryButtonText}>📊 Histórico</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </ScrollView>
+
+      <CustomModal
+        visible={modalAulaVisible}
+        title="Aula Não Agendada"
+        message="O aluno não possui aula marcada para hoje. Deseja lançar uma aula avulsa agora?"
+        type="warning"
+        confirmText="SIM, LANÇAR AULA"
+        showCancel
+        onClose={() => setModalAulaVisible(false)}
+        onConfirm={handleConfirmarAulaAvulsa}
+      />
+    </ScrollView >
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
+    paddingTop: 60, // Adjust for status bar if needed
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.text,
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 28, // Aumentado para maior destaque
+    fontFamily: theme.fonts.title, // Mudado para fonte bold/title
     textAlign: 'center',
-    color: '#2196F3',
-    marginBottom: 5,
+    color: theme.colors.primary,
+    marginBottom: 4,
   },
   alunoName: {
     fontSize: 16,
     textAlign: 'center',
-    color: '#666',
+    color: theme.colors.textSecondary,
+    fontFamily: theme.fonts.secondary,
   },
   loadingText: {
     fontSize: 18,
     textAlign: 'center',
     marginTop: 50,
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
   },
   infoSection: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: theme.colors.card,
+    margin: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
     marginBottom: 10,
-    color: '#333',
+    color: theme.colors.text,
   },
   infoRow: {
     flexDirection: 'row',
@@ -244,50 +338,66 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    width: 100,
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
+    width: 120,
   },
   infoValue: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.secondary,
     flex: 1,
   },
   exerciciosSection: {
-    backgroundColor: '#fff',
-    margin: 10,
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: theme.colors.card,
+    margin: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addButtonText: {
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   grupoContainer: {
     marginBottom: 20,
   },
   grupoTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
     marginBottom: 10,
     paddingBottom: 5,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
   },
   exercicioContainer: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: theme.colors.background,
     padding: 12,
     marginBottom: 8,
-    borderRadius: 6,
+    borderRadius: theme.borderRadius.sm,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: theme.colors.success,
   },
   exercicioNome: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontFamily: theme.fonts.regular,
+    fontWeight: 'bold',
+    color: theme.colors.text,
     marginBottom: 8,
   },
   exercicioDetails: {
@@ -299,24 +409,58 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
+    fontFamily: theme.fonts.secondary,
+    color: theme.colors.textSecondary,
     width: 80,
   },
   detailValue: {
     fontSize: 13,
-    color: '#333',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.secondary,
     flex: 1,
   },
   emptyText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 20,
+    fontFamily: theme.fonts.secondary,
   },
   actionsContainer: {
-    padding: 15,
-    gap: 10,
+    padding: theme.spacing.md,
+    gap: 16,
+    marginBottom: 20,
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    elevation: 3,
+  },
+  primaryButtonText: {
+    color: theme.colors.background,
+    fontFamily: theme.fonts.title,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  secondaryActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: theme.colors.card,
+    paddingVertical: 12,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  secondaryButtonText: {
+    color: theme.colors.text,
+    fontFamily: theme.fonts.title,
+    fontSize: 14,
   },
 }); 
