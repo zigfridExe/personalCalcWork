@@ -35,7 +35,7 @@ function formatarDataBR(dataISO: string) {
 }
 
 export default function CalendarioScreen() {
-  const { aulasVisuais, carregarCalendario, confirmarAula, cancelarAula } = useAulasStore();
+  const { aulasVisuais, carregarCalendario, confirmarAula, cancelarAula, reativarAula } = useAulasStore();
   const [dataSelecionada, setDataSelecionada] = useState<string>(
     new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   );
@@ -119,15 +119,16 @@ export default function CalendarioScreen() {
     return aulasVisuais.filter(a => a.data === dataSelecionada);
   }, [aulasVisuais, dataSelecionada]);
 
-  const handleConfirmar = async (aula: any) => {
-    Alert.alert("Confirmar Aula", "Marcar como realizada?", [
+  const handleConfirmar = async (aula: any, status: number) => {
+    const action = status === 1 ? "Presente" : "Falta";
+    Alert.alert(`Marcar ${action}`, `Confirmar ${action} para esta aula?`, [
       { text: "Cancelar", style: "cancel" },
-      { text: "Confirmar", onPress: () => confirmarAula(aula) }
+      { text: "Confirmar", onPress: () => confirmarAula(aula, status) }
     ]);
   };
 
   const handleCancelar = async (aula: any) => {
-    Alert.alert("Cancelar Aula", "Deseja cancelar esta aula?", [
+    Alert.alert("Cancelar Aula", "Deseja cancelar esta aula? Isso removerá a aula do calendário de forma diferente de 'Falta'.", [
       { text: "Não", style: "cancel" },
       { text: "Sim, Cancelar", style: "destructive", onPress: () => cancelarAula(aula) }
     ]);
@@ -200,14 +201,16 @@ export default function CalendarioScreen() {
                     // Adaptação para o componente antigo se necessário, ou atualizar o componente
                     id: item.id || 0, // Fallback p/ evitar crash
                     aluno_id: item.aluno_id,
+                    aluno_nome: item.aluno_nome, // Passando o nome do aluno
                     data_aula: item.data,
                     hora_inicio: item.hora,
                     duracao_minutos: item.duracao,
-                    tipo_aula: item.tipo === 'VIRTUAL' ? 'RECORRENTE_GERADA' : 'AVULSA', // Mock para compatibilidade visual
-                    presenca: item.status === 'REALIZADA' ? 1 : item.status === 'CANCELADA' ? 3 : 0
+                    tipo_aula: item.tipo === 'VIRTUAL' ? 'RECORRENTE_GERADA' : item.raw_tipo || 'AVULSA', // Melhorar mapeamento
+                    presenca: item.status === 'REALIZADA' ? 1 : item.status === 'FALTA' ? 2 : item.status === 'CANCELADA' ? 3 : 0
                   }}
-                  onMarcarPresenca={() => handleConfirmar(item)}
+                  onMarcarPresenca={(aula, status) => handleConfirmar(aula, status)}
                   onApagar={() => handleCancelar(item)}
+                  onReativar={() => reativarAula(item)}
                 />
               )}
               ListEmptyComponent={<Text style={styles.emptyText}>Dia livre.</Text>}

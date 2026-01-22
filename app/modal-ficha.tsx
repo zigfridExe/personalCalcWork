@@ -46,12 +46,12 @@ export default function ModalFichaScreen() {
     }
 
     if (dataInicio && !isValidDate(dataInicio)) {
-      Alert.alert('Erro', 'Data de Início inválida! Use o formato DD-MM-AAAA.');
+      Alert.alert('Erro', 'Data de Início inválida! Use o formato DD/MM/AAAA.');
       return;
     }
 
     if (dataFim && !isValidDate(dataFim)) {
-      Alert.alert('Erro', 'Data Fim inválida! Use o formato DD-MM-AAAA.');
+      Alert.alert('Erro', 'Data Fim inválida! Use o formato DD/MM/AAAA.');
       return;
     }
 
@@ -92,10 +92,10 @@ export default function ModalFichaScreen() {
           onChangeText={setNome}
         />
 
-        <Text style={styles.label}>Data Início (DD-MM-AAAA)</Text>
+        <Text style={styles.label}>Data Início (DD/MM/AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="DD-MM-AAAA"
+          placeholder="DD/MM/AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={dataInicio}
           onChangeText={(text) => setDataInicio(maskDate(text))}
@@ -103,10 +103,10 @@ export default function ModalFichaScreen() {
           maxLength={10}
         />
 
-        <Text style={styles.label}>Data Fim (DD-MM-AAAA)</Text>
+        <Text style={styles.label}>Data Fim (DD/MM/AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="DD-MM-AAAA"
+          placeholder="DD/MM/AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={dataFim}
           onChangeText={(text) => setDataFim(maskDate(text))}

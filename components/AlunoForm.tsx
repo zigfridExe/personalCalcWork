@@ -83,7 +83,7 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
 
     // Data é opcional? Se tiver algo escrito, valida.
     if (dataNascimento && !isValidDate(dataNascimento)) {
-      alert('Data de nascimento inválida! Use o formato DD-MM-AAAA.');
+      alert('Data de nascimento inválida! Use o formato DD/MM/AAAA.');
       return;
     }
 
@@ -154,7 +154,7 @@ export default function AlunoForm({ initialValues, onSubmit, submitLabel = 'Salv
 
       <TextInput
         style={[styles.input, styles.textInput, styles.lastInput]}
-        placeholder="Data de Nascimento (DD-MM-AAAA)"
+        placeholder="Data de Nascimento (DD/MM/AAAA)"
         placeholderTextColor="rgba(255, 255, 255, 0.6)"
         value={dataNascimento}
         onChangeText={text => setDataNascimento(maskDate(text))}

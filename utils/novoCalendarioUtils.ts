@@ -4,6 +4,7 @@ import { RRule, RRuleSet } from 'rrule';
 export interface RegraRecorrencia {
     id: number;
     aluno_id: number;
+    aluno_nome?: string; // Adicionado para exibição
     dia_semana: number; // 0=Dom, 1=Seg, ... 6=Sab
     hora_inicio: string; // HH:MM
     duracao_minutos: number;
@@ -14,6 +15,7 @@ export interface RegraRecorrencia {
 export interface EventoConcreto {
     id: number;
     aluno_id: number;
+    aluno_nome?: string; // Adicionado
     data_aula: string; // YYYY-MM-DD
     hora_inicio: string;
     tipo_aula: 'AVULSA' | 'REALIZADA' | 'CANCELADA' | 'FALTA';
@@ -26,6 +28,7 @@ export interface AulaCalendario {
     key: string; // ID único virtual para renderização (ex: "rule-1-2026-05-10" ou "evt-50")
     id?: number; // ID real se for concreto
     aluno_id: number;
+    aluno_nome?: string; // Adicionado para UI
     data: string; // YYYY-MM-DD
     hora: string; // HH:MM
     duracao: number;
@@ -35,6 +38,7 @@ export interface AulaCalendario {
     recorrencia_id?: number;
     raw_tipo?: string; // Tipo original no banco (AVULSA, etc)
     raw_presenca?: number; // Presença original no banco
+    status_presenca?: number; // Adicionado para consistência visual
     sobrescrita_id?: number;
     cancelada_por_id?: number;
 }
@@ -64,6 +68,7 @@ export function gerarCalendarioVisual(
             key: `evt-${evt.id}`,
             id: evt.id,
             aluno_id: evt.aluno_id,
+            aluno_nome: evt.aluno_nome, // Mapeado
             data: evt.data_aula,
             hora: evt.hora_inicio,
             duracao: 0, // TODO: Pegar do banco se tiver, ou padrão
@@ -73,6 +78,7 @@ export function gerarCalendarioVisual(
             recorrencia_id: evt.recorrencia_id || undefined,
             raw_tipo: evt.tipo_aula,
             raw_presenca: evt.status_presenca,
+            status_presenca: evt.status_presenca, // Mapeado
             // @ts-ignore - Propriedades podem existir no objeto raw do banco mesmo que nao na interface EventoConcreto estrita
             sobrescrita_id: evt.sobrescrita_id,
             // @ts-ignore
@@ -110,6 +116,7 @@ export function gerarCalendarioVisual(
                 aulasVisuais.push({
                     key: `rule-${regra.id}-${dataStr}`,
                     aluno_id: regra.aluno_id,
+                    aluno_nome: regra.aluno_nome, // Mapeado
                     data: dataStr,
                     hora: regra.hora_inicio,
                     duracao: regra.duracao_minutos,

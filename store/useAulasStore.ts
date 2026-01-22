@@ -12,7 +12,8 @@ interface AulasState {
   adicionarAula: (dados: { aluno_id: number; data_aula: string; hora_inicio: string; duracao_minutos: number; presenca: number; observacoes?: string; tipo_aula: string; horario_recorrente_id?: number | null }) => Promise<void>;
   editarAula: (dados: { id: number; aluno_id: number; data_aula: string; hora_inicio: string; duracao_minutos: number; presenca: number; observacoes?: string; tipo_aula: string; horario_recorrente_id?: number | null; rrule?: string; data_avulsa?: string; sobrescrita_id?: number; cancelada_por_id?: number }) => Promise<void>;
   cancelarAula: (aula: AulaCalendario) => Promise<void>; // Cria exceção
-  confirmarAula: (aula: AulaCalendario) => Promise<void>; // Concretiza a virtual
+  confirmarAula: (aula: AulaCalendario, presenca?: number) => Promise<void>; // Concretiza a virtual
+  reativarAula: (aula: AulaCalendario) => Promise<void>; // Reseta status
   obterAulasDoAluno: (aluno_id: number, inicio: Date, fim: Date) => Promise<AulaCalendario[]>;
   listarRegrasAtivas: (aluno_id: number) => Promise<RegraRecorrencia[]>;
   encerrarRegraRecorrente: (regra_id: number) => Promise<void>;
@@ -32,19 +33,23 @@ const useAulasStore = create<AulasState>((set, get) => ({
 
     // 2. Buscar Regras Ativas
     // (Busca regras que começam antes do fim do mês e não terminaram antes do inicio do mês)
+    // JOIN com alunos para pegar o nome
     const regras = await db.getAllAsync<RegraRecorrencia>(`
-      SELECT id, aluno_id, dia_semana, hora_inicio, duracao_minutos, data_inicio_vigencia, data_fim_vigencia 
-      FROM horarios_recorrentes 
-      WHERE data_inicio_vigencia <= ? 
-      AND (data_fim_vigencia IS NULL OR data_fim_vigencia >= ?)
+      SELECT h.id, h.aluno_id, h.dia_semana, h.hora_inicio, h.duracao_minutos, h.data_inicio_vigencia, h.data_fim_vigencia, a.nome as aluno_nome
+      FROM horarios_recorrentes h
+      LEFT JOIN alunos a ON h.aluno_id = a.id
+      WHERE h.data_inicio_vigencia <= ? 
+      AND (h.data_fim_vigencia IS NULL OR h.data_fim_vigencia >= ?)
     `, fimStr, inicioStr);
 
     // 3. Buscar Eventos Concretos (Avulsas, Realizadas, Canceladas) no período
+    // JOIN com alunos para pegar o nome
     const eventos = await db.getAllAsync<any>(`
-      SELECT id, aluno_id, data_aula, hora_inicio, tipo_aula, presenca as status_presenca, observacoes, horario_recorrente_id as recorrencia_id
-      FROM aulas 
-      WHERE data_aula BETWEEN ? AND ?
-      AND tipo_aula != 'RECORRENTE_GERADA' -- Ignorar lixo legado se houver
+      SELECT au.id, au.aluno_id, au.data_aula, au.hora_inicio, au.tipo_aula, au.presenca as status_presenca, au.observacoes, au.horario_recorrente_id as recorrencia_id, a.nome as aluno_nome
+      FROM aulas au
+      LEFT JOIN alunos a ON au.aluno_id = a.id
+      WHERE au.data_aula BETWEEN ? AND ?
+      AND au.tipo_aula != 'RECORRENTE_GERADA'
     `, inicioStr, fimStr);
 
     // Mapear para tipagem correta
@@ -108,18 +113,20 @@ const useAulasStore = create<AulasState>((set, get) => ({
 
   cancelarAula: async (aula) => {
     const db = await getDatabase();
-
-    // Ensure recorrencia_id is null if undefined
     const recorrenciaId = aula.recorrencia_id ?? null;
 
-    if (aula.tipo === 'VIRTUAL') {
-      // Requer criar uma exceção na tabela de aulas para "matar" a virtual
+    // Se for AVULSA (não ligada a regra recorrente), apagar de verdade
+    if (aula.raw_tipo === 'AVULSA' && aula.tipo === 'CONCRETA') {
+      await db.runAsync('DELETE FROM aulas WHERE id = ?', aula.id ?? 0);
+    }
+    else if (aula.tipo === 'VIRTUAL') {
+      // Requer criar uma exceção na tabela de aulas para "cancelar" a virtual
       await db.runAsync(`
         INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, tipo_aula, horario_recorrente_id)
         VALUES (?, ?, ?, ?, 0, 'CANCELADA', ?);
       `, aula.aluno_id, aula.data, aula.hora, aula.duracao, recorrenciaId);
     } else {
-      // Já é concreta, apenas atualiza status
+      // Já é concreta (ex: uma aula que foi confirmada e agora cancelada), apenas atualiza status
       await db.runAsync(`UPDATE aulas SET tipo_aula = 'CANCELADA' WHERE id = ?`, aula.id ?? 0);
     }
 
@@ -127,19 +134,42 @@ const useAulasStore = create<AulasState>((set, get) => ({
     await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
   },
 
-  confirmarAula: async (aula) => {
-    // Transforma virtual em realizada (concreta)
+  confirmarAula: async (aula, presenca = 1) => {
+    // Transforma virtual em realizada (concreta) ou atualiza existente
     const db = await getDatabase();
     const recorrenciaId = aula.recorrencia_id ?? null;
+
+    // Determinar o tipo de aula com base na presença
+    // 1 = Presente -> REALIZADA
+    // 2 = Falta -> FALTA
+    const tipoAula = presenca === 2 ? 'FALTA' : 'REALIZADA';
 
     if (aula.tipo === 'VIRTUAL') {
       await db.runAsync(`
         INSERT INTO aulas (aluno_id, data_aula, hora_inicio, duracao_minutos, presenca, tipo_aula, horario_recorrente_id)
-        VALUES (?, ?, ?, ?, 1, 'REALIZADA', ?);
-      `, aula.aluno_id, aula.data, aula.hora, aula.duracao, recorrenciaId);
+        VALUES (?, ?, ?, ?, ?, ?, ?);
+      `, aula.aluno_id, aula.data, aula.hora, aula.duracao, presenca, tipoAula, recorrenciaId);
     } else {
-      await db.runAsync(`UPDATE aulas SET presenca = 1, tipo_aula = 'REALIZADA' WHERE id = ?`, aula.id ?? 0);
+      await db.runAsync(`UPDATE aulas SET presenca = ?, tipo_aula = ? WHERE id = ?`, presenca, tipoAula, aula.id ?? 0);
     }
+    const d = new Date(aula.data);
+    await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
+  },
+
+  reativarAula: async (aula) => {
+    const db = await getDatabase();
+
+    if (aula.recorrencia_id) {
+      // Se tem recorrência, o registro concreto é uma exceção ou realização.
+      // Deletar o registro restaura a aula virtual da regra original.
+      if (aula.id) {
+        await db.runAsync('DELETE FROM aulas WHERE id = ?', aula.id);
+      }
+    } else {
+      // Se é avulsa, apenas reseta o status
+      await db.runAsync(`UPDATE aulas SET presenca = 0, tipo_aula = 'AVULSA' WHERE id = ?`, aula.id || 0);
+    }
+
     const d = new Date(aula.data);
     await get().carregarCalendario(d.getMonth() + 1, d.getFullYear());
   },

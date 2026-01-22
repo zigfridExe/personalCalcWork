@@ -1,16 +1,31 @@
 /**
  * Utilitários para manipulação e formatação de datas.
- * Padronização: DD-MM-AAAA para visualização/input e YYYY-MM-DD para banco de dados/ISO.
+ * Padronização: DD/MM/AAAA para visualização/input e YYYY-MM-DD para banco de dados/ISO.
  */
 
 /**
- * Formata uma string de data ISO (YYYY-MM-DD) ou objeto Date para DD-MM-AAAA.
+ * Formata uma string de data ISO (YYYY-MM-DD) ou objeto Date para DD/MM/AAAA.
  * @param date Data em string ISO ou objeto Date
- * @returns String formatada DD-MM-AAAA
+ * @returns String formatada DD/MM/AAAA
  */
 export const formatDate = (date: string | Date | null | undefined): string => {
     if (!date) return '';
 
+    // Se for string, tentamos processar diretamente para evitar problemas de fuso horário (UTC vs Local)
+    if (typeof date === 'string') {
+        const datePart = date.split('T')[0]; // Pega apenas a parte da data se tiver hora
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+            const [year, month, day] = datePart.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // Se já estiver no formato DD/MM/AAAA, retorna como está
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) {
+            return datePart;
+        }
+    }
+
+    // Fallback para objeto Date ou outros formatos
     const d = typeof date === 'string' ? new Date(date) : date;
 
     if (isNaN(d.getTime())) return '';
@@ -19,11 +34,11 @@ export const formatDate = (date: string | Date | null | undefined): string => {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
 
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
 };
 
 /**
- * Formata data e hora para DD-MM-AAAA HH:mm
+ * Formata data e hora para DD/MM/AAAA HH:mm
  */
 export const formatDateTime = (date: string | Date | null | undefined): string => {
     if (!date) return '';
@@ -36,12 +51,12 @@ export const formatDateTime = (date: string | Date | null | undefined): string =
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
 
-    return `${day}-${month}-${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
 
 /**
- * Aplica máscara de data (DD-MM-AAAA) em um input.
- * Permite apenas números e adiciona os hífens automaticamente.
+ * Aplica máscara de data (DD/MM/AAAA) em um input.
+ * Permite apenas números e adiciona as barras automaticamente.
  * @param value Valor atual do input
  * @returns Valor mascarado
  */
@@ -53,24 +68,27 @@ export const maskDate = (value: string): string => {
     }
 
     if (v.length > 4) {
-        return `${v.slice(0, 2)}-${v.slice(2, 4)}-${v.slice(4)}`;
+        return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
     } else if (v.length > 2) {
-        return `${v.slice(0, 2)}-${v.slice(2)}`;
+        return `${v.slice(0, 2)}/${v.slice(2)}`;
     }
 
     return v;
 };
 
 /**
- * Converte uma data no formato DD-MM-AAAA para o formato ISO YYYY-MM-DD.
+ * Converte uma data no formato DD/MM/AAAA (ou DD-MM-AAAA) para o formato ISO YYYY-MM-DD.
  * Útil para salvar no banco de dados.
- * @param dateString Data no formato DD-MM-AAAA
+ * @param dateString Data no formato DD/MM/AAAA
  * @returns Data no formato YYYY-MM-DD ou string vazia se inválido
  */
 export const parseToISO = (dateString: string): string => {
     if (!dateString || dateString.length !== 10) return '';
 
-    const parts = dateString.split('-');
+    // Suporta tanto / quanto - para robustez
+    const separator = dateString.includes('/') ? '/' : '-';
+    const parts = dateString.split(separator);
+
     if (parts.length !== 3) return '';
 
     const day = parts[0];
@@ -90,15 +108,15 @@ export const parseToISO = (dateString: string): string => {
 };
 
 /**
- * Verifica se uma string é uma data válida no formato DD-MM-AAAA.
- * @param dateString Data formato DD-MM-AAAA
+ * Verifica se uma string é uma data válida no formato DD/MM/AAAA.
+ * @param dateString Data formato DD/MM/AAAA
  * @returns boolean
  */
 export const isValidDate = (dateString: string): boolean => {
     if (!dateString || dateString.length !== 10) return false;
 
-    // Regex para validar DD-MM-AAAA
-    const regex = /^\d{2}-\d{2}-\d{4}$/;
+    // Regex para validar DD/MM/AAAA (aceita hifens também para legado)
+    const regex = /^\d{2}[\/-]\d{2}[\/-]\d{4}$/;
     if (!regex.test(dateString)) return false;
 
     const iso = parseToISO(dateString);
@@ -106,8 +124,6 @@ export const isValidDate = (dateString: string): boolean => {
 
     // Confere se a data existe mesmo (ex: 31-02-2024 é inválido)
     const date = new Date(iso + 'T00:00:00');
-    // Ajuste de fuso horário pode causar problemas se não especificar a hora, 
-    // mas aqui o objetivo é verificar validade dos componentes.
 
     const [y, m, d] = iso.split('-').map(Number);
 

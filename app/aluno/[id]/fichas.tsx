@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import { useLocalSearchParams, Link, useFocusEffect } from 'expo-router';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { useLocalSearchParams, Link } from 'expo-router';
 import useFichasStore from '../../../store/useFichasStore';
 import useAlunosStore from '../../../store/useAlunosStore';
 import useExerciciosStore from '../../../store/useExerciciosStore';
@@ -20,16 +20,18 @@ export default function FichasScreen() {
 
   const aluno = alunos.find(a => a.id === alunoId);
 
-  // Carrega as fichas do aluno
-  useEffect(() => {
-    const initDB = async () => {
-      await initializeDatabase();
-      if (alunoId) {
-        await loadFichasByAlunoId(alunoId);
-      }
-    };
-    initDB();
-  }, [alunoId, initializeDatabase, loadFichasByAlunoId]);
+  // Carrega as fichas do aluno ao focar na tela (resolve problema de duplicação após criar copia)
+  useFocusEffect(
+    useCallback(() => {
+      const initDB = async () => {
+        await initializeDatabase();
+        if (alunoId) {
+          await loadFichasByAlunoId(alunoId);
+        }
+      };
+      initDB();
+    }, [alunoId, initializeDatabase, loadFichasByAlunoId])
+  );
 
   // Carrega os exercícios quando as fichas são carregadas
   useEffect(() => {

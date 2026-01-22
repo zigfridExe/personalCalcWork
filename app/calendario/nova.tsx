@@ -48,7 +48,7 @@ export default function NovaAulaScreen() {
       return;
     }
     if (!isValidDate(data)) {
-      Alert.alert('Data inválida! Use o formato DD-MM-AAAA.');
+      Alert.alert('Data inválida! Use o formato DD/MM/AAAA.');
       return;
     }
     if (!isHoraValida(hora)) {
@@ -106,10 +106,10 @@ export default function NovaAulaScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Data (DD-MM-AAAA)</Text>
+        <Text style={styles.label}>Data (DD/MM/AAAA)</Text>
         <TextInput
           style={styles.input}
-          placeholder="DD-MM-AAAA"
+          placeholder="DD/MM/AAAA"
           placeholderTextColor={theme.colors.textSecondary}
           value={data}
           onChangeText={t => setData(maskDate(t))}

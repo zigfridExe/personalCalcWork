@@ -37,7 +37,7 @@ export default function EditarAulaScreen() {
 
     // Validação da data
     if (!isValidDate(data)) {
-      Alert.alert('Erro', 'Data inválida! Use o formato DD-MM-AAAA.');
+      Alert.alert('Erro', 'Data inválida! Use o formato DD/MM/AAAA.');
       return;
     }
 
@@ -127,7 +127,7 @@ export default function EditarAulaScreen() {
           styles.input,
           tipoAula === 'RECORRENTE_GERADA' && styles.inputDisabled
         ]}
-        placeholder="DD-MM-AAAA"
+        placeholder="DD/MM/AAAA"
         value={data}
         onChangeText={t => setData(maskDate(t))}
         maxLength={10}

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
+import { Picker } from '@react-native-picker/picker'; // Mantenho picker nativo por simplicidade ou customizar
 import useAlunosStore from '../../store/useAlunosStore';
 import useAulasStore from '../../store/useAulasStore';
+import { maskDate, parseToISO, isValidDate, formatDate } from '@/utils/dateUtils';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { theme } from '@/styles/theme';
+import { StatusBar } from 'expo-status-bar';
 
 export default function NovaRecorrenciaScreen() {
   const router = useRouter();
@@ -17,15 +20,15 @@ export default function NovaRecorrenciaScreen() {
   // Usando strings para entrada simples (Workaround para Expo Go)
   const [horaTexto, setHoraTexto] = useState('08:00');
   const [duracao, setDuracao] = useState('60');
-  const [dataInicioTexto, setDataInicioTexto] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
+  const [dataInicioTexto, setDataInicioTexto] = useState(formatDate(new Date())); // DD/MM/AAAA
 
   const diasSemana = [
     { id: 0, label: 'Domingo' },
-    { id: 1, label: 'Segunda-feira' },
-    { id: 2, label: 'Terça-feira' },
-    { id: 3, label: 'Quarta-feira' },
-    { id: 4, label: 'Quinta-feira' },
-    { id: 5, label: 'Sexta-feira' },
+    { id: 1, label: 'Segunda' },
+    { id: 2, label: 'Terça' },
+    { id: 3, label: 'Quarta' },
+    { id: 4, label: 'Quinta' },
+    { id: 5, label: 'Sexta' },
     { id: 6, label: 'Sábado' },
   ];
 
@@ -57,10 +60,12 @@ export default function NovaRecorrenciaScreen() {
     }
 
     // Validação básica de data
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicioTexto)) {
-      Alert.alert('Erro', 'Formato de data inválido. Use YYYY-MM-DD (ex: 2026-01-15)');
+    if (!isValidDate(dataInicioTexto)) {
+      Alert.alert('Erro', 'Data inválida. Use DD/MM/AAAA (ex: 15/01/2026)');
       return;
     }
+
+    const dataISO = parseToISO(dataInicioTexto);
 
     try {
       // Criar uma regra para cada dia selecionado
@@ -70,7 +75,7 @@ export default function NovaRecorrenciaScreen() {
           dia,
           horaTexto,
           parseInt(duracao) || 60,
-          dataInicioTexto
+          dataISO
         )
       );
 
@@ -85,151 +90,174 @@ export default function NovaRecorrenciaScreen() {
   };
 
   return (
-    <>
+    <View style={styles.container}>
       <ScreenHeader title="Nova Recorrência" />
-      <ScrollView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        <Text style={styles.label}>Aluno</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={alunoId}
-            onValueChange={(itemValue) => setAlunoId(itemValue)}
-          >
-            <Picker.Item label="Selecione um aluno..." value={null} />
-            {alunos.map(aluno => (
-              <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} />
-            ))}
-          </Picker>
-        </View>
-
-        <Text style={styles.label}>Dias da Semana</Text>
-        <View style={styles.diasContainer}>
-          {diasSemana.map(dia => (
-            <TouchableOpacity
-              key={dia.id}
-              style={[
-                styles.diaButton,
-                diasSelecionados.includes(dia.id) && styles.diaButtonSelected
-              ]}
-              onPress={() => toggleDia(dia.id)}
+        <View style={styles.card}>
+          <Text style={styles.label}>Aluno</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={alunoId}
+              onValueChange={(itemValue) => setAlunoId(itemValue)}
+              style={styles.picker}
             >
-              <Text style={[
-                styles.diaText,
-                diasSelecionados.includes(dia.id) && styles.diaTextSelected
-              ]}>
-                {dia.label.slice(0, 3)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+              <Picker.Item label="Selecione um aluno..." value={null} color={theme.colors.textSecondary} />
+              {alunos.map(aluno => (
+                <Picker.Item key={aluno.id} label={aluno.nome} value={aluno.id} color={theme.colors.text} />
+              ))}
+            </Picker>
+          </View>
+
+          <Text style={styles.label}>Dias da Semana</Text>
+          <View style={styles.diasContainer}>
+            {diasSemana.map(dia => (
+              <TouchableOpacity
+                key={dia.id}
+                style={[
+                  styles.diaButton,
+                  diasSelecionados.includes(dia.id) && styles.diaButtonSelected
+                ]}
+                onPress={() => toggleDia(dia.id)}
+              >
+                <Text style={[
+                  styles.diaText,
+                  diasSelecionados.includes(dia.id) && styles.diaTextSelected
+                ]}>
+                  {dia.label.slice(0, 3)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Horário de Início (HH:MM)</Text>
+          <TextInput
+            style={styles.input}
+            value={horaTexto}
+            onChangeText={setHoraTexto}
+            placeholder="Ex: 14:30"
+            keyboardType="numbers-and-punctuation"
+            placeholderTextColor={theme.colors.textSecondary}
+          />
+
+          <Text style={styles.label}>Duração (minutos)</Text>
+          <TextInput
+            style={styles.input}
+            value={duracao}
+            onChangeText={setDuracao}
+            keyboardType="numeric"
+            placeholderTextColor={theme.colors.textSecondary}
+          />
+
+          <Text style={styles.label}>Início da Vigência (DD/MM/AAAA)</Text>
+          <TextInput
+            style={styles.input}
+            value={dataInicioTexto}
+            onChangeText={t => setDataInicioTexto(maskDate(t))}
+            placeholder="Ex: 15/01/2026"
+            keyboardType="numeric"
+            placeholderTextColor={theme.colors.textSecondary}
+          />
+
+          <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
+            <Text style={styles.saveButtonText}>CRIAR REGRA</Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.label}>Horário de Início (HH:MM)</Text>
-        <TextInput
-          style={styles.input}
-          value={horaTexto}
-          onChangeText={setHoraTexto}
-          placeholder="Ex: 14:30"
-          keyboardType="numbers-and-punctuation"
-        />
-
-        <Text style={styles.label}>Duração (minutos)</Text>
-        <TextInput
-          style={styles.input}
-          value={duracao}
-          onChangeText={setDuracao}
-          keyboardType="numeric"
-        />
-
-        <Text style={styles.label}>Início da Vigência (YYYY-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          value={dataInicioTexto}
-          onChangeText={setDataInicioTexto}
-          placeholder="Ex: 2026-01-15"
-          keyboardType="default"
-        />
-
-        <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
-          <Text style={styles.saveButtonText}>Criar Regra</Text>
-        </TouchableOpacity>
 
       </ScrollView>
-    </>
+      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  scrollContent: {
     padding: 20,
-    backgroundColor: '#f5f5f5',
+  },
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.md,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontFamily: theme.fonts.title,
+    color: theme.colors.primary,
     marginBottom: 8,
-    marginTop: 16,
+    marginTop: 10,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     fontSize: 16,
+    fontFamily: theme.fonts.regular,
+    color: theme.colors.text,
+    marginBottom: 10,
   },
-  inputButton: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
+  pickerContainer: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
+    borderColor: theme.colors.border,
+    marginBottom: 10,
+    overflow: 'hidden', // Importante para o border radius no Android
+  },
+  picker: {
+    // Estilos específicos para picker se necessário
   },
   diasContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
   diaButton: {
-    padding: 10,
-    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
-    minWidth: 45,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
   },
   diaButtonSelected: {
-    backgroundColor: '#1976D2',
-    borderColor: '#1976D2',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   diaText: {
-    color: '#333',
+    color: theme.colors.text,
+    fontFamily: theme.fonts.regular,
+    fontSize: 14,
   },
   diaTextSelected: {
-    color: '#fff',
+    color: theme.colors.background,
     fontWeight: 'bold',
-  },
-  pickerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 8,
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.primary,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 50,
+    marginTop: 20,
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: theme.colors.background,
+    fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: theme.fonts.title,
   },
 });

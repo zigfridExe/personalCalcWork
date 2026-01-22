@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { format } from 'date-fns';
+import { formatDate } from '@/utils/dateUtils';
 import { alunoCardStyles as styles, buttonColors } from '@/styles/alunoCard.styles';
 
 interface AlunoCardProps {
@@ -38,7 +38,7 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
   };
 
   const router = useRouter();
-  
+
   // Função para lidar com a navegação
   const handleNavigation = (path: string) => {
     router.push(path as any); // Usando 'as any' temporariamente para evitar erros de tipagem
@@ -67,17 +67,17 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
       isDanger && styles.dangerButton,
       !isPrimary && !isDanger && styles.secondaryButton,
     ];
-    
+
     const textStyle = [
       styles.buttonText,
       isPrimary && styles.primaryButtonText,
       isDanger && styles.dangerButtonText,
       !isPrimary && !isDanger && styles.secondaryButtonText,
     ];
-    
+
     return (
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={buttonStyle}
           onPress={href ? () => handleNavigation(href) : onPress}
           activeOpacity={0.8}
@@ -90,90 +90,88 @@ const AlunoCard: React.FC<AlunoCardProps> = ({ aluno, onDelete }) => {
 
   return (
     // @ts-expect-error: dynamic route typing not recognized by Expo Router
-    <Link href={{ pathname: "/aluno/[id]123", params: { id: aluno.id.toString() } }} asChild>
+    <Link href={{ pathname: "/aluno/[id]", params: { id: aluno.id.toString() } }} asChild>
       <TouchableOpacity style={styles.container} activeOpacity={0.8}>
 
-      <View style={styles.infoRow}>
-        <View style={styles.imageContainer}>
-          {aluno.fotoUri ? (
-            <Image 
-              source={{ uri: aluno.fotoUri }} 
-              style={styles.image} 
-              resizeMode="cover"
-            />
-          ) : (
-            <Text style={styles.placeholderText}>
-              {aluno.nome.charAt(0).toUpperCase()}
+        <View style={styles.infoRow}>
+          <View style={styles.imageContainer}>
+            {aluno.fotoUri ? (
+              <Image
+                source={{ uri: aluno.fotoUri }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.placeholderText}>
+                {aluno.nome.charAt(0).toUpperCase()}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.infoContainer}>
+            <Text style={styles.nome} numberOfLines={1} ellipsizeMode="tail">
+              {aluno.nome}
             </Text>
-          )}
+
+            {aluno.data_nascimento && (
+              <Text style={styles.detalhe}>
+                Nascimento: {formatDate(aluno.data_nascimento)}
+              </Text>
+            )}
+
+            {aluno.contato && (
+              <Text style={styles.detalhe}>
+                Telefone: {formatarTelefone(aluno.contato)}
+              </Text>
+            )}
+          </View>
         </View>
-        
-        <View style={styles.infoContainer}>
-          <Text style={styles.nome} numberOfLines={1} ellipsizeMode="tail">
-            {aluno.nome}
-          </Text>
-          
-          {aluno.data_nascimento && (
-            <Text style={styles.detalhe}>
-              Nascimento: {aluno.data_nascimento.length === 10 
-                ? aluno.data_nascimento 
-                : format(new Date(aluno.data_nascimento.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')), 'dd/MM/yyyy')}
-            </Text>
-          )}
-          
-          {aluno.contato && (
-            <Text style={styles.detalhe}>
-              Telefone: {formatarTelefone(aluno.contato)}
-            </Text>
-          )}
+
+        <View style={styles.buttonsRow}>
+          {renderActionButton({
+            href: `/aluno/${aluno.id}/fichas`,
+            label: 'Fichas',
+            color: buttonColors.primary,
+            isPrimary: true,
+          })}
+
+          {renderActionButton({
+            href: `/historico/${aluno.id}`,
+            label: 'Histórico',
+            color: buttonColors.info,
+            isPrimary: true,
+          })}
+
+          {renderActionButton({
+            href: `/edit-aluno/${aluno.id}`,
+            label: 'Editar',
+            color: buttonColors.warning,
+            isPrimary: true,
+          })}
         </View>
-      </View>
-      
-      <View style={styles.buttonsRow}>
-        {renderActionButton({
-          href: `/aluno/${aluno.id}/fichas`,
-          label: 'Fichas',
-          color: buttonColors.primary,
-          isPrimary: true,
-        })}
-        
-        {renderActionButton({
-          href: `/historico/${aluno.id}`,
-          label: 'Histórico',
-          color: buttonColors.info,
-          isPrimary: true,
-        })}
-        
-        {renderActionButton({
-          href: `/edit-aluno/${aluno.id}`,
-          label: 'Editar',
-          color: buttonColors.warning,
-          isPrimary: true,
-        })}
-      </View>
-      
-      <View style={styles.buttonsRow}>
-        {renderActionButton({
-          href: `/aluno/${aluno.id}/avaliacao`,
-          label: 'Avaliação',
-          color: buttonColors.primary,
-          isPrimary: true,
-        })}
-        
-        {renderActionButton({
-          href: `/aluno/${aluno.id}/horarios`,
-          label: 'Aulas',
-          color: buttonColors.primary,
-          isPrimary: true,
-        })}
-        
-        {renderActionButton({
-          label: 'Excluir',
-          color: buttonColors.danger,
-          onPress: handleDelete,
-          isDanger: true,
-        })}
-      </View>
+
+        <View style={styles.buttonsRow}>
+          {renderActionButton({
+            href: `/aluno/${aluno.id}/avaliacao`,
+            label: 'Avaliação',
+            color: buttonColors.primary,
+            isPrimary: true,
+          })}
+
+          {renderActionButton({
+            href: `/aluno/${aluno.id}/horarios`,
+            label: 'Aulas',
+            color: buttonColors.primary,
+            isPrimary: true,
+          })}
+
+          {renderActionButton({
+            label: 'Excluir',
+            color: buttonColors.danger,
+            onPress: handleDelete,
+            isDanger: true,
+          })}
+        </View>
       </TouchableOpacity>
     </Link>
   );

@@ -130,9 +130,8 @@ const useFichasStore = create<FichasState>((set, get) => ({
         );
       }
 
-      // Adicionar nova ficha ao estado
-      const novaFicha = { ...fichaOriginal, id: novaFichaId, aluno_id: alunoIdFinal, nome: nomeFinal };
-      set((state) => ({ fichas: [...state.fichas, novaFicha] }));
+      // Adicionar nova ficha ao estado (REMOVIDO para evitar duplicação com o refresh da tela)
+      // set((state) => ({ fichas: [...state.fichas, novaFicha] }));
 
       console.log(`Ficha copiada com sucesso. Nova ficha ID: ${novaFichaId}`);
       return novaFichaId;
