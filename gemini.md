@@ -34,3 +34,24 @@ O objetivo deste projeto é desenvolver um aplicativo móvel para personal train
 - **`npm run android`**: Executa o aplicativo no emulador ou dispositivo Android.
 - **`npm run ios`**: Executa o aplicativo no emulador ou dispositivo iOS.
 - **`npm run web`**: Executa o aplicativo em um navegador web.
+
+## Registro de Alterações Recentes (Sprint de Polimento - Jan 2026)
+
+### 1. Padronização Visual (Design System)
+- **Tema Escuro:** Implementado globalmente (fundo preto/cinza, elementos em destaque amarelo #FFB700).
+- **Tipografia:** Integrado `Roboto` e `Source Sans Pro` via `expo-google-fonts`.
+- **Componentes:** Padronização de botões, inputs e cards em todo o app.
+
+### 2. Padronização de Datas
+- **Data Utils:** Criado `src/utils/dateUtils.ts` para centralizar formatação e parsing.
+- **Formato:** UX em `DD-MM-AAAA`, Banco em `YYYY-MM-DD`.
+- **Máscaras:** Inputs de data com máscara automática.
+
+### 3. Refatoração do Calendário (Headless)
+- **Virtualização:** Lógica de recorrência calculada em tempo de leitura (não gera registros futuros no banco).
+- **Store:** `useAulasStore` gerencia visualização e ações.
+- **Acesso Rápido:** Adicionado botão de "Fichas" no card de aula.
+
+### 4. Melhorias Gerais
+- **Modais:** Todos os modais (Ficha, Treino, Aluno) padronizados com o novo tema.
+- **Navegação:** Headers e TabBar ajustados para o tema amarelo/preto.
