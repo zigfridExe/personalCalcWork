@@ -93,14 +93,14 @@ function RootLayoutNav() {
           name="historico/[alunoId]"
           options={{
             title: 'Histórico Completo',
-            headerShown: true,
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="edit-aluno/[id]"
           options={{
             title: 'Editar Aluno',
-            headerShown: true,
+            headerShown: false,
           }}
         />
       </Stack>

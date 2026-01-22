@@ -5,6 +5,7 @@ import useAlunosStore from '../../store/useAlunosStore';
 // Corrigido o caminho do AlunoForm para refletir a estrutura correta do projeto
 import AlunoForm from '../../components/AlunoForm';
 import { theme } from '@/styles/theme';
+import ScreenHeader from '@/shared/components/ScreenHeader';
 import { parseToISO } from '@/utils/dateUtils';
 
 interface Aluno {
@@ -62,6 +63,7 @@ export default function EditAlunoScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <ScreenHeader title="Editar Aluno" />
       <AlunoForm initialValues={initialValues} onSubmit={handleSubmit} submitLabel="Salvar Alterações" />
     </View>
   );

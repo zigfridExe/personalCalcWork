@@ -25,6 +25,10 @@ Calendário de Aulas: Agendamento, visualização de agenda e controle de presen
 
 Backup e Restauração Local: Funcionalidade para criar e importar backups do banco de dados SQLite, garantindo a segurança dos dados offline.
 
+Padronização Visual (Design System): Tema escuro consistente com paleta de cores (Amarelo/Preto), tipografia (Roboto/Source Sans Pro) e componentes reutilizáveis.
+
+Padronização de Datas: Tratamento robusto de datas (DD-MM-AAAA) em toda interface e ISO (YYYY-MM-DD) no banco de dados.
+
 Filosofia do Projeto:
 
 Offline First: Funcionalidade total sem dependência de internet.
@@ -67,18 +71,18 @@ Quando formos expandir a avaliação física além da versão simplificada do MV
 
 Esses itens servirão de base para a evolução do sistema após a entrega do MVP.
 
-## Refatoração do Módulo de Calendário (Arquitetura Simplificada v2)
-
-- **Novo Modelo de Dados ("Calculation on Read"):**
+- **Refatoração Concluída:**
   - O banco de dados armazena apenas **REGRAS** (ex: "Toda Seg e Qua") e **EXCEÇÕES/HISTÓRICO** (aulas passadas, cancelamentos, aulas avulsas).
   - Não existe mais "geração de aulas futuras" no banco.
   - A visualização do calendário é calculada em tempo real (memória) mesclando as regras ativas com as exceções registradas.
+  - Botão de acesso rápido a Fichas no cartão de aula.
 
 - **Vantagens:**
   - Banco de dados leve e limpo.
-  - Edição de horários instantânea (sem necessidade de regravar centenas de registros).
+  - Edição de horários instantânea e robusta.
   - Robustez contra inconsistências de dados.
 
 - **UI/UX:**
   - Uso de `react-native-calendars` mantido.
-  - Diferenciação visual clara entre aula "Virtual" (calculada pela regra) e aula "Real" (confirmada/histórico).
+  - Diferenciação visual clara entre aula "Virtual", "Real" e "Cancelada".
+  - Tema escuro aplicado consistentemente.

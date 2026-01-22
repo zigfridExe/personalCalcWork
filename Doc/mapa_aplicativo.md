@@ -59,6 +59,13 @@ Rota dinâmica acessada ao clicar em um aluno na lista.
 *   **`nova-medida.tsx`**: Formulário para registrar novas medidas corporais.
 *   **`horarios.tsx`**: Configuração de horários fixos (recorrentes) do aluno.
 
+### 2.1 🛠️ Modais e Utilitários (`app/`)
+*   **`modal.tsx`**: Cadastro rápido de novo aluno.
+*   **`modal-ficha.tsx`**: Criação/Edição de ficha de treino.
+*   **`modal-exercicio.tsx`**: Seleção de exercícios para a ficha.
+*   **`modal-copiar-ficha.tsx`**: Duplicação de treinos.
+*   **`modal-treino.tsx`**: Detalhes do treino.
+
 ### 3. 📝 Fichas de Treino (`app/ficha/[id]/`)
 *   **`visualizar.tsx`**: Detalhes da ficha. Permite adicionar exercícios, editar séries e iniciar o treino.
 

@@ -86,6 +86,14 @@ const AulaCard: React.FC<AulaCardProps> = ({ aula, onMarcarPresenca, onApagar, o
           )}
 
           <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#607D8B', marginRight: 0 }]}
+            onPress={() => router.push(`/aluno/${aula.aluno_id}/fichas`)}
+          >
+            <Ionicons name="newspaper-outline" size={18} color="#fff" />
+            <Text style={styles.btnText}>Fichas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: theme.colors.danger, opacity: aula.presenca === 3 ? 0.4 : 1 }]}
             onPress={() => {
               if (aula.presenca !== 3) onApagar(aula);

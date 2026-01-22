@@ -123,6 +123,17 @@
    - [x] Testar geração de aulas em diferentes cenários (recorrente, avulsa, sobrescrita, cancelada).
    - [x] Ajustar UX conforme feedback.
 
+## 9. Padronização e Polimento ✅ CONCLUÍDO
+- [x] Implementar Design System (Cores, Fontes, Componentes).
+- [x] Padronizar formatos de data (DD-MM-AAAA) e ISO no banco.
+- [x] Refatorar telas principais para tema escuro.
+- [x] Botão de acesso rápido a Fichas no Calendário.
+
+## 10. Próximos Passos
+- [ ] Implementar Lembretes e Notificações (Seção 4).
+- [ ] Testes de Unidade e Integração (Seção 8).
+- [ ] Expansão da Avaliação Física (pós-MVP).
+
 ---
 
 > **Observações:**

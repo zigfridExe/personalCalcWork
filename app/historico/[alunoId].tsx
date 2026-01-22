@@ -8,6 +8,7 @@ import useAlunosStore from '../../store/useAlunosStore';
 import CustomModal from '../../components/CustomModal';
 import { theme } from '@/styles/theme';
 import { formatDate, formatDateTime } from '@/utils/dateUtils';
+import ScreenHeader from '@/shared/components/ScreenHeader';
 
 export default function HistoricoScreen() {
   const { alunoId } = useLocalSearchParams();
@@ -92,10 +93,7 @@ export default function HistoricoScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.subtitle}>{aluno.nome}</Text>
-      </View>
+      <ScreenHeader title={`Histórico: ${aluno.nome}`} />
       <ScrollView style={styles.content}>
         {/* Resumo Geral de Treinos */}
         {historicos.length === 0 ? (
